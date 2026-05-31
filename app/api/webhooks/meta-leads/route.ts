@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase'
-import { sendPushToCompany } from '@/app/api/push/notify/route'
+import { sendPushToCompany } from '@/lib/push'
 import { sendNewLeadNotification } from '@/lib/email'
 
 // Meta sends a GET request first to verify the webhook
