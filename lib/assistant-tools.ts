@@ -1,0 +1,478 @@
+import Anthropic from '@anthropic-ai/sdk'
+import { createAdminClient } from './supabase'
+
+// ── System prompt (dynamic per tenant) ───────────────────────────────────────
+
+export function buildSystemPrompt(agencyName: string): string {
+  return `Eres PropSync AI, el asistente inteligente de ${agencyName}.
+
+Tienes acceso en tiempo real a:
+- El inventario completo de propiedades (búsqueda, filtros, notas)
+- El CRM de leads y contactos (pipeline Kanban, etapas, seguimiento)
+- El equipo de agentes y sus asignaciones
+
+REGLAS IMPORTANTES:
+1. NUNCA elimines datos. Para propiedades: usa inactivar / marcar vendida / marcar alquilada.
+2. Para acciones que modifican datos (cambiar estado, crear contacto, agregar nota), confirma brevemente qué harás y ejecútalo de inmediato.
+3. Responde en español, de forma concisa y profesional.
+4. Usa markdown cuando ayude: **negrita** para datos clave, listas para múltiples items.
+5. Si no encuentras algo, dilo claramente — no inventes datos.
+
+ÁMBITO EXCLUSIVO: Este asistente es para gestión inmobiliaria de ${agencyName} únicamente.
+Si el usuario pregunta sobre temas ajenos (cocina, clima, programación general, entretenimiento, etc.),
+responde EXACTAMENTE así, sin usar ninguna herramienta:
+"Entiendo tu pregunta, pero este asistente está diseñado para ayudarte con la gestión de tu agencia inmobiliaria. Puedo ayudarte a buscar propiedades, gestionar leads, revisar seguimientos y más. ¿En qué puedo ayudarte hoy?"`
+}
+
+// ── Tool executor ─────────────────────────────────────────────────────────────
+
+export async function executeTool(
+  name: string,
+  input: Record<string, unknown>,
+  companyId: string
+): Promise<unknown> {
+  const db = createAdminClient()
+
+  switch (name) {
+
+    // ── Dashboard stats ────────────────────────────────────────────────────
+    case 'get_dashboard_stats': {
+      const now   = new Date()
+      const month = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      const week  = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      const today = now.toISOString().slice(0, 10)
+
+      const [props, leads, followUps, closed] = await Promise.all([
+        (db.from('properties') as any)
+          .select('id, estado_publicacion, disponibilidad', { count: 'exact' })
+          .eq('company_id', companyId),
+        (db.from('contacts') as any)
+          .select('id', { count: 'exact' })
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .gte('created_at', week),
+        (db.from('contacts') as any)
+          .select('id', { count: 'exact' })
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .lte('fecha_seguimiento', today),
+        (db.from('contacts') as any)
+          .select('id', { count: 'exact' })
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .eq('etapa_crm', 'cerrado')
+          .gte('updated_at', month),
+      ])
+
+      const rows = props.data ?? []
+      return {
+        total_propiedades:      rows.length,
+        propiedades_activas:    rows.filter((p: any) => p.estado_publicacion === 'activo' || p.estado_publicacion === 'destacado').length,
+        propiedades_disponibles:rows.filter((p: any) => p.disponibilidad === 'disponible').length,
+        propiedades_vendidas:   rows.filter((p: any) => p.disponibilidad === 'vendido').length,
+        propiedades_alquiladas: rows.filter((p: any) => p.disponibilidad === 'alquilado').length,
+        nuevos_leads_7d:        leads.count ?? 0,
+        seguimientos_pendientes:followUps.count ?? 0,
+        cerrados_este_mes:      closed.count ?? 0,
+      }
+    }
+
+    // ── Search properties ──────────────────────────────────────────────────
+    case 'search_properties': {
+      let q = (db.from('properties') as any)
+        .select('id, titulo, tipo, precio, iso_currency, disponibilidad, estado_publicacion, ciudad, zona, bedrooms, bathrooms, area, agente_asignado_id, etapa_crm, updated_at, main_image_url')
+        .eq('company_id', companyId)
+        .order('updated_at', { ascending: false })
+        .limit(Number(input.limit ?? 20))
+
+      if (input.disponibilidad) q = q.eq('disponibilidad', input.disponibilidad)
+      if (input.estado)         q = q.eq('estado_publicacion', input.estado)
+      if (input.tipo)           q = q.ilike('tipo', input.tipo as string)
+      if (input.search)         q = q.ilike('titulo', `%${input.search}%`)
+      if (input.ciudad)         q = q.ilike('ciudad', `%${input.ciudad}%`)
+      if (input.precio_max)     q = q.lte('precio', Number(input.precio_max))
+      if (input.precio_min)     q = q.gte('precio', Number(input.precio_min))
+      if (input.bedrooms)       q = q.gte('bedrooms', Number(input.bedrooms))
+
+      const { data, error } = await q
+      if (error) throw new Error(error.message)
+      return { properties: data ?? [], count: data?.length ?? 0 }
+    }
+
+    // ── Property detail + notes ────────────────────────────────────────────
+    case 'get_property_detail': {
+      const { data: prop, error } = await (db.from('properties') as any)
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('id', input.property_id)
+        .single()
+      if (error) throw new Error(error.message)
+
+      const { data: notes } = await (db.from('property_notes') as any)
+        .select('agent_nombre, contenido, created_at')
+        .eq('company_id', companyId)
+        .eq('property_id', input.property_id)
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+      return { property: prop, notes: notes ?? [] }
+    }
+
+    // ── Update property availability ───────────────────────────────────────
+    case 'update_property_availability': {
+      const allowed = ['disponible', 'vendido', 'alquilado']
+      if (!allowed.includes(input.disponibilidad as string)) {
+        throw new Error(`disponibilidad debe ser: ${allowed.join(', ')}`)
+      }
+
+      const patch: Record<string, unknown> = { disponibilidad: input.disponibilidad }
+      if (input.disponibilidad === 'vendido' || input.disponibilidad === 'alquilado') {
+        patch.estado_publicacion = 'inactivo'
+      }
+
+      const { data, error } = await (db.from('properties') as any)
+        .update(patch)
+        .eq('company_id', companyId)
+        .eq('id', input.property_id)
+        .select('id, titulo, disponibilidad, estado_publicacion')
+        .single()
+      if (error) throw new Error(error.message)
+      return { updated: data }
+    }
+
+    // ── Update property CRM fields ─────────────────────────────────────────
+    case 'update_property_crm': {
+      const patch: Record<string, unknown> = {}
+      if (input.etapa_crm)            patch.etapa_crm            = input.etapa_crm
+      if (input.agente_asignado_id)   patch.agente_asignado_id   = input.agente_asignado_id
+      if (input.fecha_seguimiento)    patch.fecha_seguimiento     = input.fecha_seguimiento
+
+      if (Object.keys(patch).length === 0) throw new Error('No se proporcionaron campos a actualizar.')
+
+      const { data, error } = await (db.from('properties') as any)
+        .update(patch)
+        .eq('company_id', companyId)
+        .eq('id', input.property_id)
+        .select('id, titulo, etapa_crm, agente_asignado_id, fecha_seguimiento')
+        .single()
+      if (error) throw new Error(error.message)
+      return { updated: data }
+    }
+
+    // ── Add immutable note to property ─────────────────────────────────────
+    case 'add_property_note': {
+      if (!input.contenido) throw new Error('contenido es requerido.')
+
+      const { data, error } = await (db.from('property_notes') as any)
+        .insert({
+          property_id:  input.property_id,
+          company_id:   companyId,
+          agent_nombre: 'PropSync AI',
+          contenido:    String(input.contenido),
+        })
+        .select()
+        .single()
+      if (error) throw new Error(error.message)
+      return { note: data }
+    }
+
+    // ── Search contacts ────────────────────────────────────────────────────
+    case 'search_contacts': {
+      let q = (db.from('contacts') as any)
+        .select('id, nombre, email, telefono, tipo, etapa_crm, agente_nombre, fecha_seguimiento, fuente, tags, presupuesto_min, presupuesto_max, ciudad, created_at')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .order('updated_at', { ascending: false })
+        .limit(Number(input.limit ?? 30))
+
+      if (input.etapa_crm)     q = q.eq('etapa_crm', input.etapa_crm)
+      if (input.tipo)          q = q.eq('tipo', input.tipo)
+      if (input.search)        q = q.or(`nombre.ilike.%${input.search}%,email.ilike.%${input.search}%,telefono.ilike.%${input.search}%`)
+      if (input.followup_due)  q = q.lte('fecha_seguimiento', new Date().toISOString().slice(0, 10))
+
+      const { data, error } = await q
+      if (error) throw new Error(error.message)
+      return { contacts: data ?? [], count: data?.length ?? 0 }
+    }
+
+    // ── Contact detail + linked properties ────────────────────────────────
+    case 'get_contact_detail': {
+      const { data: contact, error } = await (db.from('contacts') as any)
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('id', input.contact_id)
+        .single()
+      if (error) throw new Error(error.message)
+
+      const { data: links } = await (db.from('contact_property_links') as any)
+        .select('property_id, interes, created_at, properties(id, titulo, precio, disponibilidad)')
+        .eq('company_id', companyId)
+        .eq('contact_id', input.contact_id)
+
+      return { contact, linked_properties: links ?? [] }
+    }
+
+    // ── Create contact ─────────────────────────────────────────────────────
+    case 'create_contact': {
+      if (!input.nombre) throw new Error('nombre es requerido.')
+
+      const { data, error } = await (db.from('contacts') as any)
+        .insert({
+          company_id:         companyId,
+          nombre:             input.nombre,
+          email:              input.email              ?? null,
+          telefono:           input.telefono           ?? null,
+          whatsapp:           input.whatsapp           ?? null,
+          tipo:               input.tipo               ?? 'cliente',
+          ciudad:             input.ciudad             ?? null,
+          zona_interes:       input.zona_interes       ?? null,
+          tipo_operacion:     input.tipo_operacion     ?? 'compra',
+          presupuesto_min:    input.presupuesto_min    ?? null,
+          presupuesto_max:    input.presupuesto_max    ?? null,
+          etapa_crm:          input.etapa_crm          ?? 'nuevo_lead',
+          agente_asignado_id: input.agente_asignado_id ?? null,
+          fecha_seguimiento:  input.fecha_seguimiento  ?? null,
+          fuente:             'manual',
+          notas:              input.notas              ?? null,
+          tags:               (input.tags as string[]) ?? [],
+          is_active:          true,
+        })
+        .select()
+        .single()
+      if (error) throw new Error(error.message)
+      return { contact: data }
+    }
+
+    // ── Update contact ─────────────────────────────────────────────────────
+    case 'update_contact': {
+      const allowed = ['nombre','email','telefono','whatsapp','tipo','ciudad','zona_interes','tipo_operacion','presupuesto_min','presupuesto_max','etapa_crm','agente_asignado_id','agente_nombre','fecha_seguimiento','notas','tags','is_active']
+      const patch: Record<string, unknown> = {}
+      for (const key of allowed) {
+        if (input[key] !== undefined) patch[key] = input[key]
+      }
+      if (Object.keys(patch).length === 0) throw new Error('No se proporcionaron campos a actualizar.')
+
+      const { data, error } = await (db.from('contacts') as any)
+        .update(patch)
+        .eq('company_id', companyId)
+        .eq('id', input.contact_id)
+        .select('id, nombre, etapa_crm, agente_nombre, fecha_seguimiento')
+        .single()
+      if (error) throw new Error(error.message)
+      return { updated: data }
+    }
+
+    // ── CRM stages ────────────────────────────────────────────────────────
+    case 'get_crm_stages': {
+      const { data, error } = await (db.from('crm_stages') as any)
+        .select('id, nombre, slug, color, position, is_terminal')
+        .eq('company_id', companyId)
+        .order('position', { ascending: true })
+      if (error) throw new Error(error.message)
+      return { stages: data ?? [] }
+    }
+
+    // ── Pending follow-ups ────────────────────────────────────────────────
+    case 'get_pending_followups': {
+      const today = new Date().toISOString().slice(0, 10)
+
+      // Get terminal stage slugs to exclude
+      const { data: stages } = await (db.from('crm_stages') as any)
+        .select('slug')
+        .eq('company_id', companyId)
+        .eq('is_terminal', true)
+      const terminalSlugs = (stages ?? []).map((s: any) => s.slug)
+
+      let q = (db.from('contacts') as any)
+        .select('id, nombre, telefono, etapa_crm, fecha_seguimiento, agente_nombre')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .lte('fecha_seguimiento', today)
+        .order('fecha_seguimiento', { ascending: true })
+        .limit(50)
+
+      if (terminalSlugs.length > 0) q = q.not('etapa_crm', 'in', `(${terminalSlugs.map((s: string) => `"${s}"`).join(',')})`)
+
+      const { data, error } = await q
+      if (error) throw new Error(error.message)
+      return { pending: data ?? [], count: data?.length ?? 0, as_of: today }
+    }
+
+    // ── List agents ───────────────────────────────────────────────────────
+    case 'list_agents': {
+      const { data, error } = await (db.from('agents') as any)
+        .select('id, nombre, email, rol, is_active')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .order('nombre', { ascending: true })
+      if (error) throw new Error(error.message)
+      return { agents: data ?? [] }
+    }
+
+    default:
+      throw new Error(`Herramienta desconocida: ${name}`)
+  }
+}
+
+// ── Tool definitions for Claude ───────────────────────────────────────────────
+
+export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
+  {
+    name: 'get_dashboard_stats',
+    description: 'Obtiene estadísticas generales: total de propiedades, cuántas están activas y disponibles, nuevos leads de los últimos 7 días, seguimientos pendientes y cierres de este mes.',
+    input_schema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'search_properties',
+    description: 'Busca propiedades del inventario con filtros opcionales. Úsala para responder preguntas sobre propiedades disponibles, vendidas, de venta/arriendo, por ciudad o precio.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        search:         { type: 'string',  description: 'Texto libre en el título de la propiedad' },
+        tipo:           { type: 'string',  description: '"venta" o "arriendo"' },
+        disponibilidad: { type: 'string',  description: '"disponible", "vendido" o "alquilado"' },
+        estado:         { type: 'string',  description: '"activo", "destacado" o "inactivo"' },
+        ciudad:         { type: 'string',  description: 'Filtrar por ciudad (búsqueda parcial)' },
+        precio_min:     { type: 'number',  description: 'Precio mínimo' },
+        precio_max:     { type: 'number',  description: 'Precio máximo' },
+        bedrooms:       { type: 'number',  description: 'Mínimo de habitaciones' },
+        limit:          { type: 'number',  description: 'Máximo de resultados (default 20)' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_property_detail',
+    description: 'Obtiene todos los detalles de una propiedad específica, incluyendo sus últimas notas.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        property_id: { type: 'string', description: 'UUID de la propiedad' },
+      },
+      required: ['property_id'],
+    },
+  },
+  {
+    name: 'update_property_availability',
+    description: 'Cambia la disponibilidad de una propiedad: disponible, vendido o alquilado. Cuando se marca vendida o alquilada, también se inactiva automáticamente (se oculta de los portales).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        property_id:    { type: 'string', description: 'UUID de la propiedad' },
+        disponibilidad: { type: 'string', description: '"disponible", "vendido" o "alquilado"' },
+      },
+      required: ['property_id', 'disponibilidad'],
+    },
+  },
+  {
+    name: 'update_property_crm',
+    description: 'Actualiza los campos CRM de una propiedad: etapa del pipeline, agente asignado o fecha de seguimiento.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        property_id:         { type: 'string', description: 'UUID de la propiedad' },
+        etapa_crm:           { type: 'string', description: 'Etapa CRM: prospecto, contactado, visita, oferta, negociando, cerrado' },
+        agente_asignado_id:  { type: 'string', description: 'UUID del agente a asignar' },
+        fecha_seguimiento:   { type: 'string', description: 'Fecha de seguimiento en formato YYYY-MM-DD' },
+      },
+      required: ['property_id'],
+    },
+  },
+  {
+    name: 'add_property_note',
+    description: 'Agrega una nota permanente a una propiedad. Las notas son inmutables (no se pueden editar ni eliminar).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        property_id: { type: 'string', description: 'UUID de la propiedad' },
+        contenido:   { type: 'string', description: 'Texto de la nota' },
+      },
+      required: ['property_id', 'contenido'],
+    },
+  },
+  {
+    name: 'search_contacts',
+    description: 'Busca contactos/leads del CRM con filtros opcionales. Úsala para listar leads, buscar por nombre, filtrar por etapa o ver quién tiene seguimiento pendiente.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        search:       { type: 'string',  description: 'Búsqueda en nombre, email o teléfono' },
+        etapa_crm:    { type: 'string',  description: 'Filtrar por slug de etapa (ej: "nuevo_lead", "contactado")' },
+        tipo:         { type: 'string',  description: '"cliente", "propietario" o "broker"' },
+        followup_due: { type: 'boolean', description: 'Si true, solo contactos con seguimiento vencido o de hoy' },
+        limit:        { type: 'number',  description: 'Máximo de resultados (default 30)' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_contact_detail',
+    description: 'Obtiene el perfil completo de un contacto y las propiedades que tiene vinculadas.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contact_id: { type: 'string', description: 'UUID del contacto' },
+      },
+      required: ['contact_id'],
+    },
+  },
+  {
+    name: 'create_contact',
+    description: 'Crea un nuevo lead o contacto en el CRM.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        nombre:             { type: 'string', description: 'Nombre completo (requerido)' },
+        email:              { type: 'string', description: 'Email' },
+        telefono:           { type: 'string', description: 'Teléfono' },
+        whatsapp:           { type: 'string', description: 'Número WhatsApp' },
+        tipo:               { type: 'string', description: '"cliente" (default), "propietario" o "broker"' },
+        ciudad:             { type: 'string', description: 'Ciudad de interés' },
+        zona_interes:       { type: 'string', description: 'Zona o sector de interés' },
+        tipo_operacion:     { type: 'string', description: '"compra" (default), "alquiler" o "ambas"' },
+        presupuesto_min:    { type: 'number', description: 'Presupuesto mínimo' },
+        presupuesto_max:    { type: 'number', description: 'Presupuesto máximo' },
+        etapa_crm:          { type: 'string', description: 'Etapa inicial (default: "nuevo_lead")' },
+        agente_asignado_id: { type: 'string', description: 'UUID del agente a asignar' },
+        fecha_seguimiento:  { type: 'string', description: 'Fecha de seguimiento YYYY-MM-DD' },
+        notas:              { type: 'string', description: 'Notas iniciales' },
+      },
+      required: ['nombre'],
+    },
+  },
+  {
+    name: 'update_contact',
+    description: 'Actualiza campos de un contacto existente: etapa CRM, agente asignado, fecha de seguimiento, datos de contacto, tags, etc.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contact_id:         { type: 'string',  description: 'UUID del contacto' },
+        nombre:             { type: 'string',  description: 'Nuevo nombre' },
+        email:              { type: 'string',  description: 'Nuevo email' },
+        telefono:           { type: 'string',  description: 'Nuevo teléfono' },
+        etapa_crm:          { type: 'string',  description: 'Slug de la nueva etapa' },
+        agente_asignado_id: { type: 'string',  description: 'UUID del agente' },
+        agente_nombre:      { type: 'string',  description: 'Nombre del agente (texto libre)' },
+        fecha_seguimiento:  { type: 'string',  description: 'YYYY-MM-DD' },
+        notas:              { type: 'string',  description: 'Notas adicionales' },
+        is_active:          { type: 'boolean', description: 'false para desactivar (nunca elimina)' },
+      },
+      required: ['contact_id'],
+    },
+  },
+  {
+    name: 'get_crm_stages',
+    description: 'Lista todas las etapas configuradas en el pipeline CRM, ordenadas por posición.',
+    input_schema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'get_pending_followups',
+    description: 'Lista los contactos cuya fecha de seguimiento es hoy o está vencida, y que no están en etapas terminales (cerrado, descartado, etc.).',
+    input_schema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'list_agents',
+    description: 'Lista todos los agentes activos del equipo con su nombre, email y rol.',
+    input_schema: { type: 'object', properties: {}, required: [] },
+  },
+]

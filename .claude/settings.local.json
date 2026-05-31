@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\DELL\\\\OneDrive\\\\Desktop\\\\secretproject\" -Recurse -Force)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(npm --version)",
+      "Bash(npx --version)",
+      "Bash(npx shadcn@latest --help)",
+      "Bash(npm view *)",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const v=JSON.parse\\(d\\); console.log\\(v.filter\\(x=>x.startsWith\\('14.'\\)\\).slice\\(-5\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(npx create-next-app@14 . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --use-npm --yes)",
+      "Read(//c/Users/DELL/OneDrive/Desktop/**)",
+      "Bash(npx create-next-app@14 propsync-temp --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --use-npm --yes)",
+      "Bash(npm install *)",
+      "Bash(npx shadcn@latest init --defaults)",
+      "Bash(npx shadcn@latest add badge button card dialog dropdown-menu input label progress select separator sheet skeleton switch table tabs tooltip --yes)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\DELL\\\\OneDrive\\\\Desktop\\\\secretproject\" -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notmatch 'node_modules' } | ForEach-Object { if \\($_.PSIsContainer\\) { \"DIR:  $\\($_.FullName\\)\" } else { \"FILE: $\\($_.FullName\\)\" } } | Sort-Object)",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import fastapi, uvicorn, httpx, dotenv, requests, openpyxl, pandas; print\\('Todas las dependencias OK'\\)\")",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\DELL\\\\OneDrive\\\\Desktop\\\\secretproject\" -Recurse -File -Exclude @\\('node_modules', '__pycache__', '.git'\\) | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\('c:\\\\Users\\\\DELL\\\\OneDrive\\\\Desktop\\\\secretproject\\\\', ''\\) } | Sort-Object)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)"
+    ]
+  }
+}

@@ -1,0 +1,2 @@
+ALTER TABLE companies
+  ADD COLUMN IF NOT EXISTS last_wasi_sync_at TIMESTAMPTZ;

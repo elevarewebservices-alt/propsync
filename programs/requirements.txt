@@ -1,0 +1,20 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+httpx==0.28.1
+python-dotenv==1.0.1
+requests==2.32.3
+openpyxl==3.1.5
+pandas==2.2.3
+
+# Facebook Publisher Module
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+celery[redis]==5.4.0
+redis==5.2.0
+playwright==1.49.0
+playwright-stealth==1.0.6
+openai==1.57.0
+cryptography==43.0.3
+structlog==24.4.0
+Pillow==11.0.0

@@ -1,0 +1,49 @@
+# Credenciales y configuración
+.env
+*.env
+
+# Bases de datos (contienen datos personales de clientes)
+*.db
+*.sqlite
+*.sqlite3
+
+# Datos de campaña (nombres, teléfonos, propietarios)
+*.csv
+*.json
+*.xlsx
+*.xls
+
+# Logs
+*.log
+*_err.log
+
+# Scripts con credenciales hardcodeadas
+check_droplet.py
+crear_seguimiento.py
+
+# Binarios
+ngrok.exe
+*.exe
+
+# Entorno virtual Python
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Temporales
+*.tmp
+*.temp
+
+# Claude Code sesión
+.claude/
+
+# Facebook Publisher — runtime data (sensitive)
+sessions/
+screenshots/
+*.enc

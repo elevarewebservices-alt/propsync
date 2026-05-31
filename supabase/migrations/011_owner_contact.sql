@@ -1,0 +1,2 @@
+ALTER TABLE properties
+  ADD COLUMN IF NOT EXISTS owner_contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL;
