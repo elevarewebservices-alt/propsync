@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { KanbanBoard } from '@/components/crm/KanbanBoard'
@@ -12,7 +12,7 @@ import Link from 'next/link'
 
 type ViewMode = 'tabla' | 'kanban'
 
-export default function CrmPage() {
+function CrmPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const stageParam    = searchParams.get('stage')
@@ -214,5 +214,13 @@ export default function CrmPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function CrmPage() {
+  return (
+    <Suspense>
+      <CrmPageContent />
+    </Suspense>
   )
 }
