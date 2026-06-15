@@ -10,6 +10,11 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 type ConversationMessage = Anthropic.MessageParam
 
 export async function POST(req: NextRequest) {
+  // Tracks whether we have consumed a credit, so we can refund it if the
+  // request fails before delivering a response.
+  let creditState: { companyId: string; month: string } | null = null
+  const db = createAdminClient()
+
   try {
     const { messages }: { messages: ConversationMessage[] } = await req.json()
 
@@ -18,32 +23,46 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Auth + company context ──────────────────────────────────────────────
+    // companyId, planId and month are all resolved server-side from the session.
+    // The client cannot influence them, so the limit cannot be spoofed.
     const companyId = await resolveCompanyId()
     const planId    = await getSessionPlan()
-    const db        = createAdminClient()
+    const month     = new Date().toISOString().slice(0, 7)   // 'YYYY-MM'
+    const limit     = ASSISTANT_LIMITS[planId] ?? ASSISTANT_LIMITS.starter
 
-    const { data: company } = await (db.from('companies') as any)
-      .select('nombre')
-      .eq('id', companyId)
-      .single()
+    // ── Atomic credit reservation (tamper-proof) ────────────────────────────
+    // Consume one credit BEFORE spending any tokens. The DB function serializes
+    // concurrent requests, so exactly `limit` can ever succeed in a month.
+    const { data: newCount, error: creditErr } = await (db as any).rpc(
+      'consume_assistant_credit',
+      { p_company_id: companyId, p_month: month }
+    )
 
-    // ── Usage limit check ───────────────────────────────────────────────────
-    const month = new Date().toISOString().slice(0, 7)   // 'YYYY-MM'
-    const { data: usage } = await (db.from('assistant_usage') as any)
-      .select('request_count')
-      .eq('company_id', companyId)
-      .eq('month', month)
-      .maybeSingle()
+    if (creditErr || typeof newCount !== 'number') {
+      // Fail closed: if we can't verify the limit, do not run the model.
+      console.error('[assistant] credit guard failed:', creditErr)
+      return NextResponse.json(
+        { error: 'No se pudo verificar el límite de uso. Intenta más tarde.' },
+        { status: 503 }
+      )
+    }
+    creditState = { companyId, month }
 
-    const currentCount = (usage as any)?.request_count ?? 0
-    const limit        = ASSISTANT_LIMITS[planId] ?? ASSISTANT_LIMITS.starter
-
-    if (currentCount >= limit) {
+    if (newCount > limit) {
+      // Over the limit — give the credit back so the counter stays pegged at
+      // `limit`, and block the request.
+      await (db as any).rpc('refund_assistant_credit', { p_company_id: companyId, p_month: month })
+      creditState = null
       return NextResponse.json({
         role: 'assistant',
         content: `Has alcanzado el límite de **${limit} consultas** este mes para tu plan **${planId}**. Actualiza tu plan para continuar usando el asistente IA.`,
       })
     }
+
+    const { data: company } = await (db.from('companies') as any)
+      .select('nombre')
+      .eq('id', companyId)
+      .single()
 
     // ── Agentic loop ────────────────────────────────────────────────────────
     const systemPrompt = buildSystemPrompt(company?.nombre ?? 'tu agencia')
@@ -66,13 +85,7 @@ export async function POST(req: NextRequest) {
         const textBlock = response.content.find(b => b.type === 'text')
         const text      = textBlock?.type === 'text' ? textBlock.text : ''
 
-        // ── Increment usage counter ─────────────────────────────────────────
-        await (db.from('assistant_usage') as any)
-          .upsert(
-            { company_id: companyId, month, request_count: currentCount + 1 },
-            { onConflict: 'company_id,month' }
-          )
-
+        // Credit was already consumed atomically up front — nothing to do here.
         return NextResponse.json({ role: 'assistant', content: text })
       }
 
@@ -128,6 +141,15 @@ export async function POST(req: NextRequest) {
 
   } catch (err) {
     console.error('[assistant] Error:', err)
+    // Refund the reserved credit — the request failed before delivering value.
+    if (creditState) {
+      await (db as any)
+        .rpc('refund_assistant_credit', {
+          p_company_id: creditState.companyId,
+          p_month: creditState.month,
+        })
+        .catch(() => {})
+    }
     const message = err instanceof Error ? err.message : 'Error desconocido'
     return NextResponse.json({ error: message }, { status: 500 })
   }
