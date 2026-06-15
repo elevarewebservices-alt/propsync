@@ -119,6 +119,18 @@ export default function NuevaPropiedadPage() {
   const [showOwnerDropdown, setShowOwnerDropdown] = useState(false)
   const [phone1Match, setPhone1Match] = useState<Contact | null>(null)
   const [phone2Match, setPhone2Match] = useState<Contact | null>(null)
+  const ownerDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close owner dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ownerDropdownRef.current && !ownerDropdownRef.current.contains(e.target as Node)) {
+        setShowOwnerDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -142,7 +154,7 @@ export default function NuevaPropiedadPage() {
     if (q.length < 2) { setOwnerSuggestions([]); return }
     const timer = setTimeout(async () => {
       setOwnerSearching(true)
-      const res = await fetch(`/api/crm/contacts?search=${encodeURIComponent(q)}&tipo=propietario&limit=8`)
+      const res = await fetch(`/api/crm/contacts?search=${encodeURIComponent(q)}&limit=8`)
       if (res.ok) {
         const data = await res.json()
         setOwnerSuggestions(data.contacts ?? [])
@@ -864,7 +876,7 @@ export default function NuevaPropiedadPage() {
           )}
 
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 relative">
+            <div className="grid grid-cols-2 gap-4 relative" ref={ownerDropdownRef}>
               <div className="space-y-1.5">
                 <Label htmlFor="owner-nombre">Nombre *</Label>
                 <Input
