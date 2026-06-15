@@ -25,6 +25,11 @@ const PROPERTY_TYPES = [
 
 const PROPERTY_CONDITIONS = ['Nuevo', 'Usado', 'En planos', 'En construcción', 'Remodelar']
 
+// Strip formatting so "+507 9876-5432" and "+50798765432" compare as equal.
+function normalizePhone(phone: string | null | undefined): string {
+  return (phone ?? '').replace(/\D/g, '')
+}
+
 const FEATURES_INTERNAL = [
   'Aire acondicionado', 'Calentador de agua', 'Closets empotrados',
   'Cocina equipada', 'Cuarto de servicio', 'Despensa',
@@ -112,8 +117,8 @@ export default function NuevaPropiedadPage() {
   const [ownerSuggestions, setOwnerSuggestions] = useState<Contact[]>([])
   const [ownerSearching, setOwnerSearching] = useState(false)
   const [showOwnerDropdown, setShowOwnerDropdown] = useState(false)
-  const [phone1Warn, setPhone1Warn] = useState(false)
-  const [phone2Warn, setPhone2Warn] = useState(false)
+  const [phone1Match, setPhone1Match] = useState<Contact | null>(null)
+  const [phone2Match, setPhone2Match] = useState<Contact | null>(null)
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -158,6 +163,8 @@ export default function NuevaPropiedadPage() {
     setOwnerContactId(contact.id)
     setShowOwnerDropdown(false)
     setOwnerSuggestions([])
+    setPhone1Match(null)
+    setPhone2Match(null)
   }
 
   function clearOwnerContact() {
@@ -167,19 +174,28 @@ export default function NuevaPropiedadPage() {
     setOwnerEmail('')
     setOwnerTelefono1('')
     setOwnerTelefono2('')
-    setPhone1Warn(false)
-    setPhone2Warn(false)
+    setPhone1Match(null)
+    setPhone2Match(null)
   }
 
-  async function checkPhoneDuplicate(phone: string, setter: (v: boolean) => void) {
-    if (!phone.trim()) { setter(false); return }
-    const res = await fetch(`/api/crm/contacts?search=${encodeURIComponent(phone)}&limit=5`)
-    if (!res.ok) return
+  // Finds an existing contact whose phone matches (ignoring formatting), so we
+  // can reuse it instead of creating a duplicate owner.
+  async function findContactByPhone(phone: string): Promise<Contact | null> {
+    const target = normalizePhone(phone)
+    if (!target) return null
+    const res = await fetch(`/api/crm/contacts?search=${encodeURIComponent(phone.trim())}&limit=8`)
+    if (!res.ok) return null
     const data = await res.json()
-    const duplicate = (data.contacts as Contact[]).some(
-      c => (c.telefono === phone || c.whatsapp === phone) && c.id !== ownerContactId
-    )
-    setter(duplicate)
+    return (data.contacts as Contact[]).find(
+      c => normalizePhone(c.telefono) === target || normalizePhone(c.whatsapp) === target
+    ) ?? null
+  }
+
+  async function checkPhoneMatch(phone: string, setter: (c: Contact | null) => void) {
+    if (!phone.trim()) { setter(null); return }
+    const match = await findContactByPhone(phone)
+    // Ignore the contact we're already linked to
+    setter(match && match.id !== ownerContactId ? match : null)
   }
 
   function toggleFeature(list: string[], setter: React.Dispatch<React.SetStateAction<string[]>>, name: string) {
@@ -296,21 +312,31 @@ export default function NuevaPropiedadPage() {
     let resolvedOwnerContactId = ownerContactId
 
     if (ownerFilled && !ownerContactId) {
-      const cRes = await fetch('/api/crm/contacts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nombre: `${ownerNombre.trim()} ${ownerApellido.trim()}`,
-          tipo: 'propietario',
-          telefono: ownerTelefono1.trim() || null,
-          whatsapp: ownerTelefono2.trim() || null,
-          email: ownerEmail.trim() || null,
-          fuente: 'manual',
-        }),
-      })
-      if (cRes.ok) {
-        const c = await cRes.json()
-        resolvedOwnerContactId = c.id
+      // Dedupe by phone: if a contact already has this number, reuse it instead
+      // of creating a duplicate. Otherwise create a new owner contact.
+      const existing =
+        (await findContactByPhone(ownerTelefono1)) ??
+        (ownerTelefono2.trim() ? await findContactByPhone(ownerTelefono2) : null)
+
+      if (existing) {
+        resolvedOwnerContactId = existing.id
+      } else {
+        const cRes = await fetch('/api/crm/contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre: `${ownerNombre.trim()} ${ownerApellido.trim()}`,
+            tipo: 'propietario',
+            telefono: ownerTelefono1.trim() || null,
+            whatsapp: ownerTelefono2.trim() || null,
+            email: ownerEmail.trim() || null,
+            fuente: 'manual',
+          }),
+        })
+        if (cRes.ok) {
+          const c = await cRes.json()
+          resolvedOwnerContactId = c.id
+        }
       }
     }
 
@@ -897,11 +923,22 @@ export default function NuevaPropiedadPage() {
                   id="owner-tel1"
                   value={ownerTelefono1}
                   onChange={(e) => setOwnerTelefono1(e.target.value)}
-                  onBlur={() => checkPhoneDuplicate(ownerTelefono1, setPhone1Warn)}
+                  onBlur={() => checkPhoneMatch(ownerTelefono1, setPhone1Match)}
                   placeholder="+507 1234-5678"
                 />
-                {phone1Warn && (
-                  <p className="text-xs text-yellow-600 dark:text-yellow-500">⚠ Este número ya existe en otro contacto</p>
+                {phone1Match && (
+                  <div className="text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-md px-2.5 py-2 flex items-center gap-2">
+                    <span className="flex-1">
+                      Este número ya pertenece a <strong>{phone1Match.nombre}</strong>.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => selectOwnerContact(phone1Match)}
+                      className="shrink-0 font-medium underline hover:no-underline"
+                    >
+                      Usar este contacto
+                    </button>
+                  </div>
                 )}
               </div>
               <div className="space-y-1.5">
@@ -910,11 +947,22 @@ export default function NuevaPropiedadPage() {
                   id="owner-tel2"
                   value={ownerTelefono2}
                   onChange={(e) => setOwnerTelefono2(e.target.value)}
-                  onBlur={() => checkPhoneDuplicate(ownerTelefono2, setPhone2Warn)}
+                  onBlur={() => checkPhoneMatch(ownerTelefono2, setPhone2Match)}
                   placeholder="+507 9876-5432"
                 />
-                {phone2Warn && (
-                  <p className="text-xs text-yellow-600 dark:text-yellow-500">⚠ Este número ya existe en otro contacto</p>
+                {phone2Match && (
+                  <div className="text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-md px-2.5 py-2 flex items-center gap-2">
+                    <span className="flex-1">
+                      Este número ya pertenece a <strong>{phone2Match.nombre}</strong>.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => selectOwnerContact(phone2Match)}
+                      className="shrink-0 font-medium underline hover:no-underline"
+                    >
+                      Usar este contacto
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

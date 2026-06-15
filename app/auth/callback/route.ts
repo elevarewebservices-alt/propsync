@@ -71,7 +71,9 @@ export async function GET(request: NextRequest) {
       ).catch(() => {})
     }
 
-    return NextResponse.redirect(`${origin}/dashboard`)
+    // Invited users have no password yet — send them to set one so they can
+    // log in normally afterwards. The session is already active here.
+    return NextResponse.redirect(`${origin}/update-password`)
   }
 
   if (meta?.nombre && meta?.empresa) {
