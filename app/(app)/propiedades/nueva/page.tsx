@@ -886,14 +886,14 @@ export default function NuevaPropiedadPage() {
                   placeholder="Juan"
                   autoComplete="off"
                 />
-                {showOwnerDropdown && ownerSuggestions.length > 0 && (
+                {showOwnerDropdown && (ownerSuggestions.length > 0 || (!ownerSearching && (ownerNombre || ownerApellido).trim())) && (
                   <div className="absolute z-50 top-20 left-0 right-2 bg-card border border-border rounded-md shadow-lg overflow-hidden mt-1">
                     {ownerSuggestions.map((contact) => (
                       <button
                         key={contact.id}
                         type="button"
                         onClick={() => selectOwnerContact(contact)}
-                        className="w-full text-left px-4 py-2 text-sm hover:bg-muted/50 border-b last:border-b-0 flex items-center gap-2 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-muted/50 border-b border-border flex items-center gap-2 transition-colors"
                       >
                         <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-xs font-semibold text-blue-700 dark:text-blue-300">
                           {contact.nombre.charAt(0)}
@@ -906,11 +906,23 @@ export default function NuevaPropiedadPage() {
                         </div>
                       </button>
                     ))}
-                  </div>
-                )}
-                {showOwnerDropdown && ownerSuggestions.length === 0 && ownerSearching === false && (ownerNombre || ownerApellido) && (
-                  <div className="absolute z-50 top-20 left-0 right-2 bg-card border border-border rounded-md shadow-lg px-4 py-3 mt-1 text-xs text-muted-foreground">
-                    No se encontraron propietarios
+                    {!ownerSearching && (
+                      <button
+                        type="button"
+                        onClick={() => setShowOwnerDropdown(false)}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 dark:hover:bg-blue-950/30 flex items-center gap-2 transition-colors text-blue-600 dark:text-blue-400"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-base font-bold text-blue-600 dark:text-blue-400">
+                          +
+                        </div>
+                        <span>
+                          Crear nuevo:{' '}
+                          <span className="font-semibold text-foreground">
+                            {`${ownerNombre} ${ownerApellido}`.trim()}
+                          </span>
+                        </span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
