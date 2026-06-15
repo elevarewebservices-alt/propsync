@@ -47,6 +47,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create agent' }, { status: 500 })
     }
 
+    // Seed the default CRM for the new company: 3 pipelines + 7 stages.
+    // Best-effort — a CRM seeding hiccup must not block account creation.
+    try {
+      const { data: pipes } = await (db.from('pipelines') as any)
+        .insert([
+          { company_id: company.id, nombre: 'Ventas',    slug: 'ventas',    color: '#3b82f6', position: 0 },
+          { company_id: company.id, nombre: 'Arriendos', slug: 'arriendos', color: '#10b981', position: 1 },
+          { company_id: company.id, nombre: 'Proyectos', slug: 'proyectos', color: '#8b5cf6', position: 2 },
+        ])
+        .select('id, slug')
+
+      const ventasId = (pipes as { id: string; slug: string }[] | null)
+        ?.find((p) => p.slug === 'ventas')?.id ?? null
+
+      const defaultStages: [string, string, string, number, boolean][] = [
+        ['Nuevo Lead',          'nuevo_lead',        '#3b82f6', 0, false],
+        ['Contactado',          'contactado',        '#f59e0b', 1, false],
+        ['Visita Programada',   'visita',            '#8b5cf6', 2, false],
+        ['Oferta / Negociando', 'oferta_negociando', '#f97316', 3, false],
+        ['Cerrado',             'cerrado',           '#22c55e', 4, true],
+        ['Descartado',          'descartado',        '#6b7280', 5, true],
+        ['Basurero',            'basurero',          '#ef4444', 6, true],
+      ]
+
+      await (db.from('crm_stages') as any).insert(
+        defaultStages.map(([nombre, slug, color, position, is_terminal]) => ({
+          company_id: company.id,
+          nombre,
+          slug,
+          color,
+          position,
+          is_terminal,
+          pipeline_id: ventasId,
+        }))
+      )
+    } catch (seedErr) {
+      console.error('[setup] CRM seeding failed:', seedErr)
+    }
+
     // Non-blocking — don't fail setup if email fails
     sendWelcomeEmail(email, nombre, empresa, company.id).catch((err) =>
       console.error('[setup] welcome email failed:', err),
