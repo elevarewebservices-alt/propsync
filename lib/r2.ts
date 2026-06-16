@@ -9,6 +9,10 @@ function getClient() {
       accessKeyId: process.env.R2_ACCESS_KEY_ID!,
       secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
     },
+    // Disable automatic checksums — they get embedded in the presigned URL
+    // but the browser PUT doesn't send the matching headers → 403.
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
   })
 }
 
