@@ -87,6 +87,7 @@ export default function NuevaPropiedadPage() {
   const [privateArea, setPrivateArea] = useState('')
   const [year, setYear] = useState('')
   const [descripcion, setDescripcion] = useState('')
+  const [notas, setNotas] = useState('')
   const [images, setImages] = useState<{ file: File; preview: string }[]>([])
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -400,6 +401,7 @@ export default function NuevaPropiedadPage() {
       ext_commission_notes: extCommNotes.trim() || null,
       telefono_propietario: ownerTelefono1.trim() || null,
       owner_contact_id: resolvedOwnerContactId,
+      notas: notas.trim() || null,
       canales_publicados: [],
     }
 
@@ -765,6 +767,22 @@ export default function NuevaPropiedadPage() {
               Generando descripción en base a los datos ingresados...
             </p>
           )}
+        </section>
+
+        {/* Observaciones */}
+        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <h2 className="text-sm font-semibold text-foreground">Observaciones</h2>
+            <Badge variant="secondary" className="text-xs">Opcional</Badge>
+          </div>
+          <Separator />
+          <textarea
+            value={notas}
+            onChange={(e) => setNotas(e.target.value)}
+            rows={4}
+            placeholder="Notas internas sobre la propiedad: condiciones especiales, acuerdos con el propietario, historial, etc."
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+          />
         </section>
 
         {/* Comisiones */}
