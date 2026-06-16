@@ -101,7 +101,9 @@ export default function RegistroPage() {
             <Label htmlFor="nombre">Tu nombre</Label>
             <Input
               id="nombre"
+              name="nombre"
               type="text"
+              autoComplete="name"
               required
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
@@ -112,7 +114,9 @@ export default function RegistroPage() {
             <Label htmlFor="empresa">Nombre de tu inmobiliaria</Label>
             <Input
               id="empresa"
+              name="empresa"
               type="text"
+              autoComplete="organization"
               required
               value={empresa}
               onChange={(e) => setEmpresa(e.target.value)}
