@@ -30,6 +30,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Archivo muy grande (máx ${MAX_SIZE_MB} MB)` }, { status: 400 })
     }
 
+    // Guard against missing/empty R2 config (a common Vercel env-var mistake)
+    const missing = ['R2_ENDPOINT', 'R2_BUCKET_NAME', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_PUBLIC_URL']
+      .filter((k) => !process.env[k]?.trim())
+    if (missing.length) {
+      console.error('[upload] missing R2 env vars:', missing.join(', '))
+      return NextResponse.json({ error: 'Configuración R2 incompleta', detail: `Faltan: ${missing.join(', ')}` }, { status: 500 })
+    }
+
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
     const key = `properties/${companyId}/${randomUUID()}.${ext}`
     const bytes = Buffer.from(await file.arrayBuffer())
@@ -38,8 +46,14 @@ export async function POST(request: NextRequest) {
       const { publicUrl } = await uploadObject(key, bytes, file.type)
       return NextResponse.json({ url: publicUrl, publicUrl, key })
     } catch (err) {
-      console.error('[upload] R2 upload failed:', err)
-      return NextResponse.json({ error: 'Error al subir la imagen' }, { status: 500 })
+      const e = err as { name?: string; message?: string; $metadata?: { httpStatusCode?: number } }
+      console.error('[upload] R2 upload failed:', e?.name, e?.message)
+      // Surface the R2 error name so misconfig (e.g. wrong secret → SignatureDoesNotMatch)
+      // is diagnosable from the client. No secrets are included.
+      return NextResponse.json(
+        { error: 'Error al subir la imagen', detail: e?.name ?? 'Unknown', status: e?.$metadata?.httpStatusCode ?? null },
+        { status: 500 }
+      )
     }
   }
 
