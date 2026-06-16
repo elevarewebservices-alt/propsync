@@ -221,7 +221,9 @@ export default function NuevaPropiedadPage() {
 
         const res = await fetch('/api/upload', { method: 'POST', body: fd })
         if (!res.ok) {
-          console.error(`Failed to upload ${img.file.name}:`, (await res.json()).error)
+          const body = await res.json().catch(() => ({}))
+          console.error(`Failed to upload ${img.file.name}:`, JSON.stringify(body))
+          setError(`Error al subir foto: ${body.detail ?? body.error ?? res.status}`)
           continue
         }
         const { url } = await res.json()
