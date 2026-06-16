@@ -52,14 +52,14 @@ export async function POST(request: NextRequest) {
     try {
       const { data: pipes } = await (db.from('pipelines') as any)
         .insert([
-          { company_id: company.id, nombre: 'Ventas',    slug: 'ventas',    color: '#3b82f6', position: 0 },
-          { company_id: company.id, nombre: 'Arriendos', slug: 'arriendos', color: '#10b981', position: 1 },
-          { company_id: company.id, nombre: 'Proyectos', slug: 'proyectos', color: '#8b5cf6', position: 2 },
+          { company_id: company.id, nombre: 'Posibles clientes', slug: 'posibles_clientes', color: '#3b82f6', position: 0 },
+          { company_id: company.id, nombre: 'Contactos',         slug: 'contactos',         color: '#10b981', position: 1 },
+          { company_id: company.id, nombre: 'Basurero',          slug: 'basurero',          color: '#ef4444', position: 2 },
         ])
         .select('id, slug')
 
-      const ventasId = (pipes as { id: string; slug: string }[] | null)
-        ?.find((p) => p.slug === 'ventas')?.id ?? null
+      const posiblesId = (pipes as { id: string; slug: string }[] | null)
+        ?.find((p) => p.slug === 'posibles_clientes')?.id ?? null
 
       const defaultStages: [string, string, string, number, boolean][] = [
         ['Nuevo Lead',          'nuevo_lead',        '#3b82f6', 0, false],
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
           color,
           position,
           is_terminal,
-          pipeline_id: ventasId,
+          pipeline_id: posiblesId,
         }))
       )
     } catch (seedErr) {
