@@ -443,11 +443,6 @@ export default function NuevaPropiedadPage() {
         </p>
       </div>
 
-      {error && (
-        <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950 dark:text-red-400 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -1068,22 +1063,31 @@ export default function NuevaPropiedadPage() {
         </section>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-3 pb-8">
-          <Link href="/propiedades">
-            <Button type="button" variant="outline">Cancelar</Button>
-          </Link>
-          <Button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white min-w-32"
-            disabled={saving}
-          >
-            {saving ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {uploading ? 'Subiendo fotos...' : 'Guardando...'}
-              </span>
-            ) : 'Guardar propiedad'}
-          </Button>
+        <div className="flex items-center justify-between gap-3 pb-8">
+          <div className="flex-1">
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950 dark:text-red-400 px-4 py-3 rounded-lg">
+                {error}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <Link href="/propiedades">
+              <Button type="button" variant="outline">Cancelar</Button>
+            </Link>
+            <Button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 text-white min-w-32"
+              disabled={saving}
+            >
+              {saving ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {uploading ? 'Subiendo fotos...' : 'Guardando...'}
+                </span>
+              ) : 'Guardar propiedad'}
+            </Button>
+          </div>
         </div>
       </form>
     </div>
