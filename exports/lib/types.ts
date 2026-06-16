@@ -213,7 +213,6 @@ export interface Property {
   etapa_crm: EtapaCRM
   cliente_nombre: string | null
   cliente_email: string | null
-  cliente_telefono?: string | null
   agente_asignado: string | null
   fecha_seguimiento: string | null
   notas: string | null

@@ -35,7 +35,7 @@ export async function PATCH(
     'bedrooms', 'bathrooms', 'half_bathrooms', 'garages',
     'area', 'built_area', 'private_area', 'building_date',
     'estado_publicacion', 'disponibilidad',
-    'etapa_crm', 'cliente_nombre', 'cliente_email',
+    'etapa_crm', 'cliente_nombre', 'cliente_email', 'cliente_telefono',
     'agente_asignado_id', 'fecha_seguimiento', 'notas',
     'whatsapp_estado', 'telefono_propietario',
     'main_image_url', 'gallery_urls',

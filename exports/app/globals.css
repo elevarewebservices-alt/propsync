@@ -1,0 +1,87 @@
+@import "tw-animate-css";
+@import "@photo-sphere-viewer/core/index.css";
+
+@tailwind base;
+
+html {
+  scroll-behavior: smooth;
+}
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.51 0.2 258);        /* #1a73e8 PropSync blue */
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(1 0 0);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.51 0.2 258);
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: oklch(0.13 0.01 264);   /* #0f0f1a */
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.18 0.015 264);        /* #1a1a2e */
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.18 0.015 264);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.51 0.2 258);
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.22 0.01 264);
+    --muted-foreground: oklch(0.65 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(1 0 0);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.51 0.2 258);
+  }
+
+  * {
+    @apply border-border;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    letter-spacing: -0.01em;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Landing page keeps the Outfit display font */
+  .landing-root, .landing-root h1, .landing-root h2, .landing-root h3 {
+    font-family: var(--font-outfit), sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

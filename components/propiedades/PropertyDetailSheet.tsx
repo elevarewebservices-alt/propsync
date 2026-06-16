@@ -68,8 +68,9 @@ export function PropertyDetailSheet({ property, open, onClose, onSaved }: Props)
   const [etapa, setEtapa]               = useState<EtapaCRM>('prospecto')
   const [disponibilidad, setDisponibilidad] = useState<'disponible' | 'vendido' | 'alquilado'>('disponible')
   const [estadoPublicacion, setEstadoPublicacion] = useState<'activo' | 'destacado' | 'inactivo'>('inactivo')
-  const [clienteNombre, setClienteNombre] = useState('')
-  const [clienteEmail, setClienteEmail]   = useState('')
+  const [clienteNombre, setClienteNombre]     = useState('')
+  const [clienteEmail, setClienteEmail]       = useState('')
+  const [clienteTelefono, setClienteTelefono] = useState('')
   const [agente, setAgente]               = useState('')
   const [seguimiento, setSeguimiento]     = useState('')
   const [saveState, setSaveState]         = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -87,6 +88,7 @@ export function PropertyDetailSheet({ property, open, onClose, onSaved }: Props)
       setEstadoPublicacion(property.estado_publicacion)
       setClienteNombre(property.cliente_nombre ?? '')
       setClienteEmail(property.cliente_email ?? '')
+      setClienteTelefono(property.cliente_telefono ?? '')
       setAgente(property.agente_asignado ?? '')
       setSeguimiento(property.fecha_seguimiento ?? '')
       setSaveState('idle')
@@ -121,6 +123,7 @@ export function PropertyDetailSheet({ property, open, onClose, onSaved }: Props)
       estado_publicacion: estadoPublicacion,
       cliente_nombre: clienteNombre || null,
       cliente_email: clienteEmail || null,
+      cliente_telefono: clienteTelefono || null,
       fecha_seguimiento: seguimiento || null,
     }
 
@@ -322,6 +325,10 @@ export function PropertyDetailSheet({ property, open, onClose, onSaved }: Props)
             <div className="space-y-1.5">
               <Label htmlFor="cliente-email" className="text-xs">Email</Label>
               <Input id="cliente-email" type="email" value={clienteEmail} onChange={(e) => setClienteEmail(e.target.value)} placeholder="email@ejemplo.com" className="h-8 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cliente-telefono" className="text-xs">Teléfono</Label>
+              <Input id="cliente-telefono" type="tel" value={clienteTelefono} onChange={(e) => setClienteTelefono(e.target.value)} placeholder="+507 1234-5678" className="h-8 text-sm" />
             </div>
           </section>
 
