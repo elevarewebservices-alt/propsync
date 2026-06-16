@@ -74,6 +74,69 @@ export function PropertyCard({ property, onSelect, onUpdate }: PropertyCardProps
       className="group rounded-xl border border-border bg-card overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
       onClick={() => onSelect?.(property)}
     >
+      {/* Tags bar — above the image so they read clearly */}
+      <div className="flex flex-wrap items-center gap-1.5 px-3 pt-3 pb-2.5" onClick={(e) => e.stopPropagation()}>
+        {/* Estado — clickable dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger className={cn(
+            'inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-opacity hover:opacity-80 focus:outline-none',
+            estado.className
+          )}>
+            {estado.label}
+            <ChevronDown className="h-3 w-3 opacity-60" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-[140px]">
+            <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase tracking-wider py-1">
+              Estado publicación
+            </DropdownMenuLabel>
+            {(Object.entries(estadoConfig) as [EstadoPublicacion, typeof estadoConfig[EstadoPublicacion]][]).map(([val, cfg]) => (
+              <DropdownMenuItem
+                key={val}
+                className={cn('gap-2 text-sm', property.estado_publicacion === val && 'font-semibold')}
+                onClick={(e) => stopAndUpdate(e, 'estado_publicacion', val)}
+              >
+                <span className={cn('inline-block h-2 w-2 rounded-full border', cfg.className)} />
+                {cfg.label}
+                {property.estado_publicacion === val && ' ✓'}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Disponibilidad — clickable dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger className={cn(
+            'inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-opacity hover:opacity-80 focus:outline-none',
+            disp.className
+          )}>
+            {disp.label}
+            <ChevronDown className="h-3 w-3 opacity-60" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-[140px]">
+            <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase tracking-wider py-1">
+              Disponibilidad
+            </DropdownMenuLabel>
+            {(Object.entries(disponibilidadConfig) as [Disponibilidad, typeof disponibilidadConfig[Disponibilidad]][]).map(([val, cfg]) => (
+              <DropdownMenuItem
+                key={val}
+                className={cn('gap-2 text-sm', property.disponibilidad === val && 'font-semibold')}
+                onClick={(e) => stopAndUpdate(e, 'disponibilidad', val)}
+              >
+                <span className={cn('inline-block h-2 w-2 rounded-full border', cfg.className)} />
+                {cfg.label}
+                {property.disponibilidad === val && ' ✓'}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Tipo */}
+        <Badge variant="outline" className="ml-auto text-xs">
+          {property.tipo === 'venta' ? 'Venta' : 'Arriendo'}
+        </Badge>
+      </div>
+
+      {/* Image */}
       <div className="relative h-44 w-full overflow-hidden bg-muted">
         <Image
           src={property.imagenes[0]}
@@ -83,69 +146,9 @@ export function PropertyCard({ property, onSelect, onUpdate }: PropertyCardProps
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           unoptimized
         />
-        {/* Estado badge — clickable dropdown */}
-        <div className="absolute top-2 left-2 flex gap-1" onClick={(e) => e.stopPropagation()}>
-          <DropdownMenu>
-            <DropdownMenuTrigger className={cn(
-              'inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-opacity hover:opacity-80 focus:outline-none',
-              estado.className
-            )}>
-              {estado.label}
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-[140px]">
-              <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase tracking-wider py-1">
-                Estado publicación
-              </DropdownMenuLabel>
-              {(Object.entries(estadoConfig) as [EstadoPublicacion, typeof estadoConfig[EstadoPublicacion]][]).map(([val, cfg]) => (
-                <DropdownMenuItem
-                  key={val}
-                  className={cn('gap-2 text-sm', property.estado_publicacion === val && 'font-semibold')}
-                  onClick={(e) => stopAndUpdate(e, 'estado_publicacion', val)}
-                >
-                  <span className={cn('inline-block h-2 w-2 rounded-full border', cfg.className)} />
-                  {cfg.label}
-                  {property.estado_publicacion === val && ' ✓'}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Disponibilidad badge — clickable dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger className={cn(
-              'inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-opacity hover:opacity-80 focus:outline-none',
-              disp.className
-            )}>
-              {disp.label}
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-[140px]">
-              <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase tracking-wider py-1">
-                Disponibilidad
-              </DropdownMenuLabel>
-              {(Object.entries(disponibilidadConfig) as [Disponibilidad, typeof disponibilidadConfig[Disponibilidad]][]).map(([val, cfg]) => (
-                <DropdownMenuItem
-                  key={val}
-                  className={cn('gap-2 text-sm', property.disponibilidad === val && 'font-semibold')}
-                  onClick={(e) => stopAndUpdate(e, 'disponibilidad', val)}
-                >
-                  <span className={cn('inline-block h-2 w-2 rounded-full border', cfg.className)} />
-                  {cfg.label}
-                  {property.disponibilidad === val && ' ✓'}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="absolute top-2 right-2">
-          <Badge variant="secondary" className="text-xs bg-black/60 text-white border-0">
-            {property.tipo === 'venta' ? 'Venta' : 'Arriendo'}
-          </Badge>
-        </div>
       </div>
 
+      {/* Info */}
       <div className="p-4">
         <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug">
           {property.titulo}
