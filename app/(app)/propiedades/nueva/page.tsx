@@ -71,6 +71,8 @@ export default function NuevaPropiedadPage() {
   // Form state
   const [titulo, setTitulo] = useState('')
   const [tipo, setTipo] = useState<'venta' | 'arriendo'>('venta')
+  const [estadoPublicacion, setEstadoPublicacion] = useState<'activo' | 'destacado' | 'inactivo'>('inactivo')
+  const [disponibilidad, setDisponibilidad] = useState<'disponible' | 'vendido' | 'alquilado'>('disponible')
   const [propertyType, setPropertyType] = useState('')
   const [condition, setCondition] = useState('')
   const [precio, setPrecio] = useState('')
@@ -382,8 +384,8 @@ export default function NuevaPropiedadPage() {
       descripcion: descripcion.trim() || null,
       main_image_url: imageUrls[0] ?? null,
       gallery_urls: imageUrls,
-      estado_publicacion: 'inactivo',
-      disponibilidad: 'disponible',
+      estado_publicacion: estadoPublicacion,
+      disponibilidad: disponibilidad,
       fuente: 'manual',
       features_internal: featuresInternal.map(n => ({
         id: n.toLowerCase().replace(/[^a-z0-9]/g, '_'),
@@ -498,6 +500,31 @@ export default function NuevaPropiedadPage() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Estado de publicación</Label>
+              <Select value={estadoPublicacion} onValueChange={(v) => setEstadoPublicacion(v as 'activo' | 'destacado' | 'inactivo')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="activo">Activo</SelectItem>
+                  <SelectItem value="destacado">Destacado</SelectItem>
+                  <SelectItem value="inactivo">Inactivo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Disponibilidad</Label>
+              <Select value={disponibilidad} onValueChange={(v) => setDisponibilidad(v as 'disponible' | 'vendido' | 'alquilado')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="disponible">Disponible</SelectItem>
+                  <SelectItem value="vendido">Vendido</SelectItem>
+                  <SelectItem value="alquilado">Alquilado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </section>
 
