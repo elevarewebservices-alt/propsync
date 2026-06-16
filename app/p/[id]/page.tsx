@@ -23,7 +23,6 @@ async function getProperty(id: string) {
       companies(nombre, email)
     `)
     .eq('id', id)
-    .in('estado_publicacion', ['activo', 'destacado'])
     .maybeSingle()
 
   return data as any

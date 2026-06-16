@@ -23,11 +23,10 @@ export async function GET(
     .from('properties')
     .select(SELECT)
     .eq('id', params.id)
-    .in('estado_publicacion', ['activo', 'destacado'])
     .single()
 
   if (error || !data) {
-    return NextResponse.json({ error: 'Propiedad no encontrada o no publicada' }, { status: 404 })
+    return NextResponse.json({ error: 'Propiedad no encontrada' }, { status: 404 })
   }
 
   return NextResponse.json(data)

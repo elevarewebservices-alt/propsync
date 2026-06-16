@@ -9,7 +9,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
@@ -23,8 +22,20 @@ import {
 import {
   Bed, Bath, Car, Maximize2, MapPin,
   RefreshCw, CheckCircle2, Video, AlertCircle, Clapperboard, Pencil,
+  Crown, Phone, Mail, MessageCircle, User, ExternalLink,
 } from 'lucide-react'
-import { Property, EtapaCRM, PropertyNote, TourRoom } from '@/lib/types'
+import { Property, PropertyNote, TourRoom } from '@/lib/types'
+
+interface LinkedContact {
+  linkId: string | null
+  id: string
+  nombre: string
+  telefono: string | null
+  whatsapp: string | null
+  email: string | null
+  interes: string
+  is_owner: boolean
+}
 import { TourUploader } from './TourUploader'
 import Link from 'next/link'
 
@@ -48,14 +59,13 @@ function relativeTime(dateStr: string): string {
   return `hace ${days} días`
 }
 
-const ETAPAS: { value: EtapaCRM; label: string; color: string; active: string }[] = [
-  { value: 'prospecto',  label: 'Prospecto',  color: 'border-slate-300 text-slate-600 hover:border-slate-400',    active: 'bg-slate-100 border-slate-500 text-slate-800 dark:bg-slate-800 dark:border-slate-400 dark:text-slate-200' },
-  { value: 'contactado', label: 'Contactado', color: 'border-blue-300 text-blue-600 hover:border-blue-400',       active: 'bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900/40 dark:border-blue-400 dark:text-blue-200' },
-  { value: 'visita',     label: 'Visita',     color: 'border-amber-300 text-amber-600 hover:border-amber-400',    active: 'bg-amber-100 border-amber-500 text-amber-800 dark:bg-amber-900/40 dark:border-amber-400 dark:text-amber-200' },
-  { value: 'oferta',     label: 'Oferta',     color: 'border-purple-300 text-purple-600 hover:border-purple-400', active: 'bg-purple-100 border-purple-500 text-purple-800 dark:bg-purple-900/40 dark:border-purple-400 dark:text-purple-200' },
-  { value: 'negociando', label: 'Negociando', color: 'border-orange-300 text-orange-600 hover:border-orange-400', active: 'bg-orange-100 border-orange-500 text-orange-800 dark:bg-orange-900/40 dark:border-orange-400 dark:text-orange-200' },
-  { value: 'cerrado',    label: 'Cerrado',    color: 'border-green-300 text-green-600 hover:border-green-400',    active: 'bg-green-100 border-green-500 text-green-800 dark:bg-green-900/40 dark:border-green-400 dark:text-green-200' },
-]
+const INTERES_LABEL: Record<string, string> = {
+  propietario: 'Propietario',
+  interesado:  'Interesado',
+  'visitó':    'Visitó',
+  'ofertó':    'Ofertó',
+  descartado:  'Descartado',
+}
 
 interface Props {
   property: Property | null
@@ -65,32 +75,22 @@ interface Props {
 }
 
 export function PropertyDetailSheet({ property, open, onClose, onSaved }: Props) {
-  const [etapa, setEtapa]               = useState<EtapaCRM>('prospecto')
   const [disponibilidad, setDisponibilidad] = useState<'disponible' | 'vendido' | 'alquilado'>('disponible')
   const [estadoPublicacion, setEstadoPublicacion] = useState<'activo' | 'destacado' | 'inactivo'>('inactivo')
-  const [clienteNombre, setClienteNombre]     = useState('')
-  const [clienteEmail, setClienteEmail]       = useState('')
-  const [clienteTelefono, setClienteTelefono] = useState('')
-  const [agente, setAgente]               = useState('')
-  const [seguimiento, setSeguimiento]     = useState('')
   const [saveState, setSaveState]         = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [notes, setNotes]                 = useState<PropertyNote[]>([])
   const [newNote, setNewNote]             = useState('')
   const [postingNote, setPostingNote]     = useState(false)
   const [activeTab, setActiveTab]         = useState<'crm' | 'tour'>('crm')
   const [tourRooms, setTourRooms]         = useState<TourRoom[]>([])
+  const [contacts, setContacts]           = useState<LinkedContact[]>([])
+  const [loadingContacts, setLoadingContacts] = useState(false)
   const notesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (property) {
-      setEtapa(property.etapa_crm)
       setDisponibilidad(property.disponibilidad)
       setEstadoPublicacion(property.estado_publicacion)
-      setClienteNombre(property.cliente_nombre ?? '')
-      setClienteEmail(property.cliente_email ?? '')
-      setClienteTelefono(property.cliente_telefono ?? '')
-      setAgente(property.agente_asignado ?? '')
-      setSeguimiento(property.fecha_seguimiento ?? '')
       setSaveState('idle')
       setActiveTab('crm')
       setTourRooms(Array.isArray(property.tour_rooms) ? property.tour_rooms : [])
@@ -103,6 +103,14 @@ export function PropertyDetailSheet({ property, open, onClose, onSaved }: Props)
           setTimeout(() => notesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
         })
         .catch(() => {})
+
+      setLoadingContacts(true)
+      setContacts([])
+      fetch(`/api/properties/${property.id}/contacts`)
+        .then((r) => r.ok ? r.json() : [])
+        .then((data: LinkedContact[]) => setContacts(data))
+        .catch(() => {})
+        .finally(() => setLoadingContacts(false))
     }
   }, [property])
 
@@ -118,13 +126,8 @@ export function PropertyDetailSheet({ property, open, onClose, onSaved }: Props)
     setSaveState('saving')
 
     const patch = {
-      etapa_crm: etapa,
       disponibilidad,
       estado_publicacion: estadoPublicacion,
-      cliente_nombre: clienteNombre || null,
-      cliente_email: clienteEmail || null,
-      cliente_telefono: clienteTelefono || null,
-      fecha_seguimiento: seguimiento || null,
     }
 
     const res = await fetch(`/api/properties/${property.id}`, {
@@ -267,9 +270,13 @@ export function PropertyDetailSheet({ property, open, onClose, onSaved }: Props)
           )}
 
           {activeTab === 'crm' && <>
+          {/* ───── SECCIÓN 1: PROPIEDAD ───── */}
           {/* Estado de publicación */}
           <section className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Estado</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Propiedad</p>
+              <span className="text-[10px] font-mono text-muted-foreground/60">#{property.codigo ?? property.id.slice(0, 5).toUpperCase()}</span>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Publicación</Label>
@@ -296,54 +303,13 @@ export function PropertyDetailSheet({ property, open, onClose, onSaved }: Props)
             </div>
           </section>
 
-          {/* Pipeline CRM */}
-          <section>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Pipeline CRM</p>
-            <div className="flex flex-wrap gap-1.5">
-              {ETAPAS.map((e) => (
-                <button
-                  key={e.value}
-                  type="button"
-                  onClick={() => setEtapa(e.value)}
-                  className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
-                    etapa === e.value ? e.active : e.color + ' bg-transparent'
-                  }`}
-                >
-                  {e.label}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* Cliente */}
-          <section className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cliente</p>
-            <div className="space-y-1.5">
-              <Label htmlFor="cliente-nombre" className="text-xs">Nombre</Label>
-              <Input id="cliente-nombre" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} placeholder="Nombre del cliente…" className="h-8 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cliente-email" className="text-xs">Email</Label>
-              <Input id="cliente-email" type="email" value={clienteEmail} onChange={(e) => setClienteEmail(e.target.value)} placeholder="email@ejemplo.com" className="h-8 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cliente-telefono" className="text-xs">Teléfono</Label>
-              <Input id="cliente-telefono" type="tel" value={clienteTelefono} onChange={(e) => setClienteTelefono(e.target.value)} placeholder="+507 1234-5678" className="h-8 text-sm" />
-            </div>
-          </section>
-
-          {/* Gestión */}
-          <section className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gestión</p>
-            <div className="space-y-1.5">
-              <Label htmlFor="agente" className="text-xs">Agente asignado</Label>
-              <Input id="agente" value={agente} onChange={(e) => setAgente(e.target.value)} placeholder="Nombre del agente…" className="h-8 text-sm" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="seguimiento" className="text-xs">Próximo seguimiento</Label>
-              <Input id="seguimiento" type="date" value={seguimiento} onChange={(e) => setSeguimiento(e.target.value)} className="h-8 text-sm" />
-            </div>
-          </section>
+          {/* Descripción */}
+          {property.descripcion && (
+            <section className="space-y-1.5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Descripción</p>
+              <p className="text-xs leading-relaxed whitespace-pre-line text-foreground">{property.descripcion}</p>
+            </section>
+          )}
 
           {/* Detalles (read-only) */}
           <section className="space-y-2">
@@ -376,6 +342,81 @@ export function PropertyDetailSheet({ property, open, onClose, onSaved }: Props)
                 )}
               </div>
             )}
+          </section>
+
+          {/* ───── SECCIÓN 2: CLIENTES ENLAZADOS ───── */}
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Clientes enlazados</p>
+              <span className="text-[10px] text-muted-foreground">{contacts.length}</span>
+            </div>
+
+            {loadingContacts ? (
+              <p className="py-4 text-center text-xs text-muted-foreground">Cargando…</p>
+            ) : contacts.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border py-4 px-3 text-center text-xs text-muted-foreground">
+                Sin clientes enlazados. El propietario se vincula al crear la propiedad.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {contacts.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/crm/${c.id}`}
+                    onClick={onClose}
+                    className={`block rounded-lg border p-2.5 transition-colors hover:bg-muted/50 ${
+                      c.is_owner
+                        ? 'border-amber-300 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20'
+                        : 'border-border'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                        c.is_owner
+                          ? 'bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
+                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                      }`}>
+                        {c.is_owner ? <Crown className="h-4 w-4" /> : (c.nombre.charAt(0).toUpperCase() || <User className="h-4 w-4" />)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="truncate text-sm font-medium text-foreground">{c.nombre}</p>
+                          <Badge
+                            variant={c.is_owner ? 'default' : 'secondary'}
+                            className={`shrink-0 text-[9px] px-1.5 py-0 ${c.is_owner ? 'bg-amber-600 hover:bg-amber-600' : ''}`}
+                          >
+                            {INTERES_LABEL[c.interes] ?? c.interes}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                          {c.telefono && <span className="flex items-center gap-0.5"><Phone className="h-2.5 w-2.5" />{c.telefono}</span>}
+                          {c.email && <span className="flex items-center gap-0.5 truncate"><Mail className="h-2.5 w-2.5" />{c.email}</span>}
+                        </div>
+                      </div>
+                      {c.telefono && (
+                        <a
+                          href={`https://wa.me/${c.telefono.replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="shrink-0 rounded-md bg-green-600 p-1.5 text-white hover:bg-green-700"
+                          title="Contactar por WhatsApp"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+            <Link
+              href={`/crm?vincular=${property.id}`}
+              onClick={onClose}
+              className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border py-2 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+            >
+              <ExternalLink className="h-3 w-3" /> Gestionar en CRM
+            </Link>
           </section>
 
           {/* Notas */}

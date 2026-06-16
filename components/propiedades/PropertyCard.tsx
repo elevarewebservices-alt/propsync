@@ -24,6 +24,7 @@ import {
   ChevronDown,
   Share2,
   ExternalLink,
+  Pencil,
 } from 'lucide-react'
 
 function waUrl(phone: string, titulo: string): string {
@@ -186,7 +187,10 @@ export function PropertyCard({ property, onSelect, onUpdate }: PropertyCardProps
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelect?.(property) }}>
-                <Eye className="mr-2 h-4 w-4" /> Ver detalles CRM
+                <Eye className="mr-2 h-4 w-4" /> Ver detalles
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.location.href = `/propiedades/${property.id}/editar` }}>
+                <Pencil className="mr-2 h-4 w-4" /> Editar propiedad
               </DropdownMenuItem>
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`/p/${property.id}`, '_blank') }}>
                 <ExternalLink className="mr-2 h-4 w-4" /> Ver ficha pública
