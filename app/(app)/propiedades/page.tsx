@@ -124,6 +124,26 @@ export default function PropiedadesPage() {
     loadProperties()
   }, [loadProperties])
 
+  async function handleStatusUpdate(id: string, field: 'estado_publicacion' | 'disponibilidad', value: string) {
+    // Optimistic update
+    setProperties((prev) =>
+      prev.map((p) => p.id === id ? { ...p, [field]: value } : p)
+    )
+    setSelectedProperty((prev) =>
+      prev?.id === id ? { ...prev, [field]: value } as Property : prev
+    )
+    try {
+      await fetch(`/api/properties/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      })
+    } catch {
+      // Revert on error
+      loadProperties()
+    }
+  }
+
   async function handleWasiSync() {
     setIsSyncing(true)
     setSyncMessage(null)
@@ -285,7 +305,7 @@ export default function PropiedadesPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((prop) => (
-            <PropertyCard key={prop.id} property={prop} onSelect={setSelectedProperty} />
+            <PropertyCard key={prop.id} property={prop} onSelect={setSelectedProperty} onUpdate={handleStatusUpdate} />
           ))}
         </div>
       )}
