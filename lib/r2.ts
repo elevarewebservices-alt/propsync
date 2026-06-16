@@ -1,6 +1,8 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
+export const R2_PUBLIC_BASE = process.env.R2_PUBLIC_URL!
+
 function getClient() {
   return new S3Client({
     region: 'auto',
@@ -32,6 +34,24 @@ export async function createPresignedUploadUrl(
   const uploadUrl = await getSignedUrl(client, command, { expiresIn: 300 })
   const publicUrl = `${PUBLIC_URL}/${key}`
   return { uploadUrl, publicUrl }
+}
+
+// Server-side direct upload — the browser sends the file to our API and we
+// push it to R2 from the server. Avoids browser→R2 CORS and presigned-URL
+// signature fragility entirely.
+export async function uploadObject(
+  key: string,
+  body: Buffer | Uint8Array,
+  contentType: string
+): Promise<{ publicUrl: string }> {
+  const client = getClient()
+  await client.send(new PutObjectCommand({
+    Bucket: BUCKET,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  }))
+  return { publicUrl: `${PUBLIC_URL}/${key}` }
 }
 
 export async function deleteObject(key: string): Promise<void> {

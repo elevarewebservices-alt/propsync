@@ -13,6 +13,7 @@ import {
 import { ArrowLeft, Upload, X, ImagePlus, Loader2, Sparkles, Lock } from 'lucide-react'
 import Link from 'next/link'
 import type { PropertyNote } from '@/lib/types'
+import { resizeImageFile } from '@/lib/image-resize'
 
 const PROPERTY_TYPES = [
   'Apartamento', 'Casa', 'Local Comercial', 'Oficina', 'Bodega',
@@ -175,23 +176,17 @@ export default function EditarPropiedadPage() {
   }
 
   async function uploadNewImages(): Promise<string[]> {
-    if (!companyId || newImages.length === 0) return []
+    if (newImages.length === 0) return []
     const urls: string[] = []
     for (const img of newImages) {
       try {
-        const presignRes = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: img.file.name, contentType: img.file.type, companyId }),
-        })
-        if (!presignRes.ok) continue
-        const { uploadUrl, publicUrl } = await presignRes.json()
-        const uploadRes = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': img.file.type },
-          body: img.file,
-        })
-        if (uploadRes.ok) urls.push(publicUrl)
+        const resized = await resizeImageFile(img.file)
+        const fd = new FormData()
+        fd.append('file', resized)
+        const res = await fetch('/api/upload', { method: 'POST', body: fd })
+        if (!res.ok) continue
+        const { url } = await res.json()
+        if (url) urls.push(url)
       } catch { /* skip failed uploads */ }
     }
     return urls

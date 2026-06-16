@@ -1,21 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createPresignedUploadUrl } from '@/lib/r2'
+import { uploadObject, createPresignedUploadUrl } from '@/lib/r2'
+import { resolveCompanyId } from '@/lib/auth'
 import { randomUUID } from 'crypto'
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
-const MAX_SIZE_MB = 10
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/jpg']
+const MAX_SIZE_MB = 15
 
 export async function POST(request: NextRequest) {
-  const { filename, contentType, companyId } = await request.json() as {
+  const contentType = request.headers.get('content-type') ?? ''
+
+  // ── Proxy upload (FormData) — browser sends the file, we push it to R2 ──
+  if (contentType.includes('multipart/form-data')) {
+    let companyId: string
+    try {
+      companyId = await resolveCompanyId()
+    } catch {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
+    const form = await request.formData()
+    const file = form.get('file') as File | null
+    if (!file) {
+      return NextResponse.json({ error: 'Falta el archivo' }, { status: 400 })
+    }
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json({ error: `Tipo no permitido: ${file.type}` }, { status: 400 })
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      return NextResponse.json({ error: `Archivo muy grande (máx ${MAX_SIZE_MB} MB)` }, { status: 400 })
+    }
+
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+    const key = `properties/${companyId}/${randomUUID()}.${ext}`
+    const bytes = Buffer.from(await file.arrayBuffer())
+
+    try {
+      const { publicUrl } = await uploadObject(key, bytes, file.type)
+      return NextResponse.json({ url: publicUrl, publicUrl, key })
+    } catch (err) {
+      console.error('[upload] R2 upload failed:', err)
+      return NextResponse.json({ error: 'Error al subir la imagen' }, { status: 500 })
+    }
+  }
+
+  // ── Legacy presigned-URL flow (JSON) — kept for backward compatibility ──
+  const { filename, contentType: ct, companyId } = await request.json() as {
     filename: string
     contentType: string
     companyId: string
   }
 
-  if (!ALLOWED_TYPES.includes(contentType)) {
+  if (!ALLOWED_TYPES.includes(ct)) {
     return NextResponse.json({ error: 'Tipo de archivo no permitido' }, { status: 400 })
   }
-
   if (!companyId) {
     return NextResponse.json({ error: 'company_id requerido' }, { status: 400 })
   }
@@ -24,7 +61,7 @@ export async function POST(request: NextRequest) {
   const key = `properties/${companyId}/${randomUUID()}.${ext}`
 
   try {
-    const { uploadUrl, publicUrl } = await createPresignedUploadUrl(key, contentType)
+    const { uploadUrl, publicUrl } = await createPresignedUploadUrl(key, ct)
     return NextResponse.json({ uploadUrl, publicUrl, key, maxSizeMb: MAX_SIZE_MB })
   } catch {
     return NextResponse.json({ error: 'Error generando URL de subida' }, { status: 500 })

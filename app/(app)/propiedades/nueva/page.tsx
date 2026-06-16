@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { ArrowLeft, Upload, X, ImagePlus, Loader2, Sparkles } from 'lucide-react'
 import Link from 'next/link'
+import { resizeImageFile } from '@/lib/image-resize'
 
 const PROPERTY_TYPES = [
   'Apartamento', 'Casa', 'Local Comercial', 'Oficina', 'Bodega',
@@ -50,23 +51,6 @@ const FEATURES_EXTERNAL = [
 export default function NuevaPropiedadPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [companyId, setCompanyId] = useState<string | null>(null)
-
-  // Load company ID on mount
-  useEffect(() => {
-    const loadCompanyId = async () => {
-      try {
-        const res = await fetch('/api/auth/me')
-        if (res.ok) {
-          const data = await res.json()
-          setCompanyId(data.company?.id)
-        }
-      } catch (err) {
-        console.error('Error loading company ID:', err)
-      }
-    }
-    loadCompanyId()
-  }, [])
 
   // Form state
   const [titulo, setTitulo] = useState('')
@@ -228,49 +212,24 @@ export default function NuevaPropiedadPage() {
   }
 
   async function uploadImages(): Promise<string[]> {
-    if (!companyId) {
-      console.error('Company ID not loaded')
-      return []
-    }
-
     const urls: string[] = []
     for (const img of images) {
       try {
-        // Step 1: Get presigned upload URL
-        const presignRes = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            filename: img.file.name,
-            contentType: img.file.type,
-            companyId,
-          }),
-        })
+        const resized = await resizeImageFile(img.file)
+        const fd = new FormData()
+        fd.append('file', resized)
 
-        if (!presignRes.ok) {
-          console.error(`Failed to get presigned URL for ${img.file.name}`)
+        const res = await fetch('/api/upload', { method: 'POST', body: fd })
+        if (!res.ok) {
+          console.error(`Failed to upload ${img.file.name}:`, (await res.json()).error)
           continue
         }
-
-        const { uploadUrl, publicUrl } = await presignRes.json()
-
-        // Step 2: Upload file to R2 using presigned URL
-        const uploadRes = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': img.file.type },
-          body: img.file,
-        })
-
-        if (uploadRes.ok) {
-          urls.push(publicUrl)
-        } else {
-          console.error(`Failed to upload ${img.file.name}`)
-        }
+        const { url } = await res.json()
+        if (url) urls.push(url)
       } catch (err) {
         console.error(`Error uploading ${img.file.name}:`, err)
       }
     }
-
     return urls
   }
 
