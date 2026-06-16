@@ -111,6 +111,7 @@ export interface WasiFeatures {
 export interface Property {
   // ── Identity ───────────────────────────────────────────
   id: string
+  codigo?: number | null
   wasi_id?: string | null
 
   // ── Listing basics ─────────────────────────────────────

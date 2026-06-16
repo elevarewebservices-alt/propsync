@@ -150,7 +150,7 @@ export function PropertyCard({ property, onSelect, onUpdate }: PropertyCardProps
           {property.titulo}
         </h3>
         <p className="mt-0.5 text-xs text-muted-foreground">{property.zona}</p>
-        <p className="mt-0.5 text-[10px] font-mono text-muted-foreground/60">ID: {property.id.slice(0, 8).toUpperCase()}</p>
+        <p className="mt-0.5 text-[10px] font-mono text-muted-foreground/60">#{property.codigo ?? property.id.slice(0, 5).toUpperCase()}</p>
         <p className="mt-2 text-lg font-bold text-blue-600 dark:text-blue-400">
           {property.tipo === 'venta'
             ? `$${property.precio.toLocaleString()}`

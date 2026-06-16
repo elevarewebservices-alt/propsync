@@ -23,6 +23,7 @@ const TABS: { value: EstadoPublicacion | 'todas'; label: string }[] = [
 function rowToProperty(row: PropertyRow): Property {
   return {
     id: row.id,
+    codigo: (row as any).codigo ?? null,
     wasi_id: row.wasi_id,
     titulo: row.titulo,
     descripcion: row.descripcion ?? '',

@@ -12,7 +12,7 @@ async function getProperty(id: string) {
   const { data } = await (db as any)
     .from('properties')
     .select(`
-      id, titulo, descripcion, tipo, for_sale, for_rent,
+      id, codigo, titulo, descripcion, tipo, for_sale, for_rent,
       property_type_label, property_condition_label,
       country_label, region_label, ciudad, zona, address, floor,
       precio, iso_currency, sale_price, rent_price, maintenance_fee,
@@ -75,7 +75,7 @@ export default async function PublicPropertyPage({ params }: PageProps) {
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <span className="font-semibold text-foreground">{company?.nombre ?? 'PropSync'}</span>
-          <span className="text-xs text-muted-foreground font-mono">ID: {p.id.slice(0, 8).toUpperCase()}</span>
+          <span className="text-xs text-muted-foreground font-mono">#{p.codigo ?? p.id.slice(0, 5).toUpperCase()}</span>
         </div>
       </header>
 
@@ -271,7 +271,7 @@ export default async function PublicPropertyPage({ params }: PageProps) {
         {/* Footer */}
         <div className="border-t border-border pt-4 flex items-center justify-between text-xs text-muted-foreground">
           <span>Publicado por {company?.nombre ?? 'PropSync'}</span>
-          <span className="font-mono">Ref: {p.id.slice(0, 8).toUpperCase()}</span>
+          <span className="font-mono">Ref: #{p.codigo ?? p.id.slice(0, 5).toUpperCase()}</span>
         </div>
       </main>
     </div>
