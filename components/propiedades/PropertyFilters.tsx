@@ -18,7 +18,6 @@ export interface PropertyFilterState {
   ciudad: string
   zona: string
   disponibilidad: string
-  etapaCrm: string
   precioMin: string
   precioMax: string
   areaMin: string
@@ -32,7 +31,7 @@ export interface PropertyFilterState {
 
 export const DEFAULT_FILTERS: PropertyFilterState = {
   search: '', wasiCode: '', tipo: '', propertyType: '', ciudad: '', zona: '',
-  disponibilidad: '', etapaCrm: '', precioMin: '', precioMax: '',
+  disponibilidad: '', precioMin: '', precioMax: '',
   areaMin: '', areaMax: '', bedrooms: '', bathrooms: '', garages: '',
   yearBuilt: '', agente: '',
 }
@@ -42,11 +41,6 @@ interface Props {
   onChange: (f: PropertyFilterState) => void
   properties: Property[]
   agents: { id: string; nombre: string }[]
-}
-
-const ETAPA_LABELS: Record<string, string> = {
-  prospecto: 'Prospecto', contactado: 'Contactado', visita: 'Visita',
-  oferta: 'Oferta', negociando: 'Negociando', cerrado: 'Cerrado', nuevo_lead: 'Nuevo Lead',
 }
 
 function countActive(f: PropertyFilterState): number {
@@ -244,21 +238,9 @@ export function PropertyFilters({ filters, onChange, properties, agents }: Props
             </div>
           </div>
 
-          {/* Row 5: Etapa CRM + Encargado */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Etapa CRM</label>
-              <Select value={filters.etapaCrm || '__all__'} onValueChange={set('etapaCrm')}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">Todas las etapas</SelectItem>
-                  {Object.entries(ETAPA_LABELS).map(([v, l]) => (
-                    <SelectItem key={v} value={v}>{l}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {agents.length > 0 && (
+          {/* Row 5: Encargado */}
+          {agents.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">Encargado</label>
                 <Select value={filters.agente || '__all__'} onValueChange={set('agente')}>
@@ -269,8 +251,8 @@ export function PropertyFilters({ filters, onChange, properties, agents }: Props
                   </SelectContent>
                 </Select>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -284,7 +266,6 @@ export function PropertyFilters({ filters, onChange, properties, agents }: Props
           {filters.ciudad && <FilterChip label={filters.ciudad} onRemove={() => onChange({ ...filters, ciudad: '', zona: '' })} />}
           {filters.zona && <FilterChip label={filters.zona} onRemove={() => set('zona')('')} />}
           {filters.disponibilidad && <FilterChip label={filters.disponibilidad} onRemove={() => set('disponibilidad')('')} />}
-          {filters.etapaCrm && <FilterChip label={ETAPA_LABELS[filters.etapaCrm] ?? filters.etapaCrm} onRemove={() => set('etapaCrm')('')} />}
           {filters.precioMin && <FilterChip label={`Desde $${Number(filters.precioMin).toLocaleString()}`} onRemove={() => set('precioMin')('')} />}
           {filters.precioMax && <FilterChip label={`Hasta $${Number(filters.precioMax).toLocaleString()}`} onRemove={() => set('precioMax')('')} />}
           {filters.areaMin && <FilterChip label={`Área ≥ ${filters.areaMin} m²`} onRemove={() => set('areaMin')('')} />}

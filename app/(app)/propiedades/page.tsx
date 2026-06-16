@@ -183,7 +183,6 @@ export default function PropiedadesPage() {
     if (filters.ciudad && p.ciudad !== filters.ciudad) return false
     if (filters.zona && p.zona !== filters.zona) return false
     if (filters.disponibilidad && p.disponibilidad !== filters.disponibilidad) return false
-    if (filters.etapaCrm && p.etapa_crm !== filters.etapaCrm) return false
 
     if (filters.precioMin && Number(p.precio) < Number(filters.precioMin)) return false
     if (filters.precioMax && Number(p.precio) > Number(filters.precioMax)) return false

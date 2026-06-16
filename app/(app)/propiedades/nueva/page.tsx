@@ -62,9 +62,14 @@ export default function NuevaPropiedadPage() {
   const [precio, setPrecio] = useState('')
   const [currency, setCurrency] = useState('USD')
   const [maintenanceFee, setMaintenanceFee] = useState('')
+  const [pais, setPais] = useState('Panamá')
   const [ciudad, setCiudad] = useState('')
   const [zona, setZona] = useState('')
   const [address, setAddress] = useState('')
+  // Existing locations from current inventory — power the "pick or add" comboboxes
+  const [knownPaises, setKnownPaises] = useState<string[]>([])
+  const [knownCiudades, setKnownCiudades] = useState<string[]>([])
+  const [knownZonas, setKnownZonas] = useState<string[]>([])
   const [bedrooms, setBedrooms] = useState('')
   const [bathrooms, setBathrooms] = useState('')
   const [garages, setGarages] = useState('')
@@ -107,6 +112,21 @@ export default function NuevaPropiedadPage() {
   const [phone1Match, setPhone1Match] = useState<Contact | null>(null)
   const [phone2Match, setPhone2Match] = useState<Contact | null>(null)
   const ownerDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Load existing locations so the user can pick an existing país/ciudad/zona
+  // or type a new one (which "creates" it on save).
+  useEffect(() => {
+    fetch('/api/properties')
+      .then((r) => r.ok ? r.json() : [])
+      .then((rows: { country_label?: string | null; ciudad?: string | null; zona?: string | null }[]) => {
+        const uniq = (vals: (string | null | undefined)[]) =>
+          Array.from(new Set(vals.filter(Boolean) as string[])).sort()
+        setKnownPaises(uniq([...rows.map((r) => r.country_label), 'Panamá']))
+        setKnownCiudades(uniq(rows.map((r) => r.ciudad)))
+        setKnownZonas(uniq(rows.map((r) => r.zona)))
+      })
+      .catch(() => {})
+  }, [])
 
   // Close owner dropdown when clicking outside
   useEffect(() => {
@@ -332,6 +352,7 @@ export default function NuevaPropiedadPage() {
       sale_price: forSale ? parseFloat(precio) || null : null,
       rent_price: forRent ? parseFloat(precio) || null : null,
       maintenance_fee: maintenanceFee ? parseFloat(maintenanceFee) : null,
+      country_label: pais.trim() || null,
       ciudad: ciudad.trim() || null,
       zona: zona.trim() || null,
       address: address.trim() || null,
@@ -539,20 +560,36 @@ export default function NuevaPropiedadPage() {
           <h2 className="text-sm font-semibold text-foreground">Ubicación</h2>
           <Separator />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="pais">País</Label>
+              <Input id="pais" list="paises-list" value={pais} onChange={(e) => setPais(e.target.value)} placeholder="Panamá" />
+              <datalist id="paises-list">
+                {knownPaises.map((p) => <option key={p} value={p} />)}
+              </datalist>
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="ciudad">Ciudad</Label>
-              <Input id="ciudad" value={ciudad} onChange={(e) => setCiudad(e.target.value)} placeholder="Ciudad de Panamá" />
+              <Input id="ciudad" list="ciudades-list" value={ciudad} onChange={(e) => setCiudad(e.target.value)} placeholder="Ciudad de Panamá" />
+              <datalist id="ciudades-list">
+                {knownCiudades.map((c) => <option key={c} value={c} />)}
+              </datalist>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="zona">Zona / Barrio</Label>
-              <Input id="zona" value={zona} onChange={(e) => setZona(e.target.value)} placeholder="Marbella" />
+              <Input id="zona" list="zonas-list" value={zona} onChange={(e) => setZona(e.target.value)} placeholder="Marbella" />
+              <datalist id="zonas-list">
+                {knownZonas.map((z) => <option key={z} value={z} />)}
+              </datalist>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Escribe para elegir una zona existente o agregar una nueva.
+          </p>
 
           <div className="space-y-1.5">
-            <Label htmlFor="address">Dirección</Label>
-            <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Calle 50, Edificio Pacific..." />
+            <Label htmlFor="address">Dirección completa</Label>
+            <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Calle 50, Edificio Pacific, piso 12, apto 12B..." />
           </div>
         </section>
 

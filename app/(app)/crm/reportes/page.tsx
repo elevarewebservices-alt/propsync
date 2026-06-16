@@ -1,14 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Contact, CrmStage } from '@/lib/types'
-import { TrendingUp, Users, Target, Clock, Home, CheckCircle, Key, PlusCircle } from 'lucide-react'
+import { TrendingUp, Users, Target, Clock, Home, CheckCircle, Key, PlusCircle, ArrowRight } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 // ── Shared components ──────────────────────────────────────────────────────────
 
-function StatCard({ icon: Icon, label, value, sub, color = 'blue' }: {
-  icon: React.ElementType; label: string; value: string | number; sub?: string; color?: 'blue' | 'green' | 'purple' | 'amber' | 'red'
+function StatCard({ icon: Icon, label, value, sub, color = 'blue', href }: {
+  icon: React.ElementType; label: string; value: string | number; sub?: string; color?: 'blue' | 'green' | 'purple' | 'amber' | 'red'; href?: string
 }) {
   const styles = {
     blue:   'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
@@ -17,18 +20,27 @@ function StatCard({ icon: Icon, label, value, sub, color = 'blue' }: {
     amber:  'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
     red:    'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400',
   }
-  return (
-    <div className="rounded-xl border border-border bg-card p-5">
+  const inner = (
+    <>
       <div className="flex items-center gap-3 mb-3">
         <div className={`p-2 rounded-lg ${styles[color]}`}>
           <Icon className="h-4 w-4" />
         </div>
         <span className="text-sm text-muted-foreground">{label}</span>
+        {href && <ArrowRight className="h-3.5 w-3.5 text-muted-foreground ml-auto" />}
       </div>
       <p className="text-2xl font-bold text-foreground">{value}</p>
       {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-    </div>
+    </>
   )
+  if (href) {
+    return (
+      <Link href={href} className="block rounded-xl border border-border bg-card p-5 transition-colors hover:border-blue-400 hover:bg-muted/40">
+        {inner}
+      </Link>
+    )
+  }
+  return <div className="rounded-xl border border-border bg-card p-5">{inner}</div>
 }
 
 function BarChart({ data, max }: { data: { label: string; value: number; color?: string }[]; max: number }) {
@@ -205,26 +217,69 @@ interface PropStats {
 }
 
 function PropiedadesTab() {
-  const [stats, setStats] = useState<PropStats | null>(null)
+  const [stats, setStats] = useState<PropStats & { rangeActive?: boolean } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [applied, setApplied] = useState<{ from: string; to: string }>({ from: '', to: '' })
 
   useEffect(() => {
-    fetch('/api/properties/stats').then(r => r.json()).then(d => {
+    const params = new URLSearchParams()
+    if (applied.from) params.set('from', applied.from)
+    if (applied.to) params.set('to', applied.to)
+    const qs = params.toString()
+    setLoading(true)
+    fetch(`/api/properties/stats${qs ? `?${qs}` : ''}`).then(r => r.json()).then(d => {
       setStats(d)
       setLoading(false)
     })
-  }, [])
+  }, [applied])
 
-  if (loading) return <p className="text-sm text-muted-foreground text-center py-16">Cargando…</p>
-  if (!stats) return null
+  const rangeActive = !!(applied.from || applied.to)
+  const inventoryLabel = rangeActive ? 'Creadas en el período' : 'Total en inventario'
 
+  return (
+    <div className="space-y-6">
+      {/* Date range filter */}
+      <div className="rounded-xl border border-border bg-muted/30 p-4 flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">Desde</label>
+          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 text-sm w-40" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">Hasta</label>
+          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 text-sm w-40" />
+        </div>
+        <Button size="sm" className="h-9" onClick={() => setApplied({ from, to })}>Aplicar</Button>
+        {rangeActive && (
+          <Button size="sm" variant="ghost" className="h-9 text-muted-foreground" onClick={() => { setFrom(''); setTo(''); setApplied({ from: '', to: '' }) }}>
+            Limpiar fechas
+          </Button>
+        )}
+        {rangeActive && (
+          <span className="text-xs text-muted-foreground ml-auto">
+            Mostrando propiedades creadas {applied.from && `desde ${applied.from}`} {applied.to && `hasta ${applied.to}`}
+          </span>
+        )}
+      </div>
+
+      {loading || !stats ? (
+        <p className="text-sm text-muted-foreground text-center py-16">Cargando…</p>
+      ) : (
+      <PropiedadesContent stats={stats} inventoryLabel={inventoryLabel} />
+      )}
+    </div>
+  )
+}
+
+function PropiedadesContent({ stats, inventoryLabel }: { stats: PropStats & { rangeActive?: boolean }; inventoryLabel: string }) {
   const { kpis } = stats
 
   return (
     <div className="space-y-6">
       {/* KPIs — inventario total */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Home}        label="Total en inventario"  value={kpis.total}       color="blue"   />
+        <StatCard icon={Home}        label={inventoryLabel}       value={kpis.total}       color="blue"   href="/propiedades" />
         <StatCard icon={CheckCircle} label="Disponibles"          value={kpis.disponibles} color="green"  sub={`${kpis.total > 0 ? Math.round((kpis.disponibles/kpis.total)*100) : 0}% del inventario`} />
         <StatCard icon={TrendingUp}  label="Vendidas (histórico)" value={kpis.vendidas}    color="purple" />
         <StatCard icon={Key}         label="Arrendadas (histórico)" value={kpis.arrendadas} color="amber" />

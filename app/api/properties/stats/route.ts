@@ -1,14 +1,17 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { resolveCompanyId } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const companyId = await resolveCompanyId()
   const db = createAdminClient()
 
+  const { searchParams } = new URL(request.url)
+  const from = searchParams.get('from') // YYYY-MM-DD inclusive
+  const to   = searchParams.get('to')   // YYYY-MM-DD inclusive
+
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString()
 
   const { data: all, error } = await (db.from('properties') as any)
     .select('id, tipo, disponibilidad, estado_publicacion, property_type_label, ciudad, zona, created_at, updated_at')
@@ -16,7 +19,7 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const props = (all ?? []) as {
+  const allProps = (all ?? []) as {
     id: string
     tipo: string
     disponibilidad: string
@@ -27,6 +30,18 @@ export async function GET() {
     created_at: string
     updated_at: string
   }[]
+
+  // When a date range is given, scope the analysis to properties created in it.
+  // The end bound is inclusive (whole day), so add 1 day to the `to` date.
+  const fromIso = from ? new Date(from + 'T00:00:00').toISOString() : null
+  const toIso = to ? new Date(new Date(to + 'T00:00:00').getTime() + 86400000).toISOString() : null
+  const props = (fromIso || toIso)
+    ? allProps.filter(p =>
+        (!fromIso || p.created_at >= fromIso) &&
+        (!toIso || p.created_at < toIso))
+    : allProps
+
+  const rangeActive = !!(fromIso || toIso)
 
   // ── KPIs ────────────────────────────────────────────────────────────────────
   const total = props.length
@@ -82,13 +97,14 @@ export async function GET() {
     const label = d.toLocaleDateString('es', { month: 'short', year: '2-digit' })
     months.push({
       label,
-      creadas: props.filter(p => p.created_at >= start && p.created_at < end).length,
-      vendidas: props.filter(p => p.disponibilidad === 'vendido' && p.updated_at >= start && p.updated_at < end).length,
-      arrendadas: props.filter(p => p.disponibilidad === 'alquilado' && p.updated_at >= start && p.updated_at < end).length,
+      creadas: allProps.filter(p => p.created_at >= start && p.created_at < end).length,
+      vendidas: allProps.filter(p => p.disponibilidad === 'vendido' && p.updated_at >= start && p.updated_at < end).length,
+      arrendadas: allProps.filter(p => p.disponibilidad === 'alquilado' && p.updated_at >= start && p.updated_at < end).length,
     })
   }
 
   return NextResponse.json({
+    rangeActive,
     kpis: { total, disponibles, vendidas, arrendadas, activas, inactivas, nuevasEsteMes, vendidasEsteMes, arrendadasEsteMes },
     porTipo,
     porDisponibilidad,
