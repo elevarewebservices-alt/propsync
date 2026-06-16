@@ -6,13 +6,19 @@ import type { Database } from './database.types'
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-// Legacy browser client (used in components that don't need auth state)
-export const supabase = createClient<Database>(url, anon)
+// Singleton browser client — one instance per browser context to avoid
+// "Multiple GoTrueClient instances" warning from @supabase/ssr.
+let _browserClient: ReturnType<typeof createSupabaseBrowserClient<Database>> | null = null
 
-// Browser client with auth session tracking (use in client components for login/signup)
 export function createBrowserSupabaseClient() {
-  return createSupabaseBrowserClient<Database>(url, anon)
+  if (!_browserClient) {
+    _browserClient = createSupabaseBrowserClient<Database>(url, anon)
+  }
+  return _browserClient
 }
+
+// Legacy alias for code that imports `supabase` directly
+export const supabase = createClient<Database>(url, anon)
 
 // Server client that reads/writes cookies (use in Server Components, Route Handlers, middleware)
 export function createServerSupabaseClient(cookieStore: {
