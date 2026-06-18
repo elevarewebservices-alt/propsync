@@ -7,7 +7,7 @@ export function buildSystemPrompt(agencyName: string): string {
   return `Eres PropSync AI, el asistente inteligente de ${agencyName}.
 
 Tienes acceso en tiempo real a:
-- El inventario completo de propiedades (búsqueda, filtros, notas)
+- El inventario completo de propiedades (búsqueda, filtros, notas, y CREAR nuevas)
 - El CRM de leads y contactos (pipeline Kanban, etapas, seguimiento)
 - El equipo de agentes y sus asignaciones
 
@@ -17,6 +17,12 @@ REGLAS IMPORTANTES:
 3. Responde en español, de forma concisa y profesional.
 4. Usa markdown cuando ayude: **negrita** para datos clave, listas para múltiples items.
 5. Si no encuentras algo, dilo claramente — no inventes datos.
+
+CREAR PROPIEDADES:
+- Puedes crear propiedades nuevas con la herramienta create_property cuando el usuario te dé la información.
+- Mínimo necesitas **título** y **precio**. Si falta alguno, pídelo. Pide también lo demás (tipo venta/arriendo, ubicación, habitaciones, etc.) de forma natural, pero no insistas en datos opcionales si el usuario quiere crearla rápido.
+- NO inventes datos de la propiedad. Usa solo lo que el usuario te dé.
+- FOTOS: no puedes recibir ni subir fotos por el chat. Después de crear la propiedad, dile al usuario que se creó como **inactiva** y dale el enlace de edición (el campo edit_url que devuelve la herramienta, ej: "/propiedades/ID/editar") para que **suba las fotos y la active** desde ahí. Preséntalo como un enlace markdown clickeable.
 
 ÁMBITO EXCLUSIVO: Este asistente es para gestión inmobiliaria de ${agencyName} únicamente.
 Si el usuario pregunta sobre temas ajenos (cocina, clima, programación general, entretenimiento, etc.),
@@ -74,6 +80,58 @@ export async function executeTool(
         nuevos_leads_7d:        leads.count ?? 0,
         seguimientos_pendientes:followUps.count ?? 0,
         cerrados_este_mes:      closed.count ?? 0,
+      }
+    }
+
+    // ── Create property ────────────────────────────────────────────────────
+    case 'create_property': {
+      if (!input.titulo)  throw new Error('titulo es requerido.')
+      if (input.precio == null) throw new Error('precio es requerido.')
+
+      const tipo = (input.tipo === 'arriendo' ? 'arriendo' : 'venta') as 'venta' | 'arriendo'
+      const precio = Number(input.precio)
+      if (!Number.isFinite(precio) || precio < 0) throw new Error('precio inválido.')
+
+      const payload: Record<string, unknown> = {
+        company_id:            companyId,
+        titulo:                String(input.titulo),
+        descripcion:           input.descripcion ?? null,
+        tipo,
+        for_sale:              tipo === 'venta',
+        for_rent:              tipo === 'arriendo',
+        for_transfer:          false,
+        property_type_label:   input.tipo_inmueble ?? null,
+        property_condition_label: input.condicion ?? null,
+        precio,
+        iso_currency:          input.moneda ?? 'USD',
+        sale_price:            tipo === 'venta' ? precio : null,
+        rent_price:            tipo === 'arriendo' ? precio : null,
+        country_label:         input.pais ?? 'Panamá',
+        ciudad:                input.ciudad ?? null,
+        zona:                  input.zona ?? null,
+        address:               input.direccion ?? null,
+        bedrooms:              input.habitaciones != null ? Number(input.habitaciones) : null,
+        bathrooms:             input.banos != null ? Number(input.banos) : null,
+        garages:               input.garajes != null ? Number(input.garajes) : null,
+        area:                  input.area != null ? String(input.area) : null,
+        building_date:         input.anio ? String(input.anio) : null,
+        estado_publicacion:    'inactivo',   // starts hidden until the agent reviews + adds photos
+        disponibilidad:        'disponible',
+        fuente:                'manual',
+        gallery_urls:          [],
+        canales_publicados:    [],
+      }
+
+      const { data, error } = await (db.from('properties') as any)
+        .insert(payload)
+        .select('id, codigo, titulo, tipo, precio, ciudad, zona, estado_publicacion')
+        .single()
+      if (error) throw new Error(error.message)
+
+      return {
+        created: data,
+        edit_url: `/propiedades/${data.id}/editar`,
+        nota: 'La propiedad se creó como INACTIVA (oculta de portales). Para subir fotos y luego publicarla, el agente debe abrir el enlace de edición. Las fotos no se pueden subir por el chat.',
       }
     }
 
@@ -339,6 +397,32 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
         limit:          { type: 'number',  description: 'Máximo de resultados (default 20)' },
       },
       required: [],
+    },
+  },
+  {
+    name: 'create_property',
+    description: 'Crea una nueva propiedad en el inventario a partir de la información que da el usuario. Se crea como INACTIVA (oculta de portales) para que el agente revise y suba fotos antes de publicarla. IMPORTANTE: las fotos NO se pueden subir por el chat — después de crearla, indícale al usuario que abra el enlace de edición (edit_url) para subir las fotos y activar la propiedad. Pide los datos que falten (al menos título y precio) antes de crear.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        titulo:        { type: 'string', description: 'Título de la propiedad (requerido). Ej: "Apartamento 2 hab en Marbella"' },
+        precio:        { type: 'number', description: 'Precio (requerido). Para venta el precio total; para arriendo el precio mensual.' },
+        tipo:          { type: 'string', description: '"venta" (default) o "arriendo"' },
+        moneda:        { type: 'string', description: 'Código de moneda, "USD" (default) o "PAB"' },
+        tipo_inmueble: { type: 'string', description: 'Tipo: Apartamento, Casa, Local Comercial, Oficina, Terreno, etc.' },
+        condicion:     { type: 'string', description: 'Estado: Nuevo, Usado, En planos, En construcción, Remodelar' },
+        descripcion:   { type: 'string', description: 'Descripción de la propiedad' },
+        pais:          { type: 'string', description: 'País (default "Panamá")' },
+        ciudad:        { type: 'string', description: 'Ciudad' },
+        zona:          { type: 'string', description: 'Zona o barrio' },
+        direccion:     { type: 'string', description: 'Dirección completa' },
+        habitaciones:  { type: 'number', description: 'Número de habitaciones' },
+        banos:         { type: 'number', description: 'Número de baños' },
+        garajes:       { type: 'number', description: 'Número de garajes/estacionamientos' },
+        area:          { type: 'number', description: 'Área total en m²' },
+        anio:          { type: 'number', description: 'Año de construcción' },
+      },
+      required: ['titulo', 'precio'],
     },
   },
   {
