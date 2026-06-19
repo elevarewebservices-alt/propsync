@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase'
 import { sendTemplate, normalizePhone } from '@/lib/whatsapp'
 import { decrypt } from '@/lib/crypto'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET — Devuelve el estado de la campaña activa más reciente y sus estadísticas.
  */

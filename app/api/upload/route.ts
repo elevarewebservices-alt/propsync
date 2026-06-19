@@ -3,6 +3,8 @@ import { uploadObject, createPresignedUploadUrl } from '@/lib/r2'
 import { resolveCompanyId } from '@/lib/auth'
 import { randomUUID } from 'crypto'
 
+export const dynamic = 'force-dynamic'
+
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/jpg']
 const MAX_SIZE_MB = 15
 

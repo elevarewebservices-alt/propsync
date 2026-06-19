@@ -2,6 +2,8 @@ import { createAdminClient } from '@/lib/supabase'
 import { resolveCompanyId, getSessionPlan } from '@/lib/auth'
 import { canAccess, getPlan } from '@/lib/plans'
 
+export const dynamic = 'force-dynamic'
+
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const companyId = await resolveCompanyId()
   const body = await request.json()

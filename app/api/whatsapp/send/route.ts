@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase'
 import { sendTextMessage, sendTemplate, normalizePhone } from '@/lib/whatsapp'
 import { decrypt } from '@/lib/crypto'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   let companyId: string
   try {

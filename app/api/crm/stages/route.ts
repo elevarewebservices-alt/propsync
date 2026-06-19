@@ -3,6 +3,8 @@ import { resolveCompanyId } from '@/lib/auth'
 import { CrmStage } from '@/lib/types'
 import { NextRequest } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const companyId = await resolveCompanyId()
   const { searchParams } = new URL(request.url)

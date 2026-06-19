@@ -66,6 +66,20 @@ export async function POST(req: NextRequest) {
 
     // ── Agentic loop ────────────────────────────────────────────────────────
     const systemPrompt = buildSystemPrompt(company?.nombre ?? 'tu agencia')
+
+    // Prompt caching: the tools + system prompt are a large static prefix that
+    // gets re-sent on every iteration of the agentic loop (and on every message
+    // of the conversation). Marking the end of that prefix with cache_control
+    // makes calls after the first read it at ~10% of the input cost.
+    const cachedTools = ASSISTANT_TOOLS.map((t, i) =>
+      i === ASSISTANT_TOOLS.length - 1
+        ? { ...t, cache_control: { type: 'ephemeral' as const } }
+        : t
+    )
+    const cachedSystem: Anthropic.TextBlockParam[] = [
+      { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
+    ]
+
     let currentMessages: ConversationMessage[] = [...messages]
     let iterations      = 0
     const MAX_ITERATIONS = 12
@@ -76,8 +90,8 @@ export async function POST(req: NextRequest) {
       const response = await anthropic.messages.create({
         model:      'claude-haiku-4-5-20251001',
         max_tokens: 2048,
-        system:     systemPrompt,
-        tools:      ASSISTANT_TOOLS,
+        system:     cachedSystem,
+        tools:      cachedTools,
         messages:   currentMessages,
       })
 

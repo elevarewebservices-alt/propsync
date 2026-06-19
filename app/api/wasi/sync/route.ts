@@ -4,6 +4,8 @@ import { resolveCompanyId } from '@/lib/auth'
 import { upsertFromWasi } from '@/lib/properties'
 import type { PropertyInsert } from '@/lib/database.types'
 
+export const dynamic = 'force-dynamic'
+
 const WASI_BASE = 'https://api.wasi.co/v1'
 const PAGE_SIZE = 100
 

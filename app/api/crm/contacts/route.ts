@@ -4,6 +4,8 @@ import { Contact } from '@/lib/types'
 import { sendNewLeadNotification } from '@/lib/email'
 import { isValidEmail, isValidPhone, normalizePhone } from '@/lib/validation'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   const companyId = await resolveCompanyId()
   const { searchParams } = new URL(request.url)

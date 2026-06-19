@@ -3,6 +3,8 @@ import { resolveCompanyId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 import { detectAvailabilityIntent } from '@/lib/whatsapp'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET — Lista las respuestas WhatsApp recibidas (inbound) con info de la propiedad relacionada.
  */

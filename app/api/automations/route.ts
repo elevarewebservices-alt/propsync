@@ -3,6 +3,8 @@ import { resolveCompanyId, getSessionPlan } from '@/lib/auth'
 import { canAccess, getPlan } from '@/lib/plans'
 import { Automation } from '@/lib/types'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const companyId = await resolveCompanyId()
   const db = createAdminClient()

@@ -3,6 +3,8 @@ import { resolveCompanyId } from '@/lib/auth'
 import { sendStageMilestoneEmail } from '@/lib/email'
 import { isValidEmail, isValidPhone, normalizePhone } from '@/lib/validation'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   _request: Request,
   { params }: { params: { id: string } }

@@ -3,6 +3,8 @@ import { resolveCompanyId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 import { randomUUID } from 'crypto'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const companyId = await resolveCompanyId()

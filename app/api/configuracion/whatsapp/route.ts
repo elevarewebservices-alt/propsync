@@ -3,6 +3,8 @@ import { resolveCompanyId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 import { encrypt } from '@/lib/crypto'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET — Retorna la configuración WhatsApp actual de la empresa (sin el token desencriptado).
  */

@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase'
 import { resolveCompanyId } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }

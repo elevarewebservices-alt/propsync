@@ -2,6 +2,8 @@ import { createAdminClient } from '@/lib/supabase'
 import { resolveCompanyId } from '@/lib/auth'
 import { matchPropertiesForContact, PropertyForMatch } from '@/lib/matching'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const companyId = await resolveCompanyId()
   const db = createAdminClient()

@@ -2,6 +2,8 @@ import { createAdminClient } from '@/lib/supabase'
 import { resolveCompanyId } from '@/lib/auth'
 import * as XLSX from 'xlsx'
 
+export const dynamic = 'force-dynamic'
+
 const HEADERS = [
   'nombre','tipo','telefono','whatsapp','email','pais','ciudad',
   'zona_interes','tipo_operacion','presupuesto_min','presupuesto_max',

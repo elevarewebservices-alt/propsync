@@ -3,6 +3,8 @@ import { resolveCompanyId, getSessionAgent } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 import type { PropertyNoteRow } from '@/lib/database.types'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }

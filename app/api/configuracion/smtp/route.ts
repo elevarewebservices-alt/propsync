@@ -3,6 +3,8 @@ import { createAdminClient } from '@/lib/supabase'
 import { resolveCompanyId, getSessionAgent } from '@/lib/auth'
 import { encrypt } from '@/lib/crypto'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const companyId = await resolveCompanyId()
   const db        = createAdminClient()

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { resolveCompanyId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }

@@ -6,8 +6,13 @@ import { createServerSupabaseClient, createAdminClient } from './supabase'
 export async function resolveCompanyId(): Promise<string> {
   const id = await getSessionCompanyId()
   if (id) return id
-  const devId = process.env.NEXT_PUBLIC_DEV_COMPANY_ID
-  if (devId) return devId
+  // The dev fallback is ONLY allowed outside production. In production a request
+  // without a valid session must fail closed — never default to a company,
+  // otherwise an unauthenticated call could touch another tenant's data.
+  if (process.env.NODE_ENV !== 'production') {
+    const devId = process.env.NEXT_PUBLIC_DEV_COMPANY_ID
+    if (devId) return devId
+  }
   throw new Error('No company context — user not authenticated')
 }
 

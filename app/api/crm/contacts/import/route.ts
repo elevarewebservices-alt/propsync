@@ -2,6 +2,8 @@ import { createAdminClient } from '@/lib/supabase'
 import { resolveCompanyId } from '@/lib/auth'
 import * as XLSX from 'xlsx'
 
+export const dynamic = 'force-dynamic'
+
 const VALID_TIPOS = ['cliente', 'propietario', 'broker']
 const VALID_OPERACIONES = ['compra', 'alquiler', 'ambas']
 const VALID_FUENTES = ['manual', 'meta_leads', 'web_form', 'referido', 'wasi']

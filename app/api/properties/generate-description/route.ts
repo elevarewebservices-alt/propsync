@@ -3,6 +3,8 @@ import Anthropic from '@anthropic-ai/sdk'
 import { resolveCompanyId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
 const DEFAULT_PROMPT = `Eres un redactor profesional de bienes raíces de Panamá.
 Genera una descripción atractiva y profesional en español para la siguiente propiedad.
 Usa 3 párrafos: el primero debe destacar lo más atractivo y la ubicación, el segundo detallar las características principales (áreas, habitaciones, amenidades), y el tercero una llamada a la acción concisa.

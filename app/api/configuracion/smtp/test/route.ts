@@ -5,6 +5,8 @@ import { decrypt } from '@/lib/crypto'
 import { verifySmtpConfig, sendRawEmail } from '@/lib/email'
 import type { SmtpConfig } from '@/lib/email-config'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   const companyId = await resolveCompanyId()
   const me        = await getSessionAgent()

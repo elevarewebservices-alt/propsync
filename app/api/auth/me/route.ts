@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getSessionAgent, getSessionPlan } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const agent = await getSessionAgent()
   const planId = await getSessionPlan()

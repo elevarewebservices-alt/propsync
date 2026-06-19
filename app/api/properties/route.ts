@@ -5,6 +5,8 @@ import { getPlan } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase'
 import type { PropertyInsert } from '@/lib/database.types'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const companyId = await resolveCompanyId()

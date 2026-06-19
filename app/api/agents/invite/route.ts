@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
 import { getPlan } from '@/lib/plans'
 
+export const dynamic = 'force-dynamic'
+
 function createAuthAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

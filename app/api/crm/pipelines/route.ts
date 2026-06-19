@@ -2,6 +2,8 @@ import { createAdminClient } from '@/lib/supabase'
 import { resolveCompanyId } from '@/lib/auth'
 import { Pipeline } from '@/lib/types'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const companyId = await resolveCompanyId()
   const db = createAdminClient()

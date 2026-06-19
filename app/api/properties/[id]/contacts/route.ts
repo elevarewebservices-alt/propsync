@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { resolveCompanyId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
 // Returns the contacts linked to a property, with the owner first.
 // The owner is property.owner_contact_id (set when the property is created).
 export async function GET(

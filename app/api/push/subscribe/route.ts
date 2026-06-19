@@ -4,6 +4,8 @@ import { resolveCompanyId } from '@/lib/auth'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: Request) {
   try {
     const companyId = await resolveCompanyId()
