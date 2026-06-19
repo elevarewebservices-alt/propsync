@@ -55,6 +55,8 @@ function renderMarkdown(text: string): React.ReactNode {
   return lines.map((line, i) => {
     const isBullet = /^[-*•]\s/.test(line)
     const processed = line
+      // [texto](url) → enlace clickeable (procesar antes de *cursiva* para no romper la URL)
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 dark:text-blue-400 underline hover:no-underline font-medium">$1</a>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/`(.+?)`/g, '<code class="bg-black/10 dark:bg-white/10 px-1 rounded text-xs">$1</code>')

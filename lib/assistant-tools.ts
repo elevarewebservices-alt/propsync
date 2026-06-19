@@ -29,13 +29,13 @@ REGLAS IMPORTANTES:
 CREAR PROPIEDADES:
 - Puedes crear propiedades nuevas con la herramienta create_property cuando el usuario te dé la información.
 - Antes de crear, RECOPILA la información que falte. Pregunta por los datos que no te hayan dado, idealmente agrupados en un solo mensaje (ej: "Para crear la propiedad me faltan: ¿es venta o arriendo? ¿en qué ciudad y zona? ¿cuántas habitaciones y baños? ¿quién es el propietario?").
-- Datos que debes intentar reunir: **título**, **precio**, **tipo** (venta/arriendo), **tipo de inmueble**, **ciudad**, **zona**, **dirección**, **habitaciones**, **baños**, **garajes**, **área (m²)** y **propietario** (nombre + teléfono).
+- Datos que debes intentar reunir: **título**, **precio**, **tipo** (venta/arriendo), **tipo de inmueble**, **país**, **provincia/estado**, **ciudad**, **zona**, **dirección**, **habitaciones**, **baños**, **garajes**, **área (m²)** y **propietario** (nombre + teléfono).
 - Título y precio son OBLIGATORIOS: si no los tienes, no crees la propiedad, pídelos.
 - Para el resto: pídelos una vez. Si el usuario no los sabe, dice "no" o pide crearla rápido/ya, créala con lo que tengas — no insistas más de una vez ni bloquees la creación por datos opcionales.
 - Antes de crear, muestra un breve resumen de lo que vas a registrar y créala (no esperes una confirmación extra si el usuario ya te dio todo).
 - NO inventes datos de la propiedad. Usa solo lo que el usuario te dé.
 - PROPIETARIO: si el usuario menciona quién es el dueño, pasa propietario_nombre/propietario_telefono/propietario_email a create_property. El sistema reutiliza el contacto si el teléfono ya existe (no duplica) o crea uno nuevo tipo "propietario" y lo vincula. Si no menciona dueño, no lo pidas obligatoriamente.
-- FOTOS: no puedes recibir ni subir fotos por el chat. Después de crear la propiedad, dile al usuario que se creó como **inactiva** y dale el enlace de edición (el campo edit_url que devuelve la herramienta, ej: "/propiedades/ID/editar") para que **suba las fotos y la active** desde ahí. Preséntalo como un enlace markdown clickeable.
+- FOTOS Y AMENIDADES: no puedes recibir ni subir fotos ni amenidades por el chat. Después de crear la propiedad, dile al usuario que se creó como **inactiva** y dale el enlace de edición (el campo edit_url que devuelve la herramienta, ej: "/propiedades/ID/editar") para que desde ahí: **1) suba las fotos, 2) agregue las amenidades/características (internas y externas), y 3) active la propiedad**. Preséntalo como un enlace markdown clickeable: [Abrir edición](/propiedades/ID/editar).
 
 ÁMBITO — TEMAS DE INMOBILIARIA (permitido):
 Además de gestionar los datos de ${agencyName}, PUEDES responder preguntas generales del rubro inmobiliario usando tu conocimiento, por ejemplo:
@@ -128,6 +128,7 @@ export async function executeTool(
         sale_price:            tipo === 'venta' ? precio : null,
         rent_price:            tipo === 'arriendo' ? precio : null,
         country_label:         input.pais ?? 'Panamá',
+        region_label:          input.provincia ?? null,
         ciudad:                input.ciudad ?? null,
         zona:                  input.zona ?? null,
         address:               input.direccion ?? null,
@@ -208,7 +209,7 @@ export async function executeTool(
         created: data,
         owner,
         edit_url: `/propiedades/${data.id}/editar`,
-        nota: 'La propiedad se creó como INACTIVA (oculta de portales). Para subir fotos y luego publicarla, el agente debe abrir el enlace de edición. Las fotos no se pueden subir por el chat.',
+        nota: 'La propiedad se creó como INACTIVA (oculta de portales). En el enlace de edición el agente debe: 1) subir las fotos, 2) agregar las amenidades/características (internas y externas), y 3) activar la propiedad. Las fotos y amenidades no se pueden cargar por el chat.',
       }
     }
 
@@ -624,6 +625,7 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
         condicion:     { type: 'string', description: 'Estado: Nuevo, Usado, En planos, En construcción, Remodelar' },
         descripcion:   { type: 'string', description: 'Descripción de la propiedad' },
         pais:          { type: 'string', description: 'País (default "Panamá")' },
+        provincia:     { type: 'string', description: 'Estado o provincia' },
         ciudad:        { type: 'string', description: 'Ciudad' },
         zona:          { type: 'string', description: 'Zona o barrio' },
         direccion:     { type: 'string', description: 'Dirección completa' },

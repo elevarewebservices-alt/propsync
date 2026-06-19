@@ -49,6 +49,8 @@ export default function EditarPropiedadPage() {
   const [precio, setPrecio] = useState('')
   const [currency, setCurrency] = useState('USD')
   const [maintenanceFee, setMaintenanceFee] = useState('')
+  const [pais, setPais] = useState('')
+  const [provincia, setProvincia] = useState('')
   const [ciudad, setCiudad] = useState('')
   const [zona, setZona] = useState('')
   const [address, setAddress] = useState('')
@@ -105,6 +107,8 @@ export default function EditarPropiedadPage() {
         setPrecio(prop.precio ? String(prop.precio) : '')
         setCurrency(prop.iso_currency ?? 'USD')
         setMaintenanceFee(prop.maintenance_fee ? String(prop.maintenance_fee) : '')
+        setPais(prop.country_label ?? '')
+        setProvincia(prop.region_label ?? '')
         setCiudad(prop.ciudad ?? '')
         setZona(prop.zona ?? '')
         setAddress(prop.address ?? '')
@@ -243,6 +247,8 @@ export default function EditarPropiedadPage() {
       sale_price: forSale ? parseFloat(precio) || null : null,
       rent_price: forRent ? parseFloat(precio) || null : null,
       maintenance_fee: maintenanceFee ? parseFloat(maintenanceFee) : null,
+      country_label: pais.trim() || null,
+      region_label: provincia.trim() || null,
       ciudad: ciudad.trim() || null,
       zona: zona.trim() || null,
       address: address.trim() || null,
@@ -404,6 +410,14 @@ export default function EditarPropiedadPage() {
           <Separator />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
+              <Label htmlFor="pais">País</Label>
+              <Input id="pais" value={pais} onChange={(e) => setPais(e.target.value)} placeholder="Panamá" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="provincia">Estado / Provincia</Label>
+              <Input id="provincia" value={provincia} onChange={(e) => setProvincia(e.target.value)} placeholder="Panamá" />
+            </div>
+            <div className="space-y-1.5">
               <Label htmlFor="ciudad">Ciudad</Label>
               <Input id="ciudad" value={ciudad} onChange={(e) => setCiudad(e.target.value)} placeholder="Ciudad de Panamá" />
             </div>
@@ -413,8 +427,8 @@ export default function EditarPropiedadPage() {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="address">Dirección</Label>
-            <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
+            <Label htmlFor="address">Dirección completa</Label>
+            <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Calle 50, Edificio Pacific, piso 12..." />
           </div>
         </section>
 

@@ -28,7 +28,7 @@ export async function PATCH(
   const db = createAdminClient()
 
   const allowed = [
-    'titulo', 'descripcion', 'address', 'ciudad', 'zona',
+    'titulo', 'descripcion', 'address', 'country_label', 'region_label', 'ciudad', 'zona',
     'tipo', 'for_sale', 'for_rent', 'for_transfer',
     'property_type_label', 'property_condition_label',
     'precio', 'iso_currency', 'sale_price', 'rent_price', 'maintenance_fee',

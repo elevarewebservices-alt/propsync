@@ -63,11 +63,13 @@ export default function NuevaPropiedadPage() {
   const [currency, setCurrency] = useState('USD')
   const [maintenanceFee, setMaintenanceFee] = useState('')
   const [pais, setPais] = useState('Panamá')
+  const [provincia, setProvincia] = useState('')
   const [ciudad, setCiudad] = useState('')
   const [zona, setZona] = useState('')
   const [address, setAddress] = useState('')
   // Existing locations from current inventory — power the "pick or add" comboboxes
   const [knownPaises, setKnownPaises] = useState<string[]>([])
+  const [knownProvincias, setKnownProvincias] = useState<string[]>([])
   const [knownCiudades, setKnownCiudades] = useState<string[]>([])
   const [knownZonas, setKnownZonas] = useState<string[]>([])
   const [bedrooms, setBedrooms] = useState('')
@@ -118,10 +120,11 @@ export default function NuevaPropiedadPage() {
   useEffect(() => {
     fetch('/api/properties')
       .then((r) => r.ok ? r.json() : [])
-      .then((rows: { country_label?: string | null; ciudad?: string | null; zona?: string | null }[]) => {
+      .then((rows: { country_label?: string | null; region_label?: string | null; ciudad?: string | null; zona?: string | null }[]) => {
         const uniq = (vals: (string | null | undefined)[]) =>
           Array.from(new Set(vals.filter(Boolean) as string[])).sort()
         setKnownPaises(uniq([...rows.map((r) => r.country_label), 'Panamá']))
+        setKnownProvincias(uniq(rows.map((r) => r.region_label)))
         setKnownCiudades(uniq(rows.map((r) => r.ciudad)))
         setKnownZonas(uniq(rows.map((r) => r.zona)))
       })
@@ -353,6 +356,7 @@ export default function NuevaPropiedadPage() {
       rent_price: forRent ? parseFloat(precio) || null : null,
       maintenance_fee: maintenanceFee ? parseFloat(maintenanceFee) : null,
       country_label: pais.trim() || null,
+      region_label: provincia.trim() || null,
       ciudad: ciudad.trim() || null,
       zona: zona.trim() || null,
       address: address.trim() || null,
@@ -560,12 +564,19 @@ export default function NuevaPropiedadPage() {
           <h2 className="text-sm font-semibold text-foreground">Ubicación</h2>
           <Separator />
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="pais">País</Label>
               <Input id="pais" list="paises-list" value={pais} onChange={(e) => setPais(e.target.value)} placeholder="Panamá" />
               <datalist id="paises-list">
                 {knownPaises.map((p) => <option key={p} value={p} />)}
+              </datalist>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="provincia">Estado / Provincia</Label>
+              <Input id="provincia" list="provincias-list" value={provincia} onChange={(e) => setProvincia(e.target.value)} placeholder="Panamá" />
+              <datalist id="provincias-list">
+                {knownProvincias.map((r) => <option key={r} value={r} />)}
               </datalist>
             </div>
             <div className="space-y-1.5">
