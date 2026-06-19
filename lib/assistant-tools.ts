@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createAdminClient } from './supabase'
+import { matchPropertiesForContact, type PropertyForMatch } from './matching'
+import type { Contact } from './types'
 
 // ── System prompt (dynamic per tenant) ───────────────────────────────────────
 
@@ -8,8 +10,14 @@ export function buildSystemPrompt(agencyName: string): string {
 
 Tienes acceso en tiempo real a:
 - El inventario completo de propiedades (búsqueda, filtros, notas, y CREAR nuevas)
-- El CRM de leads y contactos (pipeline Kanban, etapas, seguimiento)
+- El CRM de leads y contactos (crear, buscar, notas, seguimientos, etapas)
+- Vincular clientes con propiedades y sugerir propiedades que encajan con un cliente
 - El equipo de agentes y sus asignaciones
+
+FLUJO CLIENTE↔PROPIEDAD:
+- Cuando trabajes con nombres (ej: "vincula a Juan con la propiedad de Marbella"), primero busca el UUID con search_contacts y search_properties, luego usa link_contact_property.
+- Para recomendar inmuebles a un cliente ("¿qué tengo para María?"), usa match_properties_for_contact con su UUID y presenta las mejores opciones con sus razones.
+- Para registrar interacciones usa add_contact_note; para recordatorios usa schedule_followup.
 
 REGLAS IMPORTANTES:
 1. NUNCA elimines datos. Para propiedades: usa inactivar / marcar vendida / marcar alquilada.
@@ -428,6 +436,140 @@ export async function executeTool(
       return { agents: data ?? [] }
     }
 
+    // ── Link a contact to a property ───────────────────────────────────────
+    case 'link_contact_property': {
+      if (!input.contact_id)  throw new Error('contact_id es requerido.')
+      if (!input.property_id) throw new Error('property_id es requerido.')
+      const allowed = ['interesado', 'propietario', 'visitó', 'ofertó', 'descartado']
+      const interes = allowed.includes(input.interes as string) ? input.interes : 'interesado'
+
+      // Confirm both belong to this company.
+      const [{ data: contact }, { data: property }] = await Promise.all([
+        (db.from('contacts') as any).select('id, nombre').eq('id', input.contact_id).eq('company_id', companyId).single(),
+        (db.from('properties') as any).select('id, titulo').eq('id', input.property_id).eq('company_id', companyId).single(),
+      ])
+      if (!contact)  throw new Error('Contacto no encontrado.')
+      if (!property) throw new Error('Propiedad no encontrada.')
+
+      const { error } = await (db.from('contact_property_links') as any)
+        .insert({ company_id: companyId, contact_id: input.contact_id, property_id: input.property_id, interes })
+      if (error && error.code !== '23505') throw new Error(error.message)  // 23505 = already linked
+
+      return {
+        linked: true,
+        already_linked: error?.code === '23505',
+        contacto: contact.nombre,
+        propiedad: property.titulo,
+        interes,
+      }
+    }
+
+    // ── Match properties for a contact ─────────────────────────────────────
+    case 'match_properties_for_contact': {
+      if (!input.contact_id) throw new Error('contact_id es requerido.')
+
+      const { data: contact, error: cErr } = await (db.from('contacts') as any)
+        .select('*').eq('id', input.contact_id).eq('company_id', companyId).single()
+      if (cErr || !contact) throw new Error('Contacto no encontrado.')
+
+      const { data: props, error: pErr } = await (db.from('properties') as any)
+        .select('id, titulo, precio, tipo, ciudad, zona, bedrooms, bathrooms, estado_publicacion, disponibilidad, main_image_url')
+        .eq('company_id', companyId)
+        .eq('disponibilidad', 'disponible')
+        .in('estado_publicacion', ['activo', 'destacado'])
+      if (pErr) throw new Error(pErr.message)
+
+      const matches = matchPropertiesForContact(
+        (props ?? []) as PropertyForMatch[],
+        contact as Contact,
+        Number(input.limit ?? 5),
+      )
+
+      return {
+        contacto: contact.nombre,
+        criterios: {
+          tipo_operacion: contact.tipo_operacion,
+          presupuesto_min: contact.presupuesto_min,
+          presupuesto_max: contact.presupuesto_max,
+          ciudad: contact.ciudad,
+          zona_interes: contact.zona_interes,
+        },
+        matches: matches.map((m) => ({
+          property_id: m.property.id,
+          titulo: m.property.titulo,
+          precio: m.property.precio,
+          tipo: m.property.tipo,
+          zona: m.property.zona,
+          ciudad: m.property.ciudad,
+          score: m.score,
+          razones: m.reasons,
+        })),
+        count: matches.length,
+      }
+    }
+
+    // ── Add a note to a contact ────────────────────────────────────────────
+    case 'add_contact_note': {
+      if (!input.contact_id) throw new Error('contact_id es requerido.')
+      if (!input.contenido)  throw new Error('contenido es requerido.')
+
+      const { data: contact } = await (db.from('contacts') as any)
+        .select('id').eq('id', input.contact_id).eq('company_id', companyId).single()
+      if (!contact) throw new Error('Contacto no encontrado.')
+
+      const { data, error } = await (db.from('contact_notes') as any)
+        .insert({
+          contact_id:   input.contact_id,
+          company_id:   companyId,
+          agent_nombre: 'PropSync AI',
+          contenido:    String(input.contenido),
+        })
+        .select('id, contenido, created_at')
+        .single()
+      if (error) throw new Error(error.message)
+      return { note: data }
+    }
+
+    // ── Schedule a follow-up for a contact ─────────────────────────────────
+    case 'schedule_followup': {
+      if (!input.contact_id) throw new Error('contact_id es requerido.')
+
+      // Accept an explicit date (YYYY-MM-DD) or a relative number of days.
+      let fecha: string
+      if (input.fecha) {
+        fecha = String(input.fecha)
+      } else if (input.en_dias != null) {
+        const d = new Date()
+        d.setDate(d.getDate() + Number(input.en_dias))
+        fecha = d.toISOString().slice(0, 10)
+      } else {
+        throw new Error('Indica "fecha" (YYYY-MM-DD) o "en_dias" (número de días desde hoy).')
+      }
+
+      const patch: Record<string, unknown> = { fecha_seguimiento: fecha }
+      if (input.etapa_crm) patch.etapa_crm = input.etapa_crm
+
+      const { data, error } = await (db.from('contacts') as any)
+        .update(patch)
+        .eq('id', input.contact_id)
+        .eq('company_id', companyId)
+        .select('id, nombre, fecha_seguimiento, etapa_crm')
+        .single()
+      if (error) throw new Error(error.message)
+
+      // Optionally leave a note so the reason is recorded.
+      if (input.motivo) {
+        await (db.from('contact_notes') as any).insert({
+          contact_id:   input.contact_id,
+          company_id:   companyId,
+          agent_nombre: 'PropSync AI',
+          contenido:    `Seguimiento programado para ${fecha}: ${input.motivo}`,
+        })
+      }
+
+      return { scheduled: data }
+    }
+
     default:
       throw new Error(`Herramienta desconocida: ${name}`)
   }
@@ -622,5 +764,57 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
     name: 'list_agents',
     description: 'Lista todos los agentes activos del equipo con su nombre, email y rol.',
     input_schema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'link_contact_property',
+    description: 'Vincula un contacto/cliente con una propiedad (ej: marcar que un cliente está interesado en una propiedad, que la visitó, ofertó, o es el propietario). Necesitas el UUID del contacto y de la propiedad — búscalos primero con search_contacts y search_properties si solo tienes nombres.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contact_id:  { type: 'string', description: 'UUID del contacto' },
+        property_id: { type: 'string', description: 'UUID de la propiedad' },
+        interes:     { type: 'string', description: 'Tipo de relación: "interesado" (default), "propietario", "visitó", "ofertó" o "descartado"' },
+      },
+      required: ['contact_id', 'property_id'],
+    },
+  },
+  {
+    name: 'match_properties_for_contact',
+    description: 'Sugiere las propiedades del inventario que mejor encajan con lo que busca un cliente, según su presupuesto, tipo de operación (compra/alquiler) y zona/ciudad de interés. Devuelve un puntaje y las razones del match. Usa search_contacts primero si solo tienes el nombre del cliente.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contact_id: { type: 'string', description: 'UUID del contacto/cliente' },
+        limit:      { type: 'number', description: 'Máximo de propiedades sugeridas (default 5)' },
+      },
+      required: ['contact_id'],
+    },
+  },
+  {
+    name: 'add_contact_note',
+    description: 'Agrega una nota a un contacto/cliente del CRM (ej: "llamó y quiere visita el sábado", "pidió rebaja"). Las notas quedan en el historial del contacto.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contact_id: { type: 'string', description: 'UUID del contacto' },
+        contenido:  { type: 'string', description: 'Texto de la nota' },
+      },
+      required: ['contact_id', 'contenido'],
+    },
+  },
+  {
+    name: 'schedule_followup',
+    description: 'Programa un seguimiento/recordatorio para un contacto. Acepta una fecha exacta (YYYY-MM-DD) o un número de días desde hoy (en_dias). Opcionalmente registra el motivo como nota.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contact_id: { type: 'string', description: 'UUID del contacto' },
+        fecha:      { type: 'string', description: 'Fecha exacta del seguimiento en formato YYYY-MM-DD' },
+        en_dias:    { type: 'number', description: 'Alternativa: número de días desde hoy (ej: 3 = en 3 días)' },
+        motivo:     { type: 'string', description: 'Motivo del seguimiento (se guarda como nota, opcional)' },
+        etapa_crm:  { type: 'string', description: 'Slug de etapa a la que mover el contacto (opcional)' },
+      },
+      required: ['contact_id'],
+    },
   },
 ]
