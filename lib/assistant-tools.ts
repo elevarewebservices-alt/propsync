@@ -22,6 +22,7 @@ CREAR PROPIEDADES:
 - Puedes crear propiedades nuevas con la herramienta create_property cuando el usuario te dé la información.
 - Mínimo necesitas **título** y **precio**. Si falta alguno, pídelo. Pide también lo demás (tipo venta/arriendo, ubicación, habitaciones, etc.) de forma natural, pero no insistas en datos opcionales si el usuario quiere crearla rápido.
 - NO inventes datos de la propiedad. Usa solo lo que el usuario te dé.
+- PROPIETARIO: si el usuario menciona quién es el dueño, pasa propietario_nombre/propietario_telefono/propietario_email a create_property. El sistema reutiliza el contacto si el teléfono ya existe (no duplica) o crea uno nuevo tipo "propietario" y lo vincula. Si no menciona dueño, no lo pidas obligatoriamente.
 - FOTOS: no puedes recibir ni subir fotos por el chat. Después de crear la propiedad, dile al usuario que se creó como **inactiva** y dale el enlace de edición (el campo edit_url que devuelve la herramienta, ej: "/propiedades/ID/editar") para que **suba las fotos y la active** desde ahí. Preséntalo como un enlace markdown clickeable.
 
 ÁMBITO EXCLUSIVO: Este asistente es para gestión inmobiliaria de ${agencyName} únicamente.
@@ -128,8 +129,64 @@ export async function executeTool(
         .single()
       if (error) throw new Error(error.message)
 
+      // ── Optional: link an owner contact ──────────────────────────────────
+      // Reuses an existing contact when the phone matches (no duplicates),
+      // otherwise creates a new "propietario" contact. Then sets it as the
+      // property owner and records a contact↔property link.
+      let owner: { id: string; nombre: string; reused: boolean } | null = null
+      const ownerNombre = input.propietario_nombre ? String(input.propietario_nombre).trim() : ''
+      const ownerTelefono = input.propietario_telefono ? String(input.propietario_telefono).trim() : ''
+      const ownerEmail = input.propietario_email ? String(input.propietario_email).trim() : ''
+
+      if (ownerNombre || ownerTelefono) {
+        const normPhone = ownerTelefono.replace(/\D/g, '')
+        let ownerId: string | null = null
+        let reused = false
+
+        if (normPhone) {
+          const { data: matches } = await (db.from('contacts') as any)
+            .select('id, nombre, telefono, whatsapp')
+            .eq('company_id', companyId)
+            .or(`telefono.ilike.%${normPhone}%,whatsapp.ilike.%${normPhone}%`)
+            .limit(10)
+          const hit = (matches ?? []).find((c: any) =>
+            (c.telefono ?? '').replace(/\D/g, '') === normPhone ||
+            (c.whatsapp ?? '').replace(/\D/g, '') === normPhone)
+          if (hit) { ownerId = hit.id; owner = { id: hit.id, nombre: hit.nombre, reused: true }; reused = true }
+        }
+
+        if (!ownerId) {
+          const { data: newContact, error: cErr } = await (db.from('contacts') as any)
+            .insert({
+              company_id: companyId,
+              nombre:     ownerNombre || 'Propietario',
+              telefono:   ownerTelefono || null,
+              email:      ownerEmail || null,
+              tipo:       'propietario',
+              fuente:     'manual',
+              is_active:  true,
+            })
+            .select('id, nombre')
+            .single()
+          if (cErr) throw new Error(`Propiedad creada, pero falló crear el propietario: ${cErr.message}`)
+          ownerId = newContact.id
+          owner = { id: newContact.id, nombre: newContact.nombre, reused: false }
+        }
+
+        await (db.from('properties') as any)
+          .update({ owner_contact_id: ownerId })
+          .eq('id', data.id).eq('company_id', companyId)
+
+        await (db.from('contact_property_links') as any)
+          .insert({ company_id: companyId, contact_id: ownerId, property_id: data.id, interes: 'propietario' })
+          .then((r: any) => r, () => {}) // ignore unique-constraint if already linked
+
+        void reused
+      }
+
       return {
         created: data,
+        owner,
         edit_url: `/propiedades/${data.id}/editar`,
         nota: 'La propiedad se creó como INACTIVA (oculta de portales). Para subir fotos y luego publicarla, el agente debe abrir el enlace de edición. Las fotos no se pueden subir por el chat.',
       }
@@ -421,6 +478,9 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
         garajes:       { type: 'number', description: 'Número de garajes/estacionamientos' },
         area:          { type: 'number', description: 'Área total en m²' },
         anio:          { type: 'number', description: 'Año de construcción' },
+        propietario_nombre:   { type: 'string', description: 'Nombre del propietario (opcional). Si se da, se vincula como propietario de la propiedad — reutiliza el contacto si el teléfono ya existe, o crea uno nuevo tipo "propietario".' },
+        propietario_telefono: { type: 'string', description: 'Teléfono del propietario (opcional)' },
+        propietario_email:    { type: 'string', description: 'Email del propietario (opcional)' },
       },
       required: ['titulo', 'precio'],
     },
