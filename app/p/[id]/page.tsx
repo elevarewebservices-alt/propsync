@@ -74,7 +74,17 @@ export default async function PublicPropertyPage({ params }: PageProps) {
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <span className="font-semibold text-foreground">{company?.nombre ?? 'PropSync'}</span>
-          <span className="text-xs text-muted-foreground font-mono">#{p.codigo ?? p.id.slice(0, 5).toUpperCase()}</span>
+          <div className="flex items-center gap-3">
+            <a
+              href={`/p/${p.id}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-blue-600 hover:underline"
+            >
+              Descargar PDF
+            </a>
+            <span className="text-xs text-muted-foreground font-mono">#{p.codigo ?? p.id.slice(0, 5).toUpperCase()}</span>
+          </div>
         </div>
       </header>
 

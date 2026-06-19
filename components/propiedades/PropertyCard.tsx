@@ -25,6 +25,7 @@ import {
   Share2,
   ExternalLink,
   Pencil,
+  FileText,
 } from 'lucide-react'
 
 function waUrl(phone: string, titulo: string): string {
@@ -197,6 +198,9 @@ export function PropertyCard({ property, onSelect, onUpdate }: PropertyCardProps
               </DropdownMenuItem>
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`/p/${property.id}`, '_blank') }}>
                 <ExternalLink className="mr-2 h-4 w-4" /> Ver ficha pública
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`/p/${property.id}/pdf`, '_blank') }}>
+                <FileText className="mr-2 h-4 w-4" /> Descargar PDF
               </DropdownMenuItem>
               <DropdownMenuItem onClick={(e) => {
                 e.stopPropagation()
