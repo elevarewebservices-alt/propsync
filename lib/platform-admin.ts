@@ -13,3 +13,14 @@ export function isPlatformAdmin(email: string | null | undefined): boolean {
 // Rough cost estimate per assistant request (Haiku + prompt caching).
 // Tune as you measure real spend in the Anthropic console.
 export const EST_COST_PER_REQUEST = 0.02
+
+// ── R2 storage estimation ───────────────────────────────────────────────────
+// Average size of an uploaded image AFTER client-side resize (~1920px, q0.82).
+export const AVG_IMAGE_KB = 300
+// Cloudflare R2 storage price per GB-month (egress is free on R2).
+export const R2_STORAGE_PER_GB = 0.015
+
+// Estimated GB stored for a given number of images.
+export function estStorageGB(imageCount: number): number {
+  return (imageCount * AVG_IMAGE_KB) / (1024 * 1024) // KB → GB
+}

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getSessionUser } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
-import { isPlatformAdmin, EST_COST_PER_REQUEST } from '@/lib/platform-admin'
+import { isPlatformAdmin, EST_COST_PER_REQUEST, estStorageGB, R2_STORAGE_PER_GB } from '@/lib/platform-admin'
 import { ASSISTANT_LIMITS } from '@/lib/plans'
 
 export const dynamic = 'force-dynamic'
@@ -16,18 +16,22 @@ interface CompanyRow {
   contactos: number
   agentes: number
   iaMes: number
+  imagenes: number
 }
 
 async function loadData() {
   const db = createAdminClient()
   const month = new Date().toISOString().slice(0, 7) // YYYY-MM
 
-  const [companiesRes, propsRes, contactsRes, agentsRes, usageRes] = await Promise.all([
+  const [companiesRes, propsRes, contactsRes, agentsRes, usageRes, imgRes] = await Promise.all([
     (db.from('companies') as any).select('id, nombre, email, plan_id, created_at').order('created_at', { ascending: true }),
     (db.from('properties') as any).select('company_id'),
     (db.from('contacts') as any).select('company_id').eq('is_active', true),
     (db.from('agents') as any).select('company_id').eq('is_active', true),
     (db.from('assistant_usage') as any).select('company_id, request_count').eq('month', month),
+    // Image counts computed in the DB (scales to 100k+ properties).
+    // Falls back to empty if the migration hasn't been run yet.
+    (db as any).rpc('company_image_stats').then((r: any) => r, () => ({ data: null })),
   ])
 
   const tally = (rows: { company_id: string }[] | null) => {
@@ -42,6 +46,10 @@ async function loadData() {
   for (const u of (usageRes.data ?? []) as { company_id: string; request_count: number }[]) {
     iaMap[u.company_id] = u.request_count
   }
+  const imgMap: Record<string, number> = {}
+  for (const s of (imgRes?.data ?? []) as { company_id: string; image_count: number }[]) {
+    imgMap[s.company_id] = Number(s.image_count)
+  }
 
   const companies: CompanyRow[] = ((companiesRes.data ?? []) as any[]).map((c) => ({
     id: c.id,
@@ -53,6 +61,7 @@ async function loadData() {
     contactos: contactMap[c.id] ?? 0,
     agentes: agentMap[c.id] ?? 0,
     iaMes: iaMap[c.id] ?? 0,
+    imagenes: imgMap[c.id] ?? 0,
   }))
 
   const totals = {
@@ -61,6 +70,7 @@ async function loadData() {
     contactos: companies.reduce((s, c) => s + c.contactos, 0),
     agentes: companies.reduce((s, c) => s + c.agentes, 0),
     iaMes: companies.reduce((s, c) => s + c.iaMes, 0),
+    imagenes: companies.reduce((s, c) => s + c.imagenes, 0),
   }
   return { companies, totals, month }
 }
@@ -72,6 +82,9 @@ export default async function PanelElevarePage() {
 
   const { companies, totals, month } = await loadData()
   const costMes = totals.iaMes * EST_COST_PER_REQUEST
+  const totalStorageGB = estStorageGB(totals.imagenes)
+  const storageCost = totalStorageGB * R2_STORAGE_PER_GB
+  const fmtGB = (gb: number) => gb >= 1 ? `${gb.toFixed(2)} GB` : `${(gb * 1024).toFixed(0)} MB`
 
   const planBadge = (p: string) =>
     p === 'agency' ? 'bg-violet-100 text-violet-700' :
@@ -107,12 +120,21 @@ export default async function PanelElevarePage() {
           ))}
         </div>
 
-        <div className="rounded-xl border bg-white p-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">Costo IA estimado este mes</p>
-            <p className="text-xs text-gray-500">{totals.iaMes.toLocaleString()} consultas × ${EST_COST_PER_REQUEST} (aprox. Haiku + caching)</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="rounded-xl border bg-white p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Costo IA estimado (mes)</p>
+              <p className="text-xs text-gray-500">{totals.iaMes.toLocaleString()} consultas × ${EST_COST_PER_REQUEST} · Haiku + caching</p>
+            </div>
+            <p className="text-2xl font-bold text-emerald-600">${costMes.toFixed(2)}</p>
           </div>
-          <p className="text-2xl font-bold text-emerald-600">${costMes.toFixed(2)}</p>
+          <div className="rounded-xl border bg-white p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Costo R2 estimado (mes)</p>
+              <p className="text-xs text-gray-500">{totals.imagenes.toLocaleString()} imágenes · {fmtGB(totalStorageGB)} · sin egress</p>
+            </div>
+            <p className="text-2xl font-bold text-emerald-600">${storageCost.toFixed(2)}</p>
+          </div>
         </div>
 
         {/* Companies table */}
@@ -128,7 +150,8 @@ export default async function PanelElevarePage() {
                   <th className="text-right px-4 py-2.5">Contactos</th>
                   <th className="text-right px-4 py-2.5">Agentes</th>
                   <th className="text-right px-4 py-2.5">IA mes</th>
-                  <th className="text-right px-4 py-2.5">Límite IA</th>
+                  <th className="text-right px-4 py-2.5">Imágenes</th>
+                  <th className="text-right px-4 py-2.5">R2 (est.)</th>
                   <th className="text-left px-4 py-2.5">Registrada</th>
                 </tr>
               </thead>
@@ -148,8 +171,9 @@ export default async function PanelElevarePage() {
                       <td className="px-4 py-2.5 text-right">{c.propiedades}</td>
                       <td className="px-4 py-2.5 text-right">{c.contactos}</td>
                       <td className="px-4 py-2.5 text-right">{c.agentes}</td>
-                      <td className={`px-4 py-2.5 text-right font-medium ${near ? 'text-amber-600' : ''}`}>{c.iaMes}</td>
-                      <td className="px-4 py-2.5 text-right text-gray-400">{limit.toLocaleString()}</td>
+                      <td className={`px-4 py-2.5 text-right font-medium ${near ? 'text-amber-600' : ''}`}>{c.iaMes}<span className="text-gray-300 text-xs"> / {limit.toLocaleString()}</span></td>
+                      <td className="px-4 py-2.5 text-right">{c.imagenes.toLocaleString()}</td>
+                      <td className="px-4 py-2.5 text-right text-gray-500">{fmtGB(estStorageGB(c.imagenes))}</td>
                       <td className="px-4 py-2.5 text-xs text-gray-500">
                         {new Date(c.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </td>
@@ -157,7 +181,7 @@ export default async function PanelElevarePage() {
                   )
                 })}
                 {companies.length === 0 && (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Sin empresas todavía.</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Sin empresas todavía.</td></tr>
                 )}
               </tbody>
             </table>
