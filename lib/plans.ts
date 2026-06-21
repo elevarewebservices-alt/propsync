@@ -37,7 +37,7 @@ export const PLANS: Plan[] = [
     nombre: 'Pro',
     precio: 99,
     limites: {
-      propiedades: 200,
+      propiedades: 'ilimitado',
       agentes: 5,
       fuentes: 3,
       canales: ['facebook', 'mercadolibre', 'olx'],
@@ -45,7 +45,7 @@ export const PLANS: Plan[] = [
       soporte: 'email',
     },
     features: [
-      'Hasta 200 propiedades',
+      'Propiedades ilimitadas',
       'Hasta 5 agentes (+$20/agente adicional)',
       'Publicación en FB + MercadoLibre + OLX',
       '3 fuentes de datos',
