@@ -84,4 +84,12 @@ html {
   .text-balance {
     text-wrap: balance;
   }
+  /* Native app safe areas (notch / home indicator). On the web these insets
+     are 0, so they have no effect — only the Capacitor app gets the padding. */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

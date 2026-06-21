@@ -1108,7 +1108,13 @@ export default function LandingPage() {
 
           {/* Footer bottom */}
           <div className="pt-7 flex flex-col md:flex-row items-center justify-between gap-3" style={{ fontSize: '.72rem', color: 'rgba(255,255,255,.22)', fontFamily: F }}>
-            <span>© {new Date().getFullYear()} PropSync · {lang === 'es' ? 'Todos los derechos reservados.' : 'All rights reserved.'}</span>
+            <span>
+              © {new Date().getFullYear()} PropSync · {lang === 'es' ? 'Todos los derechos reservados.' : 'All rights reserved.'}
+              {' · '}
+              <Link href="/privacidad" style={{ color: 'rgba(255,255,255,.4)', textDecoration: 'none' }}>
+                {lang === 'es' ? 'Privacidad' : 'Privacy'}
+              </Link>
+            </span>
             <span>{t.credit}{' '}
               <a href="https://elevarewebservices.com" target="_blank" rel="noopener noreferrer"
                  style={{ color: 'rgba(255,255,255,.55)', fontWeight: 500, letterSpacing: '.06em', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,.2)', paddingBottom: 1, transition: 'color .2s, border-color .2s' }}

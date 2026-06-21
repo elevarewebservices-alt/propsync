@@ -15,9 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ArrowLeft, Upload, X, ImagePlus, Loader2, Sparkles } from 'lucide-react'
+import { ArrowLeft, Upload, X, ImagePlus, Loader2, Sparkles, Camera, Images } from 'lucide-react'
 import Link from 'next/link'
 import { resizeImageFile } from '@/lib/image-resize'
+import { isNativeApp } from '@/lib/native'
+import { captureFromCamera, pickFromGallery } from '@/lib/native-camera'
 
 const PROPERTY_TYPES = [
   'Apartamento', 'Casa', 'Local Comercial', 'Oficina', 'Bodega',
@@ -82,6 +84,7 @@ export default function NuevaPropiedadPage() {
   const [descripcion, setDescripcion] = useState('')
   const [notas, setNotas] = useState('')
   const [images, setImages] = useState<{ file: File; preview: string }[]>([])
+  const [isNative, setIsNative] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -131,6 +134,9 @@ export default function NuevaPropiedadPage() {
       .catch(() => {})
   }, [])
 
+  // Detect the native (Capacitor) app once mounted — enables camera buttons.
+  useEffect(() => { setIsNative(isNativeApp()) }, [])
+
   // Close owner dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -142,14 +148,34 @@ export default function NuevaPropiedadPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? [])
-    const newImages = files.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-    }))
+  // Append File objects (from the web input OR the native camera/gallery).
+  function addFiles(files: File[]) {
+    if (files.length === 0) return
+    const newImages = files.map((file) => ({ file, preview: URL.createObjectURL(file) }))
     setImages((prev) => [...prev, ...newImages].slice(0, 20))
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    addFiles(Array.from(e.target.files ?? []))
     e.target.value = ''
+  }
+
+  // Native (Capacitor) photo capture — only used inside the iOS/Android app.
+  async function handleNativeCamera() {
+    try {
+      const file = await captureFromCamera()
+      if (file) addFiles([file])
+    } catch (err) {
+      console.error('Camera error:', err)
+    }
+  }
+  async function handleNativeGallery() {
+    try {
+      const remaining = Math.max(1, 20 - images.length)
+      addFiles(await pickFromGallery(remaining))
+    } catch (err) {
+      console.error('Gallery error:', err)
+    }
   }
 
   function removeImage(idx: number) {
@@ -1068,17 +1094,38 @@ export default function NuevaPropiedadPage() {
           />
 
           {images.length === 0 ? (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border py-10 text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
-            >
-              <ImagePlus className="h-8 w-8" />
-              <div className="text-center">
-                <p className="text-sm font-medium">Agregar fotos</p>
-                <p className="text-xs">PNG, JPG hasta 10 MB — máximo 20 fotos</p>
+            isNative ? (
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={handleNativeCamera}
+                  className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-8 text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
+                >
+                  <Camera className="h-7 w-7" />
+                  <p className="text-sm font-medium">Tomar foto</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNativeGallery}
+                  className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-8 text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
+                >
+                  <Images className="h-7 w-7" />
+                  <p className="text-sm font-medium">Galería</p>
+                </button>
               </div>
-            </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border py-10 text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
+              >
+                <ImagePlus className="h-8 w-8" />
+                <div className="text-center">
+                  <p className="text-sm font-medium">Agregar fotos</p>
+                  <p className="text-xs">PNG, JPG hasta 10 MB — máximo 20 fotos</p>
+                </div>
+              </button>
+            )
           ) : (
             <div className="space-y-3">
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -1102,10 +1149,10 @@ export default function NuevaPropiedadPage() {
                 {images.length < 20 && (
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => isNative ? handleNativeCamera() : fileInputRef.current?.click()}
                     className="aspect-square rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
                   >
-                    <Upload className="h-5 w-5" />
+                    {isNative ? <Camera className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
                   </button>
                 )}
               </div>

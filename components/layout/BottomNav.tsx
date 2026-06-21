@@ -20,7 +20,7 @@ export function BottomNav({ className }: { className?: string }) {
   return (
     <nav
       className={cn(
-        'border-t border-border bg-background z-40',
+        'border-t border-border bg-background z-40 pb-safe',
         className
       )}
     >

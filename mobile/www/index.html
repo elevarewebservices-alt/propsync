@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<!--
+  Fallback page. Capacitor requires a webDir, but the app loads the live site
+  via server.url (capacitor.config.ts). This only shows briefly on launch or if
+  the network is unavailable.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>PropSync</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #0f0f1a; color: #fff;
+        font-family: -apple-system, system-ui, sans-serif; }
+      .wrap { height: 100%; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 1rem; }
+      .dot { width: 10px; height: 10px; border-radius: 50%; background: #1a73e8;
+        animation: pulse 1s infinite ease-in-out; }
+      @keyframes pulse { 0%,100% { opacity: .3 } 50% { opacity: 1 } }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <strong style="font-size:1.2rem">PropSync</strong>
+      <div class="dot"></div>
+      <span style="opacity:.5;font-size:.85rem">Cargando…</span>
+    </div>
+  </body>
+</html>
