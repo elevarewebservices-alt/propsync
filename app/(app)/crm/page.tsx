@@ -25,6 +25,14 @@ function CrmPageContent() {
   const [view, setView]             = useState<ViewMode>('tabla')
   const [filters, setFilters]       = useState<ContactFilters>(EMPTY_FILTERS)
   const [activePipelineId, setActivePipelineId] = useState<string | null>(null)
+  const [isOwner, setIsOwner]       = useState(false)
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => setIsOwner(d?.rol === 'owner'))
+      .catch(() => {})
+  }, [])
 
   const loadData = useCallback(async () => {
     const [stagesRes, contactsRes, pipelinesRes] = await Promise.all([
@@ -36,7 +44,8 @@ function CrmPageContent() {
     const contactsData  = await contactsRes.json()
     const pipelinesData = await pipelinesRes.json()
     setStages(stagesData)
-    setContacts(contactsData.contacts ?? [])
+    // Owners live in their own /propietarios section — keep the CRM to leads.
+    setContacts((contactsData.contacts ?? []).filter((c: Contact) => c.tipo !== 'propietario'))
     setPipelines(pipelinesData)
     // Default to first pipeline
     if (pipelinesData.length > 0) {
@@ -155,12 +164,14 @@ function CrmPageContent() {
               </button>
             </div>
 
-            <a href="/api/crm/contacts/export">
-              <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
-                <Download className="h-3.5 w-3.5" />
-                Exportar
-              </Button>
-            </a>
+            {isOwner && (
+              <a href="/api/crm/contacts/export?format=csv">
+                <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
+                  <Download className="h-3.5 w-3.5" />
+                  Exportar CSV
+                </Button>
+              </a>
+            )}
             <Link href="/crm/importar">
               <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
                 <Upload className="h-3.5 w-3.5" />

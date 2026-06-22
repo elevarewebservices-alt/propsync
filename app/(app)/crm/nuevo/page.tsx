@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,8 +13,11 @@ import { CrmStage } from '@/lib/types'
 import { ValidatedInput } from '@/components/shared/ValidatedInput'
 import { isValidEmail, isValidPhone } from '@/lib/validation'
 
-export default function NuevoContactoPage() {
+function NuevoContactoForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isPropietario = searchParams.get('tipo') === 'propietario'
+  const backHref = isPropietario ? '/propietarios' : '/crm'
   const [stages, setStages] = useState<CrmStage[]>([])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -22,7 +25,7 @@ export default function NuevoContactoPage() {
 
   // form fields
   const [nombre, setNombre] = useState('')
-  const [tipo, setTipo] = useState('cliente')
+  const [tipo, setTipo] = useState(isPropietario ? 'propietario' : 'cliente')
   const [telefono, setTelefono] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [email, setEmail] = useState('')
@@ -85,7 +88,7 @@ export default function NuevoContactoPage() {
         throw new Error(d.error ?? 'Error al guardar')
       }
       setSaved(true)
-      setTimeout(() => router.push('/crm'), 800)
+      setTimeout(() => router.push(backHref), 800)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error al guardar')
     } finally {
@@ -96,15 +99,17 @@ export default function NuevoContactoPage() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
       <div className="flex items-center gap-3 mb-8">
-        <Link href="/crm">
+        <Link href={backHref}>
           <Button variant="ghost" size="sm" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
             Regresar
           </Button>
         </Link>
         <div>
-          <h1 className="text-xl font-semibold">Nuevo contacto</h1>
-          <p className="text-sm text-muted-foreground">Ingresa la información del nuevo contacto</p>
+          <h1 className="text-xl font-semibold">{isPropietario ? 'Nuevo propietario' : 'Nuevo contacto'}</h1>
+          <p className="text-sm text-muted-foreground">
+            {isPropietario ? 'Ingresa la información del propietario' : 'Ingresa la información del nuevo contacto'}
+          </p>
         </div>
       </div>
 
@@ -238,7 +243,7 @@ export default function NuevoContactoPage() {
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <div className="flex justify-end gap-3 pt-2 border-t border-border">
-          <Link href="/crm">
+          <Link href={backHref}>
             <Button variant="outline" type="button">Cancelar</Button>
           </Link>
           <Button type="submit" disabled={saving || saved}>
@@ -252,5 +257,13 @@ export default function NuevoContactoPage() {
         </div>
       </form>
     </div>
+  )
+}
+
+export default function NuevoContactoPage() {
+  return (
+    <Suspense>
+      <NuevoContactoForm />
+    </Suspense>
   )
 }

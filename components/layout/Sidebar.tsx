@@ -21,7 +21,7 @@ import {
   Users2,
   HelpCircle,
   MessageCircle,
-  Map,
+  KeyRound,
   Zap,
   BarChart2,
 } from 'lucide-react'
@@ -54,20 +54,14 @@ function getNavSections(): NavSection[] {
       title: 'General',
       items: [
         { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        {
-          label: 'Propiedades',
-          href: '/propiedades',
-          icon: Home,
-          children: [
-            { label: 'Vista en mapa', href: '/propiedades/mapa', icon: Map },
-          ],
-        },
+        { label: 'Propiedades', href: '/propiedades', icon: Home },
       ],
     },
     {
       title: 'CRM',
       items: [
         // Contactos with pipelines injected dynamically
+        { label: 'Propietarios', href: '/propietarios', icon: KeyRound },
         { label: 'Equipo', href: '/crm/equipo', icon: Users2 },
         { label: 'Reportes', href: '/crm/reportes', icon: BarChart2 },
         { label: 'Asistente IA', href: '/asistente', icon: Bot },

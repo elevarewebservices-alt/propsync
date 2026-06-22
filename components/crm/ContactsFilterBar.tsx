@@ -95,7 +95,6 @@ export function ContactsFilterBar({ filters, onChange, stages, allTags }: Props)
         <SelectContent>
           <SelectItem value="all">Todos los tipos</SelectItem>
           <SelectItem value="cliente">Cliente</SelectItem>
-          <SelectItem value="propietario">Propietario</SelectItem>
           <SelectItem value="broker">Broker</SelectItem>
         </SelectContent>
       </Select>
