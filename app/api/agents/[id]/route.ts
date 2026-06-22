@@ -8,7 +8,19 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const companyId = await resolveCompanyId()
+  let companyId: string
+  try {
+    companyId = await resolveCompanyId()
+  } catch {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  }
+  const me = await getSessionAgent()
+  const meRol = (me as any)?.rol ?? (process.env.NODE_ENV !== 'production' ? 'owner' : null)
+
+  if (!meRol || !['owner', 'admin'].includes(meRol)) {
+    return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+  }
+
   const body = await request.json()
   const db = createAdminClient()
 
@@ -16,6 +28,29 @@ export async function PATCH(
   const patch: Record<string, unknown> = {}
   for (const key of allowed) {
     if (key in body) patch[key] = body[key]
+  }
+
+  if ('rol' in patch) {
+    // Prevent privilege escalation: nobody can change their own role, only
+    // an existing owner can grant the owner role, and the current owner
+    // can't be demoted through this endpoint.
+    if ((me as any)?.id === params.id) {
+      return NextResponse.json({ error: 'No puedes cambiar tu propio rol.' }, { status: 400 })
+    }
+    if (patch.rol === 'owner' && meRol !== 'owner') {
+      return NextResponse.json({ error: 'Solo el propietario puede asignar el rol de propietario.' }, { status: 403 })
+    }
+
+    const { data: target } = await db
+      .from('agents')
+      .select('rol')
+      .eq('id', params.id)
+      .eq('company_id', companyId)
+      .single()
+
+    if ((target as any)?.rol === 'owner' && patch.rol !== 'owner') {
+      return NextResponse.json({ error: 'No se puede cambiar el rol del propietario.' }, { status: 400 })
+    }
   }
 
   const { data, error } = await (db.from('agents') as any)
@@ -33,8 +68,18 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const companyId = await resolveCompanyId()
+  let companyId: string
+  try {
+    companyId = await resolveCompanyId()
+  } catch {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  }
   const me = await getSessionAgent()
+  const meRol = (me as any)?.rol ?? (process.env.NODE_ENV !== 'production' ? 'owner' : null)
+
+  if (!meRol || !['owner', 'admin'].includes(meRol)) {
+    return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+  }
 
   // Prevent self-deletion and owner deletion
   if ((me as any)?.id === params.id) {

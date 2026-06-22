@@ -80,6 +80,15 @@ export async function getSessionPlan(): Promise<'starter' | 'pro' | 'agency'> {
   }
 }
 
+// True when the current session user is the account owner (the user that
+// created the company). Used to gate owner-only actions like CSV export.
+// In dev (no session) it returns true, mirroring resolveCompanyId's dev fallback.
+export async function isSessionOwner(): Promise<boolean> {
+  const agent = await getSessionAgent()
+  if (agent) return (agent as any).rol === 'owner'
+  return process.env.NODE_ENV !== 'production'
+}
+
 // Returns the agent row for the current session user, or null.
 export async function getSessionAgent() {
   try {

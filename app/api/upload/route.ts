@@ -60,17 +60,20 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Legacy presigned-URL flow (JSON) — kept for backward compatibility ──
-  const { filename, contentType: ct, companyId } = await request.json() as {
+  let companyId: string
+  try {
+    companyId = await resolveCompanyId()
+  } catch {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  }
+
+  const { filename, contentType: ct } = await request.json() as {
     filename: string
     contentType: string
-    companyId: string
   }
 
   if (!ALLOWED_TYPES.includes(ct)) {
     return NextResponse.json({ error: 'Tipo de archivo no permitido' }, { status: 400 })
-  }
-  if (!companyId) {
-    return NextResponse.json({ error: 'company_id requerido' }, { status: 400 })
   }
 
   const ext = filename.split('.').pop() ?? 'jpg'

@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { sendWelcomeEmail } from '@/lib/email'
+import { getSessionUser } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const { nombre, empresa, email, userId } = await request.json()
+    const sessionUser = await getSessionUser()
+    if (!sessionUser) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
+    const { nombre, empresa } = await request.json()
+    const userId = sessionUser.id
+    const email = sessionUser.email
 
     if (!nombre || !empresa || !email || !userId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
