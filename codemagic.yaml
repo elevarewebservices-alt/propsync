@@ -1,0 +1,69 @@
+workflows:
+  ios-capacitor-release:
+    name: PropSync iOS (Capacitor → TestFlight)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: propsync_app_store_connect
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.propsyncia.app
+      vars:
+        XCODE_WORKSPACE: "mobile/ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+      xcode: latest
+      cocoapods: default
+      node: latest
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: "ios-*"
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          cd mobile
+          npm install
+
+      - name: Regenerate native iOS project
+        # ios/ is gitignored (Capacitor regenerates it from capacitor.config.ts +
+        # installed plugins) — `cap add` only works against a clean checkout.
+        script: |
+          cd mobile
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd mobile/ios/App
+          pod install
+
+      - name: Set up code signing
+        script: xcode-project use-profiles
+
+      - name: Increment build number
+        script: |
+          cd mobile/ios/App
+          agvtool new-version -all $BUILD_NUMBER
+
+      - name: Build ipa for distribution
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+      email:
+        recipients:
+          - claudiojupiter55@gmail.com
+        notify:
+          success: true
+          failure: true
