@@ -22,6 +22,9 @@ export interface CompanyRow {
   whatsapp_phone_number_id: string | null
   whatsapp_business_account_id: string | null
   whatsapp_access_token_enc: string | null
+  api_key_hash: string | null
+  api_key_enc: string | null
+  api_key_created_at: string | null
   created_at: string
   updated_at: string
 }

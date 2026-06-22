@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { CheckCircle2, Mail, AlertCircle, Send, Trash2, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, Mail, AlertCircle, Send, Trash2, ChevronDown, ChevronUp, ShieldCheck, Key, Eye, EyeOff, Copy, RefreshCw } from 'lucide-react'
 
 interface SmtpState {
   host:        string
@@ -46,10 +46,19 @@ export default function ConfigGeneralPage() {
   const [smtpOpen,    setSmtpOpen]    = useState(false)
   const [helpOpen,    setHelpOpen]    = useState(false)
 
+  const [isOwner,       setIsOwner]       = useState(false)
+  const [apiKeyOpen,     setApiKeyOpen]     = useState(false)
+  const [hasApiKey,      setHasApiKey]      = useState(false)
+  const [apiKeyCreatedAt, setApiKeyCreatedAt] = useState<string | null>(null)
+  const [revealedKey,    setRevealedKey]    = useState<string | null>(null)
+  const [apiKeyBusy,     setApiKeyBusy]     = useState(false)
+  const [apiKeyCopied,   setApiKeyCopied]   = useState(false)
+  const [apiKeyMsg,      setApiKeyMsg]      = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+
   useEffect(() => {
     fetch('/api/auth/me')
       .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d) { setAgencia(d.agencia ?? ''); setEmail(d.email ?? '') } })
+      .then((d) => { if (d) { setAgencia(d.agencia ?? ''); setEmail(d.email ?? ''); setIsOwner(d.rol === 'owner') } })
       .catch(() => {})
       .finally(() => setLoading(false))
 
@@ -60,6 +69,13 @@ export default function ConfigGeneralPage() {
       })
       .catch(() => {})
       .finally(() => setSmtpLoading(false))
+
+    fetch('/api/configuracion/api-key')
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (d) { setHasApiKey(d.hasKey); setApiKeyCreatedAt(d.createdAt) }
+      })
+      .catch(() => {})
   }, [])
 
   function handleSave() {
@@ -141,6 +157,55 @@ export default function ConfigGeneralPage() {
 
   const verified = Boolean(smtp.verifiedAt)
   const canTest  = smtp.host && smtp.user && (smtp.hasPassword || smtp.password.length > 0)
+
+  async function revealApiKey() {
+    setApiKeyBusy(true)
+    setApiKeyMsg(null)
+    try {
+      const res = await fetch('/api/configuracion/api-key/reveal')
+      const body = await res.json()
+      if (!res.ok) {
+        setApiKeyMsg({ type: 'err', text: body.error ?? 'Error al mostrar la API key' })
+      } else {
+        setRevealedKey(body.apiKey)
+      }
+    } catch (err) {
+      setApiKeyMsg({ type: 'err', text: err instanceof Error ? err.message : 'Error de red' })
+    } finally {
+      setApiKeyBusy(false)
+    }
+  }
+
+  async function regenerateApiKey() {
+    if (hasApiKey && !confirm('¿Regenerar la API key? La key anterior dejará de funcionar de inmediato.')) return
+    setApiKeyBusy(true)
+    setApiKeyMsg(null)
+    try {
+      const res = await fetch('/api/configuracion/api-key', { method: 'POST' })
+      const body = await res.json()
+      if (!res.ok) {
+        setApiKeyMsg({ type: 'err', text: body.error ?? 'Error al generar la API key' })
+      } else {
+        setHasApiKey(true)
+        setApiKeyCreatedAt(new Date().toISOString())
+        setRevealedKey(body.apiKey)
+        setApiKeyMsg({ type: 'ok', text: 'API key generada. Cópiala ahora — solo se muestra al hacer clic en "Mostrar".' })
+      }
+    } catch (err) {
+      setApiKeyMsg({ type: 'err', text: err instanceof Error ? err.message : 'Error de red' })
+    } finally {
+      setApiKeyBusy(false)
+    }
+  }
+
+  async function copyApiKey() {
+    const key = revealedKey ?? (await fetch('/api/configuracion/api-key/reveal').then((r) => r.ok ? r.json() : null).then((d) => d?.apiKey).catch(() => null))
+    if (!key) return
+    await navigator.clipboard.writeText(key)
+    setRevealedKey(key)
+    setApiKeyCopied(true)
+    setTimeout(() => setApiKeyCopied(false), 2000)
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-2xl space-y-6">
@@ -373,6 +438,105 @@ export default function ConfigGeneralPage() {
           </div>
         )}
       </div>
+
+      {/* API key — owner only */}
+      {isOwner && (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <button
+            onClick={() => setApiKeyOpen(!apiKeyOpen)}
+            className="w-full flex items-center justify-between p-6 hover:bg-muted/30 transition-colors"
+          >
+            <div className="flex items-start gap-3 text-left">
+              <div className="mt-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 p-2">
+                <Key className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  API para desarrolladores
+                  {hasApiKey && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 px-1.5 py-0.5 rounded">
+                      <ShieldCheck className="h-3 w-3" /> Activa
+                    </span>
+                  )}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Extrae tu inventario completo (incluyendo fotos) en formato JSON. Solo visible para el propietario de la cuenta.
+                </p>
+              </div>
+            </div>
+            {apiKeyOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          </button>
+
+          {apiKeyOpen && (
+            <div className="px-6 pb-6 space-y-4 border-t border-border pt-5">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tu API key</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={hasApiKey ? (revealedKey ?? '••••••••••••••••••••••••••••••••') : 'Aún no has generado una API key'}
+                    className="font-mono text-xs bg-muted text-muted-foreground"
+                  />
+                  {hasApiKey && (
+                    <Button
+                      type="button" variant="outline" size="icon" className="shrink-0"
+                      onClick={() => revealedKey ? setRevealedKey(null) : revealApiKey()}
+                      disabled={apiKeyBusy}
+                      title={revealedKey ? 'Ocultar' : 'Mostrar'}
+                    >
+                      {revealedKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </Button>
+                  )}
+                  {hasApiKey && (
+                    <Button
+                      type="button" variant="outline" size="icon" className="shrink-0"
+                      onClick={copyApiKey}
+                      disabled={apiKeyBusy}
+                      title="Copiar"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+                {apiKeyCreatedAt && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Generada el {new Date(apiKeyCreatedAt).toLocaleDateString('es-PA', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </p>
+                )}
+              </div>
+
+              {apiKeyMsg && (
+                <div className={`flex items-start gap-2 text-xs p-3 rounded-md ${
+                  apiKeyMsg.type === 'ok'
+                    ? 'bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300'
+                    : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300'
+                }`}>
+                  {apiKeyMsg.type === 'ok' ? <CheckCircle2 className="h-4 w-4 shrink-0 mt-px" /> : <AlertCircle className="h-4 w-4 shrink-0 mt-px" />}
+                  <span>{apiKeyMsg.text}</span>
+                  {apiKeyCopied && <span className="ml-auto text-[11px]">¡Copiado!</span>}
+                </div>
+              )}
+
+              <Button onClick={regenerateApiKey} disabled={apiKeyBusy} variant="outline" className="gap-1.5">
+                <RefreshCw className="h-3.5 w-3.5" />
+                {apiKeyBusy ? 'Procesando…' : hasApiKey ? 'Regenerar API key' : 'Generar API key'}
+              </Button>
+
+              <Separator />
+
+              <div className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-4 space-y-2 leading-relaxed">
+                <p className="font-semibold text-foreground">Uso</p>
+                <p>Incluye tu API key en el header <code className="bg-background px-1 rounded">Authorization</code>:</p>
+                <pre className="bg-background rounded p-2 overflow-x-auto text-[11px]">
+{`GET /api/v1/properties
+Authorization: Bearer ${revealedKey ?? '<tu_api_key>'}`}
+                </pre>
+                <p>Devuelve todas tus propiedades en JSON, incluyendo URLs de imágenes (<code className="bg-background px-1 rounded">gallery_urls</code>) y todos los campos CRM. Soporta paginación con <code className="bg-background px-1 rounded">?limit=&offset=</code> (máx. 500 por página).</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
