@@ -1,0 +1,199 @@
+================================================================================
+  PROPSYNC — ¿QUÉ ES Y QUÉ PUEDE HACER?
+  Plataforma integral de marketing, ventas y comunicación para inmobiliarias
+  Creado por Elevare Web Services — elevarewebservices.com
+================================================================================
+
+--------------------------------------------------------------------------------
+EN UNA FRASE
+--------------------------------------------------------------------------------
+PropSync centraliza tu inventario de propiedades, tu CRM de clientes y un
+asistente de inteligencia artificial en un solo lugar.
+
+  Base de datos · CRM · IA — todo en uno
+  "Tu inventario, siempre activo, siempre publicado"
+
+Pensado para inmobiliarias y agentes de Latinoamérica que hoy trabajan con
+hojas de cálculo, chats de WhatsApp dispersos y herramientas que no se hablan
+entre sí. PropSync une todo eso en una sola plataforma, accesible desde la
+computadora y desde el teléfono.
+
+
+--------------------------------------------------------------------------------
+EL PROBLEMA QUE RESUELVE
+--------------------------------------------------------------------------------
+La mayoría de los agentes inmobiliarios:
+
+  • Pierden propiedades y contactos entre Excel, notas y chats.
+  • No saben qué lead viene de qué campaña ni cuál dejaron de seguir.
+  • Republican manualmente las mismas propiedades una y otra vez.
+  • Pasan horas respondiendo las mismas preguntas por WhatsApp.
+  • Trabajan desde el celular, pero sus herramientas son solo de escritorio.
+
+PropSync ataca cada uno de estos puntos con un sistema que mantiene tu
+inventario ordenado, tus clientes organizados y tu comunicación automatizada.
+
+
+--------------------------------------------------------------------------------
+1. BASE DE DATOS DE PROPIEDADES
+--------------------------------------------------------------------------------
+Tu inventario completo, ordenado y siempre a la mano.
+
+  • Ficha de propiedad profesional con más de 50 campos: precio, ubicación,
+    área, habitaciones, baños, estacionamientos, amenidades internas y
+    externas, comisiones, moneda, y más.
+  • Doble estado por propiedad para que nunca haya confusión:
+        – Estado de publicación: Activa · Destacada · Inactiva
+        – Disponibilidad: Disponible · Vendida · Alquilada
+  • Galería de fotos con carga directa desde la computadora o desde la cámara
+    del teléfono. Las imágenes se alojan en almacenamiento en la nube de alta
+    velocidad, sin límites prácticos de volumen.
+  • Código numérico de propiedad fácil de dictar y buscar.
+  • Filtros avanzados: por tipo, ciudad, zona, precio, área, habitaciones,
+    baños, estacionamientos, año, agente y disponibilidad.
+  • Vista en lista y vista en mapa con la ubicación real de cada inmueble.
+  • Notas internas inmutables por propiedad: un historial permanente de
+    actividad que nadie puede borrar ni alterar.
+  • Importación automática desde Wasi: trae tus propiedades existentes con su
+    estado y disponibilidad ya mapeados.
+
+
+--------------------------------------------------------------------------------
+2. CRM NATIVO DE CLIENTES Y PROPIETARIOS
+--------------------------------------------------------------------------------
+Un CRM construido para inmobiliarias, no un CRM genérico adaptado.
+
+  • Tablero Kanban por etapas (pipeline) y vista de tabla, ambas con
+    arrastrar y soltar para mover contactos entre etapas.
+  • Pipelines y etapas totalmente configurables según tu proceso de venta.
+  • Secciones separadas para Leads/Clientes y para Propietarios: cada uno en
+    su propio espacio, sin mezclarse.
+  • Ficha de contacto completa: datos, tipo de operación (compra/alquiler),
+    presupuesto, zona de interés, etiquetas, agente asignado y notas.
+  • Vinculación de contactos con propiedades: sabes qué cliente está
+    interesado en qué inmueble y quién es el propietario de cada uno.
+  • Recordatorios de seguimiento con alertas de tareas vencidas o del día.
+  • Importación y exportación de contactos (CSV).
+  • Asignación por equipo: reparte y supervisa la cartera entre agentes.
+
+
+--------------------------------------------------------------------------------
+3. ASISTENTE DE INTELIGENCIA ARTIFICIAL
+--------------------------------------------------------------------------------
+Un asistente que entiende tu negocio y trabaja contigo.
+
+  • Crea propiedades nuevas a partir de lo que le cuentas, y pide la
+    información que falte.
+  • Registra clientes y propietarios directamente desde la conversación.
+  • Vincula contactos con propiedades y agenda seguimientos por ti.
+  • Hace "matching": sugiere qué propiedades encajan con qué clientes.
+  • Responde preguntas generales de inmobiliarias y sobre ubicaciones.
+  • Disponible como chat dentro de la plataforma, siempre a un clic.
+
+
+--------------------------------------------------------------------------------
+4. MARKETING Y CAPTACIÓN DE LEADS
+--------------------------------------------------------------------------------
+Convierte la publicidad en contactos organizados, automáticamente.
+
+  • Captura automática de leads desde Meta (Facebook / Instagram) Lead Ads:
+    cada formulario llenado entra directo a tu CRM.
+  • Captura de leads desde campañas de TikTok.
+  • Registro del origen de cada lead (campaña, formulario, conjunto de anuncios)
+    para saber qué publicidad realmente funciona.
+  • Reportes de ROI por fuente: descubre de dónde vienen tus mejores clientes.
+  • Automatizaciones por reglas: cuando entra un lead nuevo, cuando no hay
+    respuesta o cuando vence un seguimiento, el sistema puede enviar correos,
+    cambiar etapas, asignar agentes o crear notas — sin que tú muevas un dedo.
+
+
+--------------------------------------------------------------------------------
+5. COMUNICACIÓN POR WHATSAPP
+--------------------------------------------------------------------------------
+El canal que tus clientes realmente usan, integrado a tu operación.
+
+  • Campañas de WhatsApp para verificación, marketing y seguimiento.
+  • Verificación de disponibilidad: el sistema le pregunta al propietario si
+    la propiedad sigue disponible y actualiza el estado según la respuesta.
+  • Seguimiento del estado de cada conversación y de cada mensaje.
+
+
+--------------------------------------------------------------------------------
+6. PUBLICACIÓN Y PRESENCIA WEB
+--------------------------------------------------------------------------------
+Que cada propiedad luzca profesional donde la compartas.
+
+  • Página pública de propiedad lista para compartir por WhatsApp, redes o
+    correo — con fotos, datos y diseño cuidado.
+  • Exportación a PDF de la ficha de la propiedad para enviar o imprimir.
+  • Tour virtual / recorrido 360° de la propiedad para que el cliente la
+    explore desde su pantalla.
+  • Compatibilidad con widgets embebibles y API REST para integrar tu
+    inventario en tu propio sitio web.
+
+
+--------------------------------------------------------------------------------
+7. APP MÓVIL NATIVA (iOS Y ANDROID)
+--------------------------------------------------------------------------------
+Porque el agente inmobiliario trabaja desde el teléfono.
+
+  • Aplicación nativa para iPhone y Android, no solo una página web.
+  • Toma fotos de la propiedad con la cámara del teléfono y súbelas al
+    instante a la ficha.
+  • Experiencia optimizada para celular: navegación inferior, pantallas
+    adaptadas a dispositivos con notch y carga rápida.
+  • Tu inventario y tu CRM, en el bolsillo, dondequiera que estés.
+
+
+--------------------------------------------------------------------------------
+8. EQUIPOS, PERMISOS Y MULTIUSUARIO
+--------------------------------------------------------------------------------
+Crece sin perder el control.
+
+  • Invita a tu equipo y trabaja todos sobre la misma base de datos.
+  • Roles diferenciados (propietario de la cuenta, administrador, agente).
+  • Acciones sensibles, como la exportación de la lista de clientes,
+    reservadas al dueño de la cuenta.
+  • Seguridad multiempresa: los datos de cada inmobiliaria están aislados;
+    nadie ve la información de otra agencia.
+
+
+--------------------------------------------------------------------------------
+9. REPORTES Y ESTADÍSTICAS
+--------------------------------------------------------------------------------
+Decisiones basadas en datos, no en intuición.
+
+  • Reportes filtrables por fechas.
+  • Análisis de origen de leads y retorno de inversión por fuente.
+  • Métricas de inventario y de actividad del equipo.
+
+
+--------------------------------------------------------------------------------
+PLANES (resumen de capacidades)
+--------------------------------------------------------------------------------
+  STARTER  → Base de datos + CRM básico, ideal para empezar. 1 usuario.
+  PRO      → CRM completo, WhatsApp, automatizaciones de marketing, API,
+             propiedades ilimitadas y varios usuarios.
+  AGENCY   → Todo lo anterior + usuarios ilimitados y soporte dedicado.
+
+  (Los precios finales se definen según el mercado y el momento comercial.)
+
+
+--------------------------------------------------------------------------------
+EN RESUMEN — POR QUÉ PROPSYNC
+--------------------------------------------------------------------------------
+  ✓ Todo tu negocio inmobiliario en una sola plataforma.
+  ✓ Inventario ordenado y siempre publicado.
+  ✓ Clientes y propietarios organizados, sin perder seguimientos.
+  ✓ Inteligencia artificial que crea, organiza y sugiere por ti.
+  ✓ Leads de Meta y TikTok capturados automáticamente.
+  ✓ WhatsApp integrado al flujo de trabajo.
+  ✓ App nativa para iPhone y Android.
+  ✓ Pensado para inmobiliarias de Latinoamérica.
+
+  Tu inventario, siempre activo, siempre publicado.
+
+================================================================================
+  PropSync — Creado por Elevare Web Services
+  elevarewebservices.com
+================================================================================
