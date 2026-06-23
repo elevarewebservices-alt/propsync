@@ -123,22 +123,24 @@
 
 ## ✅ COMPLETED (this session)
 
-- [x] Three High-severity security fixes (H-01, H-02, H-03)
+- [x] Three High-severity security fixes (H-01, H-02, H-03) + DELETE role-gate fix found in review
 - [x] Per-company API key feature (management + v1 endpoints)
+- [x] Rate limiting on /api/v1/* (in-memory, 60 req/min/company)
 - [x] Propietarios/Sidebar/CSV feature (separate owners from leads)
 - [x] Security audit (OWASP Top 10 / ASVS)
 - [x] Marketing capabilities document (`PropSync-Capacidades.txt`)
 - [x] Capacitor plan drafted (Phase 1/2/3 breakdown)
+- [x] Migration 021 run in Supabase (confirmed via check script)
+- [x] **Committed + pushed to `main`** — 5 commits (`f4085a1..d7f7b09`), deployed to Vercel
 
 ---
 
-## 🎯 Immediate next steps (after this compact)
+## 🎯 Immediate next steps
 
-1. **Run migration 021** in Supabase
-2. **Test API key** end-to-end (generate, reveal, use in curl)
-3. **Test security fixes** (H-01 escalation, H-02 account takeover, H-03 unsigned upload)
-4. **Plan the mobile build** (decide: local toolchain or CI service like Codemagic/EAS)
-5. **Commit changes** (3 security fixes + API key feature + Propietarios)
+1. **Verify the Vercel deploy** picked up `d7f7b09` and "API para desarrolladores" now shows at `/configuracion/general`
+2. **Test API key** end-to-end (generate, reveal, use in curl) — see step-by-step in conversation
+3. **Test security fixes** against the production build (H-01 escalation, H-02 account takeover, H-03 unsigned upload)
+4. Codemagic setup: account, Apple Developer account, `propsync_app_store_connect` integration, App Store Connect app shell, push `ios-1` tag
 
 ---
 

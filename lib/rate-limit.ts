@@ -6,7 +6,7 @@
 // if/when traffic justifies it.
 
 const WINDOW_MS = 60_000
-const LIMIT = 60
+const LIMIT = 20
 
 const buckets = new Map<string, { count: number; resetAt: number }>()
 

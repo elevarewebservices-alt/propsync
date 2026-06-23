@@ -5,14 +5,18 @@ import { createAdminClient } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
-const MAX_LIMIT = 500
+const MAX_LIMIT = 50
 
 /**
  * GET /api/v1/properties — Exporta el inventario completo de la empresa
  * (todos los campos, incluyendo galería de imágenes) autenticado por API key.
  *
  * Auth: Authorization: Bearer <api_key>
- * Query: limit (máx 500, default 100), offset (default 0)
+ * Query: limit (máx 50, default 50), offset (default 0)
+ *
+ * Page size and request rate are deliberately capped low (50/page, 20 req/min
+ * via checkApiRateLimit) so a leaked key can't pull the full inventory in one
+ * burst — bulk extraction is throttled to a steady trickle, not blocked outright.
  */
 export async function GET(request: NextRequest) {
   const companyId = await authenticateApiKey(request)
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url)
-  const limit  = Math.min(parseInt(searchParams.get('limit') ?? '100', 10) || 100, MAX_LIMIT)
+  const limit  = Math.min(parseInt(searchParams.get('limit') ?? String(MAX_LIMIT), 10) || MAX_LIMIT, MAX_LIMIT)
   const offset = Math.max(parseInt(searchParams.get('offset') ?? '0', 10) || 0, 0)
 
   const db = createAdminClient()
