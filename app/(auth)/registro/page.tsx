@@ -47,7 +47,7 @@ export default function RegistroPage() {
       const res = await fetch('/api/auth/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, empresa, email, userId: data.session.user.id }),
+        body: JSON.stringify({ nombre, empresa }),
       })
       if (!res.ok) {
         const body = await res.json()

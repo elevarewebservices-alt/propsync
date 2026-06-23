@@ -79,9 +79,12 @@ export async function GET(request: NextRequest) {
   if (meta?.nombre && meta?.empresa) {
     // New self-signup: create company + agent. /api/auth/setup derives the
     // user from the session cookie, so it must be forwarded explicitly —
-    // this is a server-to-server fetch, not a browser request.
+    // this is a server-to-server fetch, not a browser request. The response
+    // MUST be checked: if setup fails, the agent/company row never gets
+    // created, and redirecting to /dashboard anyway would crash it (no
+    // company_id to resolve) instead of showing the user a clear error.
     const cookieHeader = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join('; ')
-    await fetch(`${origin}/api/auth/setup`, {
+    const setupRes = await fetch(`${origin}/api/auth/setup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Cookie: cookieHeader },
       body: JSON.stringify({
@@ -89,6 +92,11 @@ export async function GET(request: NextRequest) {
         empresa: meta.empresa,
       }),
     })
+
+    if (!setupRes.ok) {
+      console.error('[auth/callback] /api/auth/setup failed:', setupRes.status, await setupRes.text().catch(() => ''))
+      return NextResponse.redirect(`${origin}/login?error=setup_failed`)
+    }
   }
 
   return NextResponse.redirect(`${origin}${next}`)

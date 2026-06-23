@@ -6,7 +6,19 @@ import { getDashboardData } from '@/lib/dashboard'
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  const data = await getDashboardData()
+  let data
+  try {
+    data = await getDashboardData()
+  } catch {
+    return (
+      <div className="p-4 md:p-6">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+          Estamos terminando de configurar tu cuenta. Si ves este mensaje por más de un minuto,
+          cierra sesión y vuelve a iniciar sesión.
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-6">

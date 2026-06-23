@@ -16,6 +16,23 @@ export async function resolveCompanyId(): Promise<string> {
   throw new Error('No company context — user not authenticated')
 }
 
+// Self-heals invited agents whose auth_user_id never got linked — e.g. if
+// /auth/callback's link step was interrupted (network blip, double-click on
+// the invite link, etc). The invite metadata (company_id + invited flag) is
+// baked into the JWT at invite time, so it's safe to retry this match on any
+// request rather than only once in the callback.
+async function linkInvitedAgentIfNeeded(user: { id: string; email?: string; user_metadata?: any }) {
+  const meta = user.user_metadata as { invited?: boolean; company_id?: string } | undefined
+  if (!meta?.invited || !meta?.company_id || !user.email) return
+
+  const db = createAdminClient()
+  await (db.from('agents') as any)
+    .update({ auth_user_id: user.id, is_active: true })
+    .eq('company_id', meta.company_id)
+    .eq('email', user.email)
+    .is('auth_user_id', null)
+}
+
 // Returns company_id from the session, or null if no session.
 export async function getSessionCompanyId(): Promise<string | null> {
   try {
@@ -37,7 +54,17 @@ export async function getSessionCompanyId(): Promise<string | null> {
       .eq('is_active', true)
       .single()
 
-    return (agent as any)?.company_id ?? null
+    if (agent) return (agent as any).company_id
+
+    await linkInvitedAgentIfNeeded(session.user)
+    const { data: retried } = await db
+      .from('agents')
+      .select('company_id')
+      .eq('auth_user_id', session.user.id)
+      .eq('is_active', true)
+      .single()
+
+    return (retried as any)?.company_id ?? null
   } catch {
     return null
   }
@@ -103,7 +130,17 @@ export async function getSessionAgent() {
       .eq('is_active', true)
       .single()
 
-    return data as any ?? null
+    if (data) return data as any
+
+    await linkInvitedAgentIfNeeded(user)
+    const { data: retried } = await db
+      .from('agents')
+      .select('*')
+      .eq('auth_user_id', user.id)
+      .eq('is_active', true)
+      .single()
+
+    return retried as any ?? null
   } catch {
     return null
   }

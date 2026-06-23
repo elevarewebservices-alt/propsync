@@ -15,9 +15,17 @@ function LoginPageContent() {
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? '/dashboard'
 
+  const ERROR_MESSAGES: Record<string, string> = {
+    setup_failed: 'No pudimos terminar de configurar tu cuenta. Intenta iniciar sesión de nuevo; si el problema persiste, contáctanos.',
+    auth_callback_failed: 'El enlace de confirmación ya no es válido o expiró. Intenta de nuevo.',
+    missing_code: 'El enlace de confirmación es inválido. Solicita uno nuevo.',
+  }
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(
+    ERROR_MESSAGES[searchParams.get('error') ?? ''] ?? null
+  )
   const [loading, setLoading] = useState(false)
 
   async function handleOAuth(provider: 'google' | 'azure') {
