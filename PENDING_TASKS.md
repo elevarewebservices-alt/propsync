@@ -69,16 +69,14 @@
 - **Status:** ⏳ Pending
 - **Target date:** 2026-08-15
 
-> **Removed from this list 2026-06-23 (handled outside this session, not Claude's scope):** Brevo transactional emails, Facebook publishing backend production deploy.
+> **Removed from this list 2026-06-23 (handled outside this session, not Claude's scope):** transactional emails, Facebook publishing backend production deploy. **Note on transactional emails:** turned out the code is already fully built — `lib/email.ts` has welcome/agent-welcome/follow-up-reminder/stage-milestone/new-lead emails, all wired in and running (welcome on signup, follow-up reminders via daily cron). It's generic SMTP (`lib/email-config.ts`), not Brevo-specific. If anything is still outstanding here it's SMTP credentials/config, not code — flagging in case that changes the external plan.
 
 ---
 
 ## 🟢 LOW PRIORITY — Nice-to-have / post-launch
 
 ### 11. Wasi auto-sync
-- Daily cron via Vercel Cron Jobs or Supabase `pg_cron`
-- **Status:** ⏳ Pending
-- **Target date:** Post-launch (v1.1)
+- **Status:** ✅ **Already done** — discovered 2026-06-23: `vercel.json` schedules `/api/cron/wasi-sync` daily at 6am; the route is a full implementation (fetches Wasi API, maps status/availability, upserts), not a stub.
 
 ### 12. Rate limiting on `/api/v1/properties`
 - **Status:** ✅ **Done 2026-06-22, tightened 2026-06-22** — `lib/rate-limit.ts`, **20 req/min** per company (lowered from 60 per owner request to slow bulk extraction), max **50/page** (lowered from 500). Wired into both `/api/v1/properties` and `/api/v1/properties/[id]`. Returns `429` + `Retry-After` header when exceeded; `X-RateLimit-Remaining` header on success.
@@ -93,8 +91,7 @@
 - **Status:** ✅ **Done** — verified 2026-06-23, this was already fully wired: `(auth)/reset/page.tsx` calls `resetPasswordForEmail` with `redirectTo=/auth/callback?type=recovery`; `app/auth/callback/route.ts` exchanges the code and redirects `type=recovery` sessions to `/update-password`; `(auth)/update-password/page.tsx` validates length/match and calls `auth.updateUser({ password })`, then redirects to `/dashboard`. Expired/invalid links surface a clear message via `login?error=auth_callback_failed`. "¿Olvidaste tu contraseña?" link on `/login` points to `/reset`. No code changes needed — this PENDING_TASKS entry was stale.
 
 ### 15. Vercel deployment + custom domain
-- **Status:** ⏳ Pending (currently dev-only)
-- **Target date:** Before public launch
+- **Status:** ✅ **Already done** — discovered 2026-06-23 while auditing this list for staleness: app is live at `propsyncia.com`, not dev-only as this entry claimed.
 
 ### 16. Per-agent permission system
 - **Status:** ✅ **Done 2026-06-23** — `agente` role now defaults to: edit-only-own properties, view-only-own contacts, Configuración restricted to "General". Admin/owner can override any flag per-agent from Configuración → Usuarios (⚙️ icon per row). AI assistant tools respect the same scoping. See `lib/permissions.ts` + memory `agent-permissions-system.md`.
@@ -106,6 +103,7 @@
 
 ## ✅ COMPLETED (this session, 2026-06-22 → 2026-06-23)
 
+- [x] Real dashboard, Vercel deploy/custom domain, and `003_crm_stages.sql` were already done — three more stale "pending" entries corrected 2026-06-23
 - [x] Three High-severity security fixes (H-01, H-02, H-03) + DELETE role-gate fix found in review
 - [x] Per-company API key feature (management + v1 endpoints) — tested live end-to-end
 - [x] Rate limiting on /api/v1/* — shipped at 60/min, tightened to 20/min + 50/page same day

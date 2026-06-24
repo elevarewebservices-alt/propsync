@@ -304,13 +304,14 @@ mapAvailability(id): 'disponible' | 'vendido' | 'alquilado'
 - [x] ROI/source reports — `/crm/reportes`
 - [x] Virtual tours — mixed regular + 360° photo tours, public shareable page, iframe embed (see section below)
 - [x] Password reset flow — `/reset` → `/auth/callback?type=recovery` → `/update-password`, fully wired
+- [x] Real dashboard — `lib/dashboard.ts`'s `getDashboardData()` queries live Supabase data via `resolveCompanyId()`, no mock data
+- [x] Vercel deploy + custom domain — live at `propsyncia.com`
+- [x] `supabase/migrations/003_crm_stages.sql` — confirmed applied (`crm_stages` table has rows)
+- [x] Wasi auto-sync — `vercel.json` runs `/api/cron/wasi-sync` daily at 6am, real implementation (not a stub)
+- [x] Transactional emails — `lib/email.ts` (`sendWelcomeEmail`, `sendAgentWelcomeEmail`, `sendFollowUpReminderEmail`, `sendStageMilestoneEmail`, `sendNewLeadNotification`) over generic SMTP (`lib/email-config.ts`, per-company override or platform `SMTP_*` env vars — not Brevo-specific despite earlier docs calling it that). Welcome email fires from `/api/auth/setup`; follow-up reminders run via `/api/cron/follow-up-reminders` (daily 8am weekdays). What's actually outstanding here, if anything, is SMTP provider credentials/config, not code.
 
 ### Pending
-- [ ] Real dashboard — `/dashboard` still shows MOCK_PROPERTIES; needs live Supabase counts
 - [ ] Stripe payments — plan upgrade/downgrade, webhook updates `companies.plan_id`
-- [ ] Wasi auto-sync — daily cron via Vercel Cron Jobs or Supabase pg_cron
-- [ ] Vercel deploy + custom domain
-- [ ] `supabase/migrations/003_crm_stages.sql` — run in Supabase SQL Editor if not done
 
 ---
 
