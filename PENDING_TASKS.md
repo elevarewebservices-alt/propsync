@@ -34,7 +34,7 @@
 - ✅ Plugins in `mobile/package.json` (camera, push-notifications, app, splash-screen, status-bar)
 - ✅ `npx cap add android` + `npx cap add ios` — both native projects generated locally 2026-06-22 (gitignored per `mobile/.gitignore`, regenerated on demand)
 - ✅ **iOS path decided: Codemagic** (user has no Mac). Added `codemagic.yaml` at repo root — workflow `ios-capacitor-release`, triggers on `ios-*` tags, regenerates `ios/` in CI (since it's gitignored), signs via App Store Connect integration, publishes to TestFlight. Documented setup steps in `mobile/README.md`.
-- **Status:** ⏳ Pending — (1) Codemagic account ✅ done, (2) Apple Developer account ✅ **paid 2026-06-23** ($99/yr). **Still needed**: (3) create the App Store Connect API key integration named exactly `propsync_app_store_connect` in Codemagic, (4) create the `com.propsyncia.app` app shell in App Store Connect, (5) push a tag like `ios-1` to trigger the first build.
+- **Status:** ⏳ Pending — (1) Codemagic account ✅ done, (2) Apple Developer account ⏳ **payment processing 2026-06-23** ($99/yr, not yet confirmed/active — Apple's enrollment review can take hours to days). **Still needed once active**: (3) create the App Store Connect API key integration named exactly `propsync_app_store_connect` in Codemagic, (4) create the `com.propsyncia.app` app shell in App Store Connect, (5) push a tag like `ios-1` to trigger the first build.
 - **Android:** Google Play account ✅ **paid 2026-06-23** ($25). ⏸️ **On hold** — user needs to acquire a physical Android device before building/testing locally via Android Studio.
 - **Target date:** 2026-06-30 (before Phase 2 testing)
 
