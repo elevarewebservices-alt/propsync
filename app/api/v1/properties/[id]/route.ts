@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateApiKey } from '@/lib/api-key'
-import { checkApiRateLimit } from '@/lib/rate-limit'
+import { checkApiRateLimit, checkIpRateLimit, getClientIp } from '@/lib/rate-limit'
 import { createAdminClient } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
@@ -13,6 +13,14 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const ipCheck = checkIpRateLimit(getClientIp(request))
+  if (!ipCheck.allowed) {
+    return NextResponse.json(
+      { error: 'Demasiadas solicitudes desde esta IP. Intenta de nuevo en un minuto.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((ipCheck.resetAt - Date.now()) / 1000)) } }
+    )
+  }
+
   const companyId = await authenticateApiKey(request)
   if (!companyId) {
     return NextResponse.json({ error: 'API key inválida o ausente' }, { status: 401 })
