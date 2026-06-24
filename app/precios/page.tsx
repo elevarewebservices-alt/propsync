@@ -7,8 +7,8 @@ const F = 'var(--font-outfit), sans-serif'
 
 const PLANS = [
   {
-    name: 'Starter',
-    price: '$49',
+    name: 'Individual',
+    price: '$30',
     per: '/mes',
     desc: 'Para agentes independientes que arrancan',
     features: [
@@ -25,39 +25,21 @@ const PLANS = [
   },
   {
     name: 'Pro',
-    price: '$99',
+    price: '$60',
     per: '/mes',
     desc: 'Para equipos que están creciendo',
     features: [
-      '200 propiedades',
+      'Propiedades ilimitadas',
       'CRM completo + pipeline configurable',
       'Asistente IA completo',
-      'Marketing automation',
-      'API REST + Webhooks',
-      '5 usuarios',
+      'Conexión a portales',
+      'API REST de integración',
+      '2 usuarios (+$7.99/usuario adicional)',
       'Reportes ROI por fuente',
-      'Soporte prioritario',
+      'Soporte por email',
     ],
     cta: 'Probar 15 días gratis',
     popular: true,
-  },
-  {
-    name: 'Agency',
-    price: '$199',
-    per: '/mes',
-    desc: 'Para agencias con operación completa',
-    features: [
-      'Propiedades ilimitadas',
-      'CRM avanzado + IA sin límites',
-      'Automatización completa',
-      'Usuarios ilimitados',
-      'API + Webhooks + SDK',
-      'White-label widget',
-      'Onboarding personalizado',
-      'Soporte dedicado',
-    ],
-    cta: 'Hablar con ventas',
-    popular: false,
   },
 ]
 
@@ -109,8 +91,8 @@ export default function PreciosPage() {
 
       {/* Pricing grid */}
       <section className="px-6 pb-16">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-5 items-start">
+        <div className="max-w-3xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-5 items-start">
             {PLANS.map((plan, i) => (
               <div key={i} style={{ borderRadius: '1.5rem', padding: '1.875rem', display: 'flex', flexDirection: 'column', height: '100%', transition: 'transform .3s ease', ...(plan.popular ? { background: 'rgba(251,191,36,.05)', border: '1px solid rgba(251,191,36,.28)' } : { background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)' }) }}>
                 {plan.popular && <span style={{ fontSize: '.62rem', letterSpacing: '.16em', color: '#fbbf24', fontWeight: 600, display: 'block', marginBottom: '.75rem', textTransform: 'uppercase', fontFamily: F }}>Popular</span>}

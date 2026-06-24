@@ -34,7 +34,7 @@ export function Header() {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [userName, setUserName] = useState('U')
   const [userEmail, setUserEmail] = useState('')
-  const [planId, setPlanId] = useState<'starter' | 'pro' | 'agency'>('starter')
+  const [planId, setPlanId] = useState<'starter' | 'pro'>('starter')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const push = usePushNotifications()
@@ -52,7 +52,7 @@ export function Header() {
     // Fetch agent's company plan
     fetch('/api/auth/me')
       .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d?.planId && ['starter','pro','agency'].includes(d.planId)) setPlanId(d.planId as 'starter' | 'pro' | 'agency') })
+      .then((d) => { if (d?.planId && ['starter','pro'].includes(d.planId)) setPlanId(d.planId as 'starter' | 'pro') })
       .catch(() => {})
   }, [])
 

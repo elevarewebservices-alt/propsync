@@ -111,7 +111,7 @@ const FAQ_CATEGORIES: FAQCategory[] = [
       },
       {
         question: '¿Cuántas consultas puedo hacer al mes?',
-        answer: 'Depende de tu plan: Starter (200/mes), Pro (1000/mes), Agency (5000/mes). Una conversación puede usar múltiples consultas si el asistente necesita varias herramientas.',
+        answer: 'Depende de tu plan: Individual (200/mes), Pro (1000/mes). Una conversación puede usar múltiples consultas si el asistente necesita varias herramientas.',
       },
       {
         question: '¿Puedo personalizar las descripciones generadas?',
@@ -125,7 +125,7 @@ const FAQ_CATEGORIES: FAQCategory[] = [
     questions: [
       {
         question: '¿Qué incluye cada plan?',
-        answer: 'Starter: 50 propiedades, Facebook, 1 usuario. Pro: 200 propiedades, todos los canales, WhatsApp, marketing automation, 5 usuarios, API. Agency: ilimitado, soporte dedicado.',
+        answer: 'Individual ($30/mes): 50 propiedades, Facebook, 1 usuario. Pro ($60/mes): propiedades ilimitadas, conexión a portales, WhatsApp, marketing automation, API, 2 usuarios (+$7.99/usuario adicional).',
       },
       {
         question: '¿Cómo cambio de plan?',

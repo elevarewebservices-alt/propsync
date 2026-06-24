@@ -10,7 +10,7 @@ export const MOCK_USER: MockUser = {
   id: 'user-1',
   nombre: 'Carlos Mendoza',
   email: 'carlos@inmobiliariapanama.com',
-  planId: 'agency',
+  planId: 'pro',
   agencia: 'Inmobiliaria Panamá',
 }
 

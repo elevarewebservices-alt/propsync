@@ -245,7 +245,7 @@ export default function AutomatizacionesPage() {
   }, [])
 
   async function toggleActive(auto: Automation) {
-    const planOk = planId === 'pro' || planId === 'agency'
+    const planOk = planId === 'pro'
     if (!planOk && !auto.is_active) return // Can't re-activate without plan
     setToggling(auto.id)
     const res = await fetch(`/api/automations/${auto.id}`, {
@@ -277,7 +277,7 @@ export default function AutomatizacionesPage() {
     return <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">Cargando…</div>
   }
 
-  const hasAccess = planId === 'pro' || planId === 'agency'
+  const hasAccess = planId === 'pro'
 
   return (
     <div className="p-4 md:p-6 space-y-6">

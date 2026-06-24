@@ -19,7 +19,7 @@ export type WhatsAppResponse =
   | 'no_disponible'
   | 'sin_respuesta'
 
-export type PlanId = 'starter' | 'pro' | 'agency'
+export type PlanId = 'starter' | 'pro'
 
 export type EtapaCRM = string // dynamic — values come from crm_stages table
 
@@ -241,6 +241,7 @@ export interface PlanLimits {
   canales: string[]
   mantener: boolean
   soporte: 'comunidad' | 'email' | 'dedicado'
+  api: boolean
 }
 
 export interface Pipeline {

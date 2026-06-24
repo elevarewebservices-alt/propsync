@@ -3,6 +3,8 @@ import { resolveCompanyId, isSessionOwner } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 import { encrypt } from '@/lib/crypto'
 import { generateApiKey, hashApiKey } from '@/lib/api-key'
+import { canAccess } from '@/lib/plans'
+import { PlanId } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,8 +51,17 @@ export async function POST() {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   }
 
-  const plainKey = generateApiKey()
   const db = createAdminClient()
+  const { data: company } = await (db.from('companies') as any)
+    .select('plan_id')
+    .eq('id', companyId)
+    .single()
+
+  if (!canAccess((company as any)?.plan_id as PlanId, 'api')) {
+    return NextResponse.json({ error: 'El acceso a la API requiere el plan Pro o superior' }, { status: 403 })
+  }
+
+  const plainKey = generateApiKey()
 
   const { error } = await (db.from('companies') as any)
     .update({

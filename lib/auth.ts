@@ -88,7 +88,7 @@ export async function getSessionUser() {
 }
 
 // Returns the company's plan_id for the current session, or 'starter' as the safe default.
-export async function getSessionPlan(): Promise<'starter' | 'pro' | 'agency'> {
+export async function getSessionPlan(): Promise<'starter' | 'pro'> {
   try {
     const companyId = await getSessionCompanyId()
     if (!companyId) return 'starter'
@@ -101,7 +101,7 @@ export async function getSessionPlan(): Promise<'starter' | 'pro' | 'agency'> {
       .single()
 
     const plan = (data as any)?.plan_id
-    if (plan === 'pro' || plan === 'agency') return plan
+    if (plan === 'pro') return plan
     return 'starter'
   } catch {
     return 'starter'

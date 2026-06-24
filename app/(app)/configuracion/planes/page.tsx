@@ -8,7 +8,6 @@ import { CheckCircle2 } from 'lucide-react'
 const planStyle: Record<string, { ring: string; bg: string; highlight: boolean }> = {
   starter: { ring: 'border-border', bg: 'bg-card', highlight: false },
   pro: { ring: 'border-blue-500 ring-2 ring-blue-500/20', bg: 'bg-card', highlight: true },
-  agency: { ring: 'border-border', bg: 'bg-card', highlight: false },
 }
 
 export default async function PlanesPage() {

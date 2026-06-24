@@ -57,11 +57,10 @@
 ## 🟠 MEDIUM PRIORITY — Business/product
 
 ### 7. Finalize pricing
-- **Issue:** Landing page shows placeholder prices ($49/$99/$199)
-- **Dependency:** Business decision required (sales, market research)
-- **Impact:** Cannot promote/sell until locked in
-- **Status:** ⏳ Blocked on business
-- **Target date:** TBD (owner decision)
+- **Status:** ✅ **Done 2026-06-23** — final 2-tier structure: **Individual** $30/mes (1 usuario, 50 propiedades, Facebook only, sin API) and **Pro** $60/mes (propiedades ilimitadas, 2 usuarios incluidos + $7.99/usuario adicional, conexión a portales, API REST incluida, módulo Mantener completo). **Agency tier removed entirely** — large agencies scale by adding extra users to Pro instead of a separate tier.
+- Updated: `lib/plans.ts` (PLANS, ASSISTANT_LIMITS, requiresPlan order), `lib/types.ts` (`PlanId`, added `PlanLimits.api`), `lib/auth.ts` (`getSessionPlan`), `components/layout/Header.tsx`, `components/shared/PlanBadge.tsx`, `app/(app)/configuracion/planes/page.tsx`, `app/(app)/mantener/automatizaciones/page.tsx`, `app/page.tsx` (landing, ES+EN), `app/precios/page.tsx`, `app/(app)/ayuda/faq/page.tsx`, `lib/mock-data.ts`.
+- **API access gated to Pro+**: `lib/api-key.ts`'s `authenticateApiKey()` now checks `canAccess(plan_id, 'api')` (fails closed if plan downgraded after key generation); `POST /api/configuracion/api-key` also checks plan before generating a key, returns 403 with a clear message on Starter/Individual.
+- **Production data:** the one company that was on `plan_id: 'agency'` (`a0000000-0000-0000-0000-000000000001`, "Mi Empresa" — seed/test company) was migrated to `'pro'` after explicit user confirmation, since Agency had equal-or-greater features than Pro.
 
 ### 8. Brevo transactional emails
 - Welcome email on signup (already scaffolded in `/api/auth/setup`)
@@ -143,8 +142,8 @@ All security + permissions verification is done. What's left is either external 
 
 1. Codemagic setup: account, Apple Developer account, `propsync_app_store_connect` integration, App Store Connect app shell, push `ios-1` tag
 2. Google Play account ($25) + Android Studio local build + 20 testers for internal track
-3. Pricing decision (unblocks Stripe work)
-4. Optional code work available now, not yet requested: IP-based rate limiting on `/api/v1/*` for invalid-key brute force, password-reset flow polish, custom domain DNS (needs your Vercel access either way)
+3. Pricing is now finalized (Individual $30 / Pro $60+$7.99/usuario) — unblocks Stripe integration work (item 9) whenever you want to schedule it
+4. Optional code work available now, not yet requested: password-reset flow polish, custom domain DNS (needs your Vercel access either way)
 
 ---
 
