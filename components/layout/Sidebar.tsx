@@ -28,6 +28,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { Pipeline } from '@/lib/types'
+import { useSessionPermissions } from '@/hooks/useSessionPermissions'
 
 interface NavSubItem {
   label: string
@@ -48,7 +49,7 @@ interface NavSection {
   items: NavItem[]
 }
 
-function getNavSections(): NavSection[] {
+function getNavSections(accessSettings: boolean): NavSection[] {
   return [
     {
       title: 'General',
@@ -85,11 +86,15 @@ function getNavSections(): NavSection[] {
       title: 'Configuración',
       items: [
         { label: 'General', href: '/configuracion/general', icon: Settings },
-        { label: 'Usuarios', href: '/configuracion/usuarios', icon: Users },
-        { label: 'Pipelines & CRM', href: '/configuracion/crm', icon: Layers },
-        { label: 'Descripción IA', href: '/configuracion/descripcion', icon: Sparkles },
-        { label: 'Fuentes', href: '/configuracion/fuentes', icon: Plug },
-        { label: 'Planes', href: '/configuracion/planes', icon: CreditCard },
+        ...(accessSettings
+          ? [
+              { label: 'Usuarios', href: '/configuracion/usuarios', icon: Users },
+              { label: 'Pipelines & CRM', href: '/configuracion/crm', icon: Layers },
+              { label: 'Descripción IA', href: '/configuracion/descripcion', icon: Sparkles },
+              { label: 'Fuentes', href: '/configuracion/fuentes', icon: Plug },
+              { label: 'Planes', href: '/configuracion/planes', icon: CreditCard },
+            ]
+          : []),
       ],
     },
   ]
@@ -116,6 +121,7 @@ function PropSyncLogo() {
 
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname()
+  const { permissions } = useSessionPermissions()
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [sections, setSections] = useState<NavSection[]>([])
@@ -128,7 +134,7 @@ export function Sidebar({ className }: { className?: string }) {
   }, [])
 
   useEffect(() => {
-    const baseSections = getNavSections()
+    const baseSections = getNavSections(permissions.accessSettings)
 
     const pipelineChildren = pipelines.map((p) => ({
       label: p.nombre,
@@ -157,7 +163,7 @@ export function Sidebar({ className }: { className?: string }) {
 
 
     setSections(updatedSections)
-  }, [pipelines])
+  }, [pipelines, permissions.accessSettings])
 
   const toggleExpand = (href: string) => {
     setExpandedItems((prev) => ({

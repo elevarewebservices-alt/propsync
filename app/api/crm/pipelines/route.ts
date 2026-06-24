@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase'
-import { resolveCompanyId } from '@/lib/auth'
+import { resolveCompanyId, getSessionPermissions } from '@/lib/auth'
 import { Pipeline } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -18,6 +18,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const companyId = await resolveCompanyId()
+  if (!(await getSessionPermissions()).accessSettings) {
+    return Response.json({ error: 'Sin permisos' }, { status: 403 })
+  }
   const body = await request.json()
   if (!body.nombre?.trim()) {
     return Response.json({ error: 'El nombre es requerido' }, { status: 400 })

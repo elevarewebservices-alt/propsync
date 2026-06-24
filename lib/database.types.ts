@@ -132,6 +132,7 @@ export interface AgentRow {
   rol: string
   is_active: boolean
   created_at: string
+  permissions: Record<string, boolean> | null
 }
 
 export interface ContactRow {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { resolveCompanyId } from '@/lib/auth'
+import { resolveCompanyId, canEditProperty } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
@@ -26,8 +26,13 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   const companyId = await resolveCompanyId()
-  const body = await request.json()
   const db = createAdminClient()
+
+  if (!(await canEditProperty(companyId, params.id))) {
+    return NextResponse.json({ error: 'Solo puedes modificar propiedades asignadas a ti.' }, { status: 403 })
+  }
+
+  const body = await request.json()
 
   const allowed = [
     'titulo', 'descripcion', 'address', 'country_label', 'region_label', 'ciudad', 'zona',
@@ -70,6 +75,10 @@ export async function DELETE(
 ) {
   const companyId = await resolveCompanyId()
   const db = createAdminClient()
+
+  if (!(await canEditProperty(companyId, params.id))) {
+    return NextResponse.json({ error: 'Solo puedes eliminar propiedades asignadas a ti.' }, { status: 403 })
+  }
 
   const { error } = await db
     .from('properties')

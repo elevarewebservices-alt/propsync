@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase'
-import { resolveCompanyId } from '@/lib/auth'
+import { resolveCompanyId, getSessionPermissions } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,6 +8,9 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   const companyId = await resolveCompanyId()
+  if (!(await getSessionPermissions()).accessSettings) {
+    return Response.json({ error: 'Sin permisos' }, { status: 403 })
+  }
   const body = await request.json()
   const db = createAdminClient()
 
@@ -33,6 +36,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   const companyId = await resolveCompanyId()
+  if (!(await getSessionPermissions()).accessSettings) {
+    return Response.json({ error: 'Sin permisos' }, { status: 403 })
+  }
   const db = createAdminClient()
 
   const { data: stage } = await (db.from('crm_stages') as any)

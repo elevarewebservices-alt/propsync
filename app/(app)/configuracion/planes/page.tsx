@@ -1,5 +1,6 @@
 import { PLANS } from '@/lib/plans'
-import { getSessionPlan } from '@/lib/auth'
+import { getSessionPlan, getSessionPermissions } from '@/lib/auth'
+import { RestrictedAccess } from '@/components/shared/RestrictedAccess'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2 } from 'lucide-react'
@@ -11,6 +12,9 @@ const planStyle: Record<string, { ring: string; bg: string; highlight: boolean }
 }
 
 export default async function PlanesPage() {
+  const permissions = await getSessionPermissions()
+  if (!permissions.accessSettings) return <RestrictedAccess />
+
   const currentPlanId = await getSessionPlan()
   return (
     <div className="p-4 md:p-6 space-y-8">

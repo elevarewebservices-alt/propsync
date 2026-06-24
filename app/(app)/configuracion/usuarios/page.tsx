@@ -20,7 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { UserPlus, Mail, Trash2, Crown, ShieldCheck, User } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { UserPlus, Mail, Trash2, Crown, ShieldCheck, User, Settings2 } from 'lucide-react'
+import { RestrictedAccess } from '@/components/shared/RestrictedAccess'
+import { useSessionPermissions } from '@/hooks/useSessionPermissions'
+import { resolvePermissions, type AgentPermissions } from '@/lib/permissions'
 
 interface Agent {
   id: string
@@ -31,7 +35,26 @@ interface Agent {
   is_active: boolean
   auth_user_id: string | null
   created_at: string
+  permissions: Partial<AgentPermissions> | null
 }
+
+const PERMISSION_FIELDS: { key: keyof AgentPermissions; label: string; description: string }[] = [
+  {
+    key: 'editAllProperties',
+    label: 'Editar todas las propiedades',
+    description: 'Si está apagado, solo puede modificar o eliminar las propiedades que le fueron asignadas a él.',
+  },
+  {
+    key: 'viewAllContacts',
+    label: 'Ver todos los contactos',
+    description: 'Si está apagado, solo ve los clientes/leads asignados a él en el CRM.',
+  },
+  {
+    key: 'accessSettings',
+    label: 'Acceso a Configuración',
+    description: 'Si está apagado, solo puede acceder a Configuración → General (su nombre y datos básicos).',
+  },
+]
 
 const ROL_LABELS: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   owner:  { label: 'Propietario', icon: Crown,        color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' },
@@ -40,6 +63,7 @@ const ROL_LABELS: Record<string, { label: string; icon: React.ElementType; color
 }
 
 export default function UsuariosPage() {
+  const { permissions, loading: permLoading } = useSessionPermissions()
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -52,6 +76,11 @@ export default function UsuariosPage() {
   const [invLoading, setInvLoading] = useState(false)
   const [invError, setInvError]   = useState<string | null>(null)
   const [invDone, setInvDone]     = useState(false)
+
+  // Per-agent permission overrides
+  const [permsAgent, setPermsAgent]   = useState<Agent | null>(null)
+  const [permsDraft, setPermsDraft]   = useState<AgentPermissions | null>(null)
+  const [permsSaving, setPermsSaving] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -108,8 +137,46 @@ export default function UsuariosPage() {
     load()
   }
 
+  function openPerms(agent: Agent) {
+    setPermsAgent(agent)
+    setPermsDraft(resolvePermissions(agent.rol, agent.permissions))
+  }
+
+  function closePerms() {
+    setPermsAgent(null)
+    setPermsDraft(null)
+  }
+
+  async function savePerms() {
+    if (!permsAgent || !permsDraft) return
+    setPermsSaving(true)
+    await fetch(`/api/agents/${permsAgent.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ permissions: permsDraft }),
+    })
+    setPermsSaving(false)
+    closePerms()
+    load()
+  }
+
+  async function resetPerms() {
+    if (!permsAgent) return
+    setPermsSaving(true)
+    await fetch(`/api/agents/${permsAgent.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ permissions: null }),
+    })
+    setPermsSaving(false)
+    closePerms()
+    load()
+  }
+
   const active  = agents.filter((a) => a.is_active)
   const pending = agents.filter((a) => !a.is_active)
+
+  if (!permLoading && !permissions.accessSettings) return <RestrictedAccess />
 
   return (
     <div className="p-4 md:p-6 max-w-3xl space-y-6">
@@ -164,6 +231,15 @@ export default function UsuariosPage() {
                     <Icon className="h-3 w-3" />
                     {meta.label}
                   </span>
+                  {!isMe && agent.rol !== 'owner' && (
+                    <button
+                      onClick={() => openPerms(agent)}
+                      className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
+                      title="Permisos"
+                    >
+                      <Settings2 className="h-4 w-4" />
+                    </button>
+                  )}
                   {!isMe && agent.rol !== 'owner' && (
                     <button
                       onClick={() => handleDeactivate(agent)}
@@ -283,6 +359,49 @@ export default function UsuariosPage() {
               </Button>
             </DialogFooter>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Permissions dialog */}
+      <Dialog open={!!permsAgent} onOpenChange={(o) => { if (!o) closePerms() }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Permisos de {permsAgent?.nombre}</DialogTitle>
+          </DialogHeader>
+
+          {permsDraft && (
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">
+                Por defecto, un agente solo ve/edita lo que es suyo. Activa lo que quieras darle de más.
+              </p>
+              {PERMISSION_FIELDS.map((field) => (
+                <div key={field.key} className="flex items-start justify-between gap-4 py-1">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{field.label}</p>
+                    <p className="text-xs text-muted-foreground">{field.description}</p>
+                  </div>
+                  <Switch
+                    checked={permsDraft[field.key]}
+                    onCheckedChange={(checked) =>
+                      setPermsDraft((prev) => prev ? { ...prev, [field.key]: checked } : prev)
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          <DialogFooter className="pt-2 sm:justify-between">
+            <Button type="button" variant="ghost" onClick={resetPerms} disabled={permsSaving}>
+              Restablecer al rol
+            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={closePerms}>Cancelar</Button>
+              <Button onClick={savePerms} className="bg-blue-600 hover:bg-blue-700 text-white" disabled={permsSaving}>
+                {permsSaving ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

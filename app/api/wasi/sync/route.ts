@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
-import { resolveCompanyId } from '@/lib/auth'
+import { resolveCompanyId, getSessionPermissions } from '@/lib/auth'
 import { upsertFromWasi } from '@/lib/properties'
 import type { PropertyInsert } from '@/lib/database.types'
 
@@ -155,6 +155,9 @@ function mapWasiToInsert(p: WasiProperty, companyId: string): PropertyInsert {
 
 export async function POST(_request: NextRequest) {
   const companyId = await resolveCompanyId()
+  if (!(await getSessionPermissions()).accessSettings) {
+    return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+  }
 
   // Get Wasi credentials from company record
   const db = createAdminClient()

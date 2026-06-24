@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { listProperties, createProperty } from '@/lib/properties'
-import { resolveCompanyId, getSessionPlan } from '@/lib/auth'
+import { resolveCompanyId, getSessionPlan, getSessionAgent, getSessionPermissions } from '@/lib/auth'
 import { getPlan } from '@/lib/plans'
 import { createAdminClient } from '@/lib/supabase'
 import type { PropertyInsert } from '@/lib/database.types'
@@ -63,7 +63,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = (await request.json()) as PropertyInsert
-    const data = await createProperty({ ...body, company_id: companyId })
+
+    // A restricted agente always owns what they create — never trust the
+    // client to assign a property to someone else when their edit scope is
+    // limited to "own", otherwise they could create it under a teammate and
+    // dodge the ownership check entirely.
+    const permissions = await getSessionPermissions()
+    let agenteAsignadoId = body.agente_asignado_id
+    if (!permissions.editAllProperties) {
+      const me = await getSessionAgent()
+      agenteAsignadoId = (me as any)?.id ?? null
+    }
+
+    const data = await createProperty({ ...body, company_id: companyId, agente_asignado_id: agenteAsignadoId })
     return NextResponse.json(data, { status: 201 })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Error'

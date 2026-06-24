@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { NextRequest, NextResponse } from 'next/server'
 import { ASSISTANT_TOOLS, buildSystemPrompt, executeTool } from '@/lib/assistant-tools'
 import { ASSISTANT_LIMITS } from '@/lib/plans'
-import { resolveCompanyId, getSessionPlan } from '@/lib/auth'
+import { resolveCompanyId, getSessionPlan, getSessionAgent, getSessionPermissions } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -29,6 +29,13 @@ export async function POST(req: NextRequest) {
     const planId    = await getSessionPlan()
     const month     = new Date().toISOString().slice(0, 7)   // 'YYYY-MM'
     const limit     = ASSISTANT_LIMITS[planId] ?? ASSISTANT_LIMITS.starter
+
+    // The assistant must respect the same per-agent data scoping as the rest
+    // of the app — a restricted agente asking the bot can't get answers
+    // about properties/contacts they wouldn't see in the UI either.
+    const agent       = await getSessionAgent()
+    const permissions = await getSessionPermissions()
+    const toolContext = { companyId, agentId: (agent as any)?.id ?? null, permissions }
 
     // ── Atomic credit reservation (tamper-proof) ────────────────────────────
     // Consume one credit BEFORE spending any tokens. The DB function serializes
@@ -120,7 +127,7 @@ export async function POST(req: NextRequest) {
           let isError = false
 
           try {
-            result = await executeTool(block.name, block.input as Record<string, unknown>, companyId)
+            result = await executeTool(block.name, block.input as Record<string, unknown>, toolContext)
           } catch (err) {
             result  = { error: err instanceof Error ? err.message : String(err) }
             isError = true

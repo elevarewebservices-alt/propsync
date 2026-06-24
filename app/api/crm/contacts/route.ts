@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase'
-import { resolveCompanyId } from '@/lib/auth'
+import { resolveCompanyId, getSessionAgent, getSessionPermissions } from '@/lib/auth'
 import { Contact } from '@/lib/types'
 import { sendNewLeadNotification } from '@/lib/email'
 import { isValidEmail, isValidPhone, normalizePhone } from '@/lib/validation'
@@ -25,6 +25,12 @@ export async function GET(request: Request) {
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
+
+  const permissions = await getSessionPermissions()
+  if (!permissions.viewAllContacts) {
+    const me = await getSessionAgent()
+    query = query.eq('agente_asignado_id', (me as any)?.id ?? '')
+  }
 
   if (stage) query = query.eq('etapa_crm', stage)
   if (tipo) query = query.eq('tipo', tipo)
@@ -60,6 +66,18 @@ export async function POST(request: Request) {
     return Response.json({ error: 'WhatsApp no válido' }, { status: 400 })
   }
 
+  // A restricted agente always owns the contacts they create — never trust
+  // the client to assign one to a teammate when their view scope is "own",
+  // otherwise they could create it under someone else and immediately lose
+  // visibility into it, or worse, hide it from themselves while still being
+  // the one who captured the lead.
+  const permissions = await getSessionPermissions()
+  let agenteAsignadoId = body.agente_asignado_id ?? null
+  if (!permissions.viewAllContacts) {
+    const me = await getSessionAgent()
+    agenteAsignadoId = (me as any)?.id ?? null
+  }
+
   const payload = {
     company_id: companyId,
     nombre: body.nombre.trim(),
@@ -75,6 +93,7 @@ export async function POST(request: Request) {
     presupuesto_min: body.presupuesto_min ?? null,
     presupuesto_max: body.presupuesto_max ?? null,
     etapa_crm: body.etapa_crm ?? 'nuevo_lead',
+    agente_asignado_id: agenteAsignadoId,
     agente_nombre: body.agente_nombre ?? null,
     fecha_seguimiento: body.fecha_seguimiento ?? null,
     fuente: body.fuente ?? 'manual',

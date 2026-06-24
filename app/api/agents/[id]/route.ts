@@ -24,10 +24,16 @@ export async function PATCH(
   const body = await request.json()
   const db = createAdminClient()
 
-  const allowed = ['nombre', 'telefono', 'rol', 'is_active']
+  const allowed = ['nombre', 'telefono', 'rol', 'is_active', 'permissions']
   const patch: Record<string, unknown> = {}
   for (const key of allowed) {
     if (key in body) patch[key] = body[key]
+  }
+
+  if ('permissions' in patch && (me as any)?.id === params.id) {
+    // Prevents an admin from reverting permission restrictions the owner
+    // placed on them — same self-modification rule as 'rol' below.
+    return NextResponse.json({ error: 'No puedes cambiar tus propios permisos.' }, { status: 400 })
   }
 
   if ('rol' in patch) {

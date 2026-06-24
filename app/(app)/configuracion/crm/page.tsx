@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { StageSettingsSheet } from '@/components/crm/StageSettingsSheet'
+import { RestrictedAccess } from '@/components/shared/RestrictedAccess'
+import { useSessionPermissions } from '@/hooks/useSessionPermissions'
 import { CrmStage, Pipeline } from '@/lib/types'
 import {
   Plus, Pencil, Trash2, Copy, Check, GripVertical,
@@ -17,6 +19,7 @@ const PRESET_COLORS = [
 ]
 
 export default function CrmConfigPage() {
+  const { permissions, loading: permLoading } = useSessionPermissions()
   const [stages, setStages]                 = useState<CrmStage[]>([])
   const [pipelines, setPipelines]           = useState<Pipeline[]>([])
   const [loading, setLoading]               = useState(true)
@@ -158,9 +161,11 @@ export default function CrmConfigPage() {
     })
   }
 
-  if (loading) {
+  if (loading || permLoading) {
     return <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">Cargando…</div>
   }
+
+  if (!permissions.accessSettings) return <RestrictedAccess />
 
   const activePipelineStages = stages
     .filter((s) => s.pipeline_id === activePipelineId)

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { RestrictedAccess } from '@/components/shared/RestrictedAccess'
+import { useSessionPermissions } from '@/hooks/useSessionPermissions'
 import { Loader2, Sparkles, RotateCcw, Save } from 'lucide-react'
 
 const DEFAULT_PROMPT = `Eres un redactor profesional de bienes raíces de Panamá.
@@ -24,6 +26,7 @@ const AUTO_INCLUDED_FIELDS = [
 ]
 
 export default function DescripcionConfigPage() {
+  const { permissions, loading: permLoading } = useSessionPermissions()
   const [template, setTemplate] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -56,6 +59,8 @@ export default function DescripcionConfigPage() {
   }
 
   const effectiveTemplate = template.trim() || DEFAULT_PROMPT
+
+  if (!permLoading && !permissions.accessSettings) return <RestrictedAccess />
 
   return (
     <div className="p-4 md:p-6 max-w-3xl space-y-6">

@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase'
-import { resolveCompanyId } from '@/lib/auth'
+import { resolveCompanyId, canAccessContact } from '@/lib/auth'
 import { sendStageMilestoneEmail } from '@/lib/email'
 import { isValidEmail, isValidPhone, normalizePhone } from '@/lib/validation'
 
@@ -11,6 +11,11 @@ export async function GET(
 ) {
   const companyId = await resolveCompanyId()
   const db = createAdminClient()
+
+  if (!(await canAccessContact(companyId, params.id))) {
+    return Response.json({ error: 'Contacto no encontrado' }, { status: 404 })
+  }
+
   const { data: contact, error } = await db
     .from('contacts')
     .select('*')
@@ -34,8 +39,13 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   const companyId = await resolveCompanyId()
-  const body = await request.json()
   const db = createAdminClient()
+
+  if (!(await canAccessContact(companyId, params.id))) {
+    return Response.json({ error: 'Contacto no encontrado' }, { status: 404 })
+  }
+
+  const body = await request.json()
 
   // Fetch current state before update for change detection
   const { data: current } = await db
@@ -137,6 +147,11 @@ export async function DELETE(
 ) {
   const companyId = await resolveCompanyId()
   const db = createAdminClient()
+
+  if (!(await canAccessContact(companyId, params.id))) {
+    return Response.json({ error: 'Contacto no encontrado' }, { status: 404 })
+  }
+
   const { error } = await (db.from('contacts') as any)
     .update({ is_active: false })
     .eq('id', params.id)

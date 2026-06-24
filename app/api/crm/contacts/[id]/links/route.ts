@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase'
-import { resolveCompanyId } from '@/lib/auth'
+import { resolveCompanyId, canAccessContact } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,8 +8,13 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const companyId = await resolveCompanyId()
-  const body      = await request.json()
   const db        = createAdminClient()
+
+  if (!(await canAccessContact(companyId, params.id))) {
+    return Response.json({ error: 'Contacto no encontrado' }, { status: 404 })
+  }
+
+  const body = await request.json()
 
   if (!body.property_id) {
     return Response.json({ error: 'property_id requerido' }, { status: 400 })

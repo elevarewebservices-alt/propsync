@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { resolveCompanyId } from '@/lib/auth'
+import { resolveCompanyId, getSessionPermissions } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 import { randomUUID } from 'crypto'
 
@@ -8,6 +8,9 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const companyId = await resolveCompanyId()
+    if (!(await getSessionPermissions()).accessSettings) {
+      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+    }
     const db = createAdminClient()
 
     const { data } = await db
@@ -33,6 +36,9 @@ export async function GET() {
 export async function PATCH(req: Request) {
   try {
     const companyId = await resolveCompanyId()
+    if (!(await getSessionPermissions()).accessSettings) {
+      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+    }
     const db = createAdminClient()
     const body = await req.json() as {
       wasi_company_id?: string

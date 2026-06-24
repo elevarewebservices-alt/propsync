@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase'
-import { resolveCompanyId } from '@/lib/auth'
+import { resolveCompanyId, getSessionPermissions } from '@/lib/auth'
 import { CrmStage } from '@/lib/types'
 import { NextRequest } from 'next/server'
 
@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: Request) {
   const companyId = await resolveCompanyId()
+  if (!(await getSessionPermissions()).accessSettings) {
+    return Response.json({ error: 'Sin permisos' }, { status: 403 })
+  }
   const body = await request.json()
   const db = createAdminClient()
 

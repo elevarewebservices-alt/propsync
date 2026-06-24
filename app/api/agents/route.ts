@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data, error } = await db
     .from('agents')
-    .select('id, nombre, email, telefono, rol, is_active, created_at, auth_user_id')
+    .select('id, nombre, email, telefono, rol, is_active, created_at, auth_user_id, permissions')
     .eq('company_id', companyId)
     .order('created_at', { ascending: true })
 

@@ -2,6 +2,27 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createAdminClient } from './supabase'
 import { matchPropertiesForContact, type PropertyForMatch } from './matching'
 import type { Contact } from './types'
+import type { AgentPermissions } from './permissions'
+
+export interface ToolContext {
+  companyId: string
+  agentId: string | null
+  permissions: AgentPermissions
+}
+
+type Db = ReturnType<typeof createAdminClient>
+
+async function checkPropertyAccess(db: Db, companyId: string, propertyId: unknown, agentId: string | null, permissions: AgentPermissions): Promise<boolean> {
+  if (permissions.editAllProperties) return true
+  const { data } = await db.from('properties').select('agente_asignado_id').eq('id', propertyId as string).eq('company_id', companyId).single()
+  return !!data && (data as any).agente_asignado_id === agentId
+}
+
+async function checkContactAccess(db: Db, companyId: string, contactId: unknown, agentId: string | null, permissions: AgentPermissions): Promise<boolean> {
+  if (permissions.viewAllContacts) return true
+  const { data } = await db.from('contacts').select('agente_asignado_id').eq('id', contactId as string).eq('company_id', companyId).single()
+  return !!data && (data as any).agente_asignado_id === agentId
+}
 
 // ── System prompt (dynamic per tenant) ───────────────────────────────────────
 
@@ -56,8 +77,9 @@ responde EXACTAMENTE así, sin usar ninguna herramienta:
 export async function executeTool(
   name: string,
   input: Record<string, unknown>,
-  companyId: string
+  ctx: ToolContext
 ): Promise<unknown> {
+  const { companyId, agentId, permissions } = ctx
   const db = createAdminClient()
 
   switch (name) {
@@ -142,6 +164,8 @@ export async function executeTool(
         fuente:                'manual',
         gallery_urls:          [],
         canales_publicados:    [],
+        // A restricted agente always owns what they create through the bot too.
+        agente_asignado_id:    permissions.editAllProperties ? (input.agente_asignado_id ?? null) : agentId,
       }
 
       const { data, error } = await (db.from('properties') as any)
@@ -256,6 +280,9 @@ export async function executeTool(
 
     // ── Update property availability ───────────────────────────────────────
     case 'update_property_availability': {
+      if (!(await checkPropertyAccess(db, companyId, input.property_id, agentId, permissions))) {
+        throw new Error('Esa propiedad no está asignada a ti — no puedes modificarla.')
+      }
       const allowed = ['disponible', 'vendido', 'alquilado']
       if (!allowed.includes(input.disponibilidad as string)) {
         throw new Error(`disponibilidad debe ser: ${allowed.join(', ')}`)
@@ -278,6 +305,9 @@ export async function executeTool(
 
     // ── Update property CRM fields ─────────────────────────────────────────
     case 'update_property_crm': {
+      if (!(await checkPropertyAccess(db, companyId, input.property_id, agentId, permissions))) {
+        throw new Error('Esa propiedad no está asignada a ti — no puedes modificarla.')
+      }
       const patch: Record<string, unknown> = {}
       if (input.etapa_crm)            patch.etapa_crm            = input.etapa_crm
       if (input.agente_asignado_id)   patch.agente_asignado_id   = input.agente_asignado_id
@@ -321,6 +351,7 @@ export async function executeTool(
         .order('updated_at', { ascending: false })
         .limit(Number(input.limit ?? 30))
 
+      if (!permissions.viewAllContacts) q = q.eq('agente_asignado_id', agentId ?? '')
       if (input.etapa_crm)     q = q.eq('etapa_crm', input.etapa_crm)
       if (input.tipo)          q = q.eq('tipo', input.tipo)
       if (input.search)        q = q.or(`nombre.ilike.%${input.search}%,email.ilike.%${input.search}%,telefono.ilike.%${input.search}%`)
@@ -333,6 +364,9 @@ export async function executeTool(
 
     // ── Contact detail + linked properties ────────────────────────────────
     case 'get_contact_detail': {
+      if (!(await checkContactAccess(db, companyId, input.contact_id, agentId, permissions))) {
+        throw new Error('Contacto no encontrado.')
+      }
       const { data: contact, error } = await (db.from('contacts') as any)
         .select('*')
         .eq('company_id', companyId)
@@ -352,6 +386,11 @@ export async function executeTool(
     case 'create_contact': {
       if (!input.nombre) throw new Error('nombre es requerido.')
 
+      // A restricted agente always owns the contacts they create through the
+      // bot too — don't let them assign a new lead to someone else and lose
+      // visibility into it themselves.
+      const contactAgenteId = permissions.viewAllContacts ? (input.agente_asignado_id ?? null) : agentId
+
       const { data, error } = await (db.from('contacts') as any)
         .insert({
           company_id:         companyId,
@@ -366,7 +405,7 @@ export async function executeTool(
           presupuesto_min:    input.presupuesto_min    ?? null,
           presupuesto_max:    input.presupuesto_max    ?? null,
           etapa_crm:          input.etapa_crm          ?? 'nuevo_lead',
-          agente_asignado_id: input.agente_asignado_id ?? null,
+          agente_asignado_id: contactAgenteId,
           fecha_seguimiento:  input.fecha_seguimiento  ?? null,
           fuente:             'manual',
           notas:              input.notas              ?? null,
@@ -381,6 +420,9 @@ export async function executeTool(
 
     // ── Update contact ─────────────────────────────────────────────────────
     case 'update_contact': {
+      if (!(await checkContactAccess(db, companyId, input.contact_id, agentId, permissions))) {
+        throw new Error('Contacto no encontrado.')
+      }
       const allowed = ['nombre','email','telefono','whatsapp','tipo','ciudad','zona_interes','tipo_operacion','presupuesto_min','presupuesto_max','etapa_crm','agente_asignado_id','agente_nombre','fecha_seguimiento','notas','tags','is_active']
       const patch: Record<string, unknown> = {}
       for (const key of allowed) {
@@ -427,6 +469,7 @@ export async function executeTool(
         .order('fecha_seguimiento', { ascending: true })
         .limit(50)
 
+      if (!permissions.viewAllContacts) q = q.eq('agente_asignado_id', agentId ?? '')
       if (terminalSlugs.length > 0) q = q.not('etapa_crm', 'in', `(${terminalSlugs.map((s: string) => `"${s}"`).join(',')})`)
 
       const { data, error } = await q
@@ -449,6 +492,9 @@ export async function executeTool(
     case 'link_contact_property': {
       if (!input.contact_id)  throw new Error('contact_id es requerido.')
       if (!input.property_id) throw new Error('property_id es requerido.')
+      if (!(await checkContactAccess(db, companyId, input.contact_id, agentId, permissions))) {
+        throw new Error('Contacto no encontrado.')
+      }
       const allowed = ['interesado', 'propietario', 'visitó', 'ofertó', 'descartado']
       const interes = allowed.includes(input.interes as string) ? input.interes : 'interesado'
 
@@ -476,6 +522,9 @@ export async function executeTool(
     // ── Match properties for a contact ─────────────────────────────────────
     case 'match_properties_for_contact': {
       if (!input.contact_id) throw new Error('contact_id es requerido.')
+      if (!(await checkContactAccess(db, companyId, input.contact_id, agentId, permissions))) {
+        throw new Error('Contacto no encontrado.')
+      }
 
       const { data: contact, error: cErr } = await (db.from('contacts') as any)
         .select('*').eq('id', input.contact_id).eq('company_id', companyId).single()
@@ -521,6 +570,9 @@ export async function executeTool(
     case 'add_contact_note': {
       if (!input.contact_id) throw new Error('contact_id es requerido.')
       if (!input.contenido)  throw new Error('contenido es requerido.')
+      if (!(await checkContactAccess(db, companyId, input.contact_id, agentId, permissions))) {
+        throw new Error('Contacto no encontrado.')
+      }
 
       const { data: contact } = await (db.from('contacts') as any)
         .select('id').eq('id', input.contact_id).eq('company_id', companyId).single()
@@ -542,6 +594,9 @@ export async function executeTool(
     // ── Schedule a follow-up for a contact ─────────────────────────────────
     case 'schedule_followup': {
       if (!input.contact_id) throw new Error('contact_id es requerido.')
+      if (!(await checkContactAccess(db, companyId, input.contact_id, agentId, permissions))) {
+        throw new Error('Contacto no encontrado.')
+      }
 
       // Accept an explicit date (YYYY-MM-DD) or a relative number of days.
       let fecha: string

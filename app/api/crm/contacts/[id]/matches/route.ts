@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase'
-import { resolveCompanyId } from '@/lib/auth'
+import { resolveCompanyId, canAccessContact } from '@/lib/auth'
 import { matchPropertiesForContact, PropertyForMatch } from '@/lib/matching'
 
 export const dynamic = 'force-dynamic'
@@ -7,6 +7,10 @@ export const dynamic = 'force-dynamic'
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const companyId = await resolveCompanyId()
   const db = createAdminClient()
+
+  if (!(await canAccessContact(companyId, params.id))) {
+    return Response.json({ error: 'Contact not found' }, { status: 404 })
+  }
 
   const [contactRes, propertiesRes] = await Promise.all([
     (db.from('contacts') as any)

@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient, createAdminClient } from './supabase'
+import { resolvePermissions, type AgentPermissions } from './permissions'
 
 // Returns the company_id for the currently authenticated user.
 // Falls back to NEXT_PUBLIC_DEV_COMPANY_ID when no session exists (dev mode).
@@ -144,4 +145,55 @@ export async function getSessionAgent() {
   } catch {
     return null
   }
+}
+
+// Returns the effective permissions for the current session user — role
+// defaults merged with any per-agent override (agents.permissions). In dev
+// (no session) it grants full access, mirroring isSessionOwner's fallback.
+export async function getSessionPermissions(): Promise<AgentPermissions> {
+  const agent = await getSessionAgent()
+  if (!agent) {
+    return resolvePermissions(process.env.NODE_ENV !== 'production' ? 'owner' : 'agente')
+  }
+  return resolvePermissions((agent as any).rol, (agent as any).permissions)
+}
+
+// True if the current session can view/edit the given contact — always true
+// with viewAllContacts, otherwise only if it's assigned to them. Used to
+// return a 404 (not 403) so a restricted agente can't probe which contact
+// ids exist outside their own.
+export async function canAccessContact(companyId: string, contactId: string): Promise<boolean> {
+  const permissions = await getSessionPermissions()
+  if (permissions.viewAllContacts) return true
+
+  const me = await getSessionAgent()
+  const db = createAdminClient()
+  const { data } = await db
+    .from('contacts')
+    .select('agente_asignado_id')
+    .eq('id', contactId)
+    .eq('company_id', companyId)
+    .single()
+
+  return !!data && (data as any).agente_asignado_id === (me as any)?.id
+}
+
+// True if the current session can edit/delete the given property — always
+// true with editAllProperties, otherwise only if it's assigned to them.
+// Properties stay visible to everyone (only editing is scoped), so this is
+// not used to gate reads.
+export async function canEditProperty(companyId: string, propertyId: string): Promise<boolean> {
+  const permissions = await getSessionPermissions()
+  if (permissions.editAllProperties) return true
+
+  const me = await getSessionAgent()
+  const db = createAdminClient()
+  const { data } = await db
+    .from('properties')
+    .select('agente_asignado_id')
+    .eq('id', propertyId)
+    .eq('company_id', companyId)
+    .single()
+
+  return !!data && (data as any).agente_asignado_id === (me as any)?.id
 }

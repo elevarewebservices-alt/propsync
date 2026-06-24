@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { RestrictedAccess } from '@/components/shared/RestrictedAccess'
+import { useSessionPermissions } from '@/hooks/useSessionPermissions'
 import { Eye, EyeOff, RefreshCw, CheckCircle2, AlertCircle, Loader2, Save, Copy, RefreshCcw } from 'lucide-react'
 
 interface FuentesState {
@@ -17,6 +19,7 @@ interface FuentesState {
 }
 
 export default function FuentesPage() {
+  const { permissions, loading: permLoading } = useSessionPermissions()
   const [showToken, setShowToken] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -107,6 +110,8 @@ export default function FuentesPage() {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://tudominio.com'
   const isConnected = Boolean(data.wasi_company_id) && data.wasi_token_set
   const hasUnsavedChanges = companyIdInput.trim() !== (data.wasi_company_id || '') || tokenInput.trim().length > 0
+
+  if (!permLoading && !permissions.accessSettings) return <RestrictedAccess />
 
   return (
     <div className="p-4 md:p-6 max-w-2xl space-y-6">
