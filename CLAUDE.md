@@ -302,41 +302,30 @@ mapAvailability(id): 'disponible' | 'vendido' | 'alquilado'
 - [x] "Nueva propiedad" form — `app/(app)/propiedades/nueva/page.tsx` with image upload
 - [x] Security hardening — all API routes use `resolveCompanyId()`, removed MOCK_USER from plan gates
 - [x] ROI/source reports — `/crm/reportes`
+- [x] Virtual tours — mixed regular + 360° photo tours, public shareable page, iframe embed (see section below)
+- [x] Password reset flow — `/reset` → `/auth/callback?type=recovery` → `/update-password`, fully wired
 
 ### Pending
 - [ ] Real dashboard — `/dashboard` still shows MOCK_PROPERTIES; needs live Supabase counts
-- [ ] Brevo transactional emails — welcome email on signup, follow-up reminders, password reset
 - [ ] Stripe payments — plan upgrade/downgrade, webhook updates `companies.plan_id`
-- [ ] 3D renders / AI walkthrough — generate virtual walkthroughs from uploaded property photos (see section below)
-- [ ] Facebook publishing — currently calls `localhost:8001`; Python backend needs production deploy
 - [ ] Wasi auto-sync — daily cron via Vercel Cron Jobs or Supabase pg_cron
-- [ ] Password reset page — `/auth/callback` needs to handle `type=recovery` flow
 - [ ] Vercel deploy + custom domain
 - [ ] `supabase/migrations/003_crm_stages.sql` — run in Supabase SQL Editor if not done
 
 ---
 
-## 3D Renders / AI Virtual Walkthrough
+## Virtual Tours
 
-**Goal:** Allow agents to upload regular photos of a property and generate an AI-powered 3D walkthrough / virtual tour that clients can navigate in browser.
+**Goal:** Let agents upload property photos (regular and/or 360°) and produce a navigable virtual tour clients can view in-browser or embed on an external site. **Implemented** — not the pannellum/AI-walkthrough plan originally sketched below; superseded by a more complete build.
 
-### Approach options (choose one at build time)
-| Option | How | Cost |
-|---|---|---|
-| **Matterport embed** | Agent uploads `.matterport` scan link; we embed the iframe in PropertyDetailSheet | Free embed, requires Matterport camera |
-| **Kuula / 360° photo** | Agent uploads equirectangular 360° JPG; we use `pannellum.js` or `three.js` to render it | Free, works with any 360° phone |
-| **AI upscale + tour** | Upload regular photos → send to Replicate/Stability AI model → stitch into walkable scene | ~$0.10–$0.50/property, requires model selection |
-| **Video walkthrough** | Agent uploads MP4 video → stored in R2 → streamed via `<video>` in sheet | Cheapest, no AI needed |
+### What's built
+- `properties.tour_rooms` (JSONB, `supabase/migrations/004_tour_rooms.sql`) — array of `{ url, label, is360? }`, one per room/photo. `TourRoom` type in `lib/types.ts`.
+- `components/propiedades/TourUploader.tsx` — drag/drop or click upload (reuses `/api/upload` → R2), per-room label dropdown, up/down reorder, toggle any photo as 360°, generates the public share URL and an `<iframe>` embed snippet with copy-to-clipboard.
+- `components/propiedades/PanoramaViewer.tsx` — wraps `@photo-sphere-viewer/core` (dynamic import, no SSR) for 360° rooms.
+- `components/propiedades/TourViewer.tsx` — the actual viewer: Ken Burns slideshow for regular photos, swaps to the 360° panorama viewer for rooms flagged `is360`, swipe/keyboard/arrow navigation, auto-advance (paused on 360° rooms), thumbnail strip, `embed` mode (hides chrome for iframe use).
+- `app/tour/[id]/page.tsx` — public route (no auth) rendering the tour for a property; supports `?embed=true`; generates OG metadata for link previews.
+- "Tour virtual" tab in `PropertyDetailSheet.tsx` (icon: `Clapperboard`, badge shows room count) hosts `TourUploader`; saves via `PATCH /api/properties/[id]` with `tour_rooms` in the allowed-fields list.
 
-### MVP recommendation
-Start with **Kuula-style 360° photo + pannellum.js** (free, no API needed, works with any modern phone camera in panorama mode):
-1. Add `panorama_url` column to `properties` table
-2. `PropertyDetailSheet` — new "Tour 360°" tab: renders pannellum viewer if `panorama_url` set
-3. In "Nueva propiedad" / property edit — upload field for 360° image (stores to R2 same as regular photos)
-4. Future: swap pannellum for AI-generated scene once a stable model is chosen
-
-### Files to create
-- `supabase/migrations/004_panorama.sql` — `ALTER TABLE properties ADD COLUMN panorama_url TEXT`
-- `components/propiedades/PanoramaViewer.tsx` — wraps `pannellum` via dynamic import (no SSR)
-- Add panorama upload field to `app/(app)/propiedades/nueva/page.tsx`
-- Add "Tour 360°" tab to `components/propiedades/PropertyDetailSheet.tsx`
+### Not built (future, if ever requested)
+- AI-generated 3D scenes from regular photos (Replicate/Stability) — current approach is manual upload + curation, not AI stitching
+- Matterport embed support

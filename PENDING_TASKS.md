@@ -62,13 +62,6 @@
 - **API access gated to Pro+**: `lib/api-key.ts`'s `authenticateApiKey()` now checks `canAccess(plan_id, 'api')` (fails closed if plan downgraded after key generation); `POST /api/configuracion/api-key` also checks plan before generating a key, returns 403 with a clear message on Starter/Individual.
 - **Production data:** the one company that was on `plan_id: 'agency'` (`a0000000-0000-0000-0000-000000000001`, "Mi Empresa" — seed/test company) was migrated to `'pro'` after explicit user confirmation, since Agency had equal-or-greater features than Pro.
 
-### 8. Brevo transactional emails
-- Welcome email on signup (already scaffolded in `/api/auth/setup`)
-- Follow-up reminders for vencidas (overdue follow-ups)
-- Password reset template
-- **Status:** ⏳ Pending (low-priority, basic flow works)
-- **Target date:** 2026-07-30
-
 ### 9. Stripe payments
 - Plan upgrade/downgrade flow
 - Webhook for subscription updates (`companies.plan_id`)
@@ -76,11 +69,7 @@
 - **Status:** ⏳ Pending
 - **Target date:** 2026-08-15
 
-### 10. Facebook publishing backend
-- Currently calls `localhost:8001` (dev Python backend)
-- Needs production deployment + environment config
-- **Status:** ⏳ Blocked on Python backend ops
-- **Target date:** TBD (dependent on ops)
+> **Removed from this list 2026-06-23 (handled outside this session, not Claude's scope):** Brevo transactional emails, Facebook publishing backend production deploy.
 
 ---
 
@@ -96,17 +85,12 @@
 - **Known limitation:** in-memory, per-instance (no Redis/KV configured in this project) — under multiple concurrent Vercel instances the real ceiling is `N_instances × 20/min`, not a precise distributed limit. Upgrade to Upstash/Vercel KV later if traffic justifies it.
 - **Not covered:** invalid/brute-forced API keys aren't rate-limited (the check only runs after a key authenticates successfully) — that would need IP-based limiting, a separate piece of work.
 
-### 13. 3D virtual tours / AI walkthrough
-- Documented in CLAUDE.md but not implemented
-- Requires model selection (Kuula/360° MVP or AI upscale)
-- **Status:** ⏳ Pending (roadmap only)
-- **Target date:** v1.2 or later
+### 13. Virtual tours (3D/360°)
+- **Status:** ✅ **Already done** — discovered 2026-06-23 while scoping this as new work: this was fully built in an earlier session and just never reflected back into CLAUDE.md/this doc. `TourUploader.tsx` (mixed regular + 360° photo upload, reorder, label per room) + `TourViewer.tsx` (Ken Burns slideshow, swaps to `PanoramaViewer.tsx`/`@photo-sphere-viewer/core` for 360° rooms) + public `app/tour/[id]/page.tsx` (shareable + `?embed=true` iframe support) + `properties.tour_rooms` JSONB column (migration `004_tour_rooms.sql`). Lives as the "Tour virtual" tab in `PropertyDetailSheet.tsx`. CLAUDE.md's roadmap section rewritten to describe what's actually built instead of the original pannellum/AI-walkthrough plan.
+- **Not built:** AI-generated 3D scenes from regular photos (current approach is manual curation, not AI stitching), Matterport embed. Only worth doing if specifically requested later.
 
 ### 14. Password reset page (`/auth/callback?type=recovery`)
-- Already partially wired in `middleware.ts` and `app/auth/callback/route.ts`
-- Needs `/update-password` page completion
-- **Status:** ⏳ Pending (basic email reset works)
-- **Target date:** v1.1
+- **Status:** ✅ **Done** — verified 2026-06-23, this was already fully wired: `(auth)/reset/page.tsx` calls `resetPasswordForEmail` with `redirectTo=/auth/callback?type=recovery`; `app/auth/callback/route.ts` exchanges the code and redirects `type=recovery` sessions to `/update-password`; `(auth)/update-password/page.tsx` validates length/match and calls `auth.updateUser({ password })`, then redirects to `/dashboard`. Expired/invalid links surface a clear message via `login?error=auth_callback_failed`. "¿Olvidaste tu contraseña?" link on `/login` points to `/reset`. No code changes needed — this PENDING_TASKS entry was stale.
 
 ### 15. Vercel deployment + custom domain
 - **Status:** ⏳ Pending (currently dev-only)
@@ -143,7 +127,8 @@ All security + permissions verification is done. What's left is either external 
 1. Codemagic setup: account, Apple Developer account, `propsync_app_store_connect` integration, App Store Connect app shell, push `ios-1` tag
 2. Google Play account ($25) + Android Studio local build + 20 testers for internal track
 3. Pricing is now finalized (Individual $30 / Pro $60+$7.99/usuario) — unblocks Stripe integration work (item 9) whenever you want to schedule it
-4. Optional code work available now, not yet requested: password-reset flow polish, custom domain DNS (needs your Vercel access either way)
+4. Password reset and virtual tours both turned out to be already done — verified 2026-06-23, no code changes needed
+5. Optional code work available now, not yet requested: custom domain DNS (needs your Vercel access either way)
 
 ---
 
