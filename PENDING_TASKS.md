@@ -1,7 +1,7 @@
 # PropSync — Pending Tasks & Next Steps
 
-**Last updated:** 2026-06-22 (code review pass)  
-**Current date:** 2026-06-22
+**Last updated:** 2026-06-23  
+**Current date:** 2026-06-23
 
 ---
 
@@ -12,13 +12,8 @@
 - **Status:** ✅ **Done** — confirmed applied via `node scripts/check-api-key-migration.mjs` on 2026-06-22
 
 ### 2. Test API key feature end-to-end
-- Generate key via UI (`/configuracion/general` → "API para desarrolladores")
-- Test reveal/hide/copy
-- Test regenerate (old key should stop working)
-- Test `GET /api/v1/properties` with `Authorization: Bearer <key>`
-- Test `GET /api/v1/properties/[id]` with key and without key (should 401)
-- **Status:** ⏳ Pending — blocked on task #1 (migration)
-- **Target date:** 2026-06-23
+- **Status:** ✅ **Done 2026-06-22** — generated a real key, tested list/single/pagination/missing-key(401)/invalid-key(401) against production. All passed.
+- Regenerated the test key after sharing it in chat — old key confirmed `401` afterward.
 
 ### 3. Verify three High-severity security fixes
 - **H-01:** Try to escalate agent role via PATCH `/api/agents/[id]` (should 403 if not owner/admin)
@@ -27,8 +22,7 @@
 - **Status:** ✅ Code-reviewed line-by-line 2026-06-22 — all three confirmed correctly implemented and fail closed in production. `npx tsc --noEmit` clean.
 - **⚠️ Found + fixed during this review (not in original H-01/02/03 list):** `DELETE /api/agents/[id]` had **no role check at all** — any active agent (role `agente`) could deactivate teammates/admins. The UI button is shown to every role with no gate, so this was live-exploitable, not theoretical. Fixed: added the same `['owner','admin']` check used in PATCH. Also wrapped `resolveCompanyId()` in PATCH/DELETE with try/catch (was throwing unhandled 500 instead of clean 401 for unauthenticated requests).
 - **⚠️ Important caveat for manual testing:** all these checks have a `process.env.NODE_ENV !== 'production'` dev fallback that grants owner access when there's no session. `npm run dev` always runs in development mode, so these attacks will silently succeed against the dev server (false negative). **Must test against `npm run build && npm start` or the Vercel deployment**, not `npm run dev`.
-- **Status:** Manual live testing (against production build) still ⏳ Pending
-- **Target date:** 2026-06-23
+- **Status:** ✅ **Done 2026-06-23** — H-01 and H-03 confirmed live against production with a real non-owner session (H-02 and the API key flow were already confirmed earlier). All three hold.
 
 ---
 
@@ -99,8 +93,8 @@
 - **Target date:** Post-launch (v1.1)
 
 ### 12. Rate limiting on `/api/v1/properties`
-- **Status:** ✅ **Done 2026-06-22** — `lib/rate-limit.ts`, 60 req/min per company, wired into both `/api/v1/properties` and `/api/v1/properties/[id]`. Returns `429` + `Retry-After` header when exceeded; `X-RateLimit-Remaining` header on success. Verified live: fired 63 requests against a test key, confirmed 200 for the first 60 and 429 for the rest.
-- **Known limitation:** in-memory, per-instance (no Redis/KV configured in this project) — under multiple concurrent Vercel instances the real ceiling is `N_instances × 60/min`, not a precise distributed limit. Upgrade to Upstash/Vercel KV later if traffic justifies it.
+- **Status:** ✅ **Done 2026-06-22, tightened 2026-06-22** — `lib/rate-limit.ts`, **20 req/min** per company (lowered from 60 per owner request to slow bulk extraction), max **50/page** (lowered from 500). Wired into both `/api/v1/properties` and `/api/v1/properties/[id]`. Returns `429` + `Retry-After` header when exceeded; `X-RateLimit-Remaining` header on success.
+- **Known limitation:** in-memory, per-instance (no Redis/KV configured in this project) — under multiple concurrent Vercel instances the real ceiling is `N_instances × 20/min`, not a precise distributed limit. Upgrade to Upstash/Vercel KV later if traffic justifies it.
 - **Not covered:** invalid/brute-forced API keys aren't rate-limited (the check only runs after a key authenticates successfully) — that would need IP-based limiting, a separate piece of work.
 
 ### 13. 3D virtual tours / AI walkthrough
@@ -119,28 +113,38 @@
 - **Status:** ⏳ Pending (currently dev-only)
 - **Target date:** Before public launch
 
+### 16. Per-agent permission system
+- **Status:** ✅ **Done 2026-06-23** — `agente` role now defaults to: edit-only-own properties, view-only-own contacts, Configuración restricted to "General". Admin/owner can override any flag per-agent from Configuración → Usuarios (⚙️ icon per row). AI assistant tools respect the same scoping. See `lib/permissions.ts` + memory `agent-permissions-system.md`.
+- **Migration 022 confirmed applied** (`agents.permissions` column exists).
+- **✅ Tested live 2026-06-23** with the `jupiteralemanc@carolinau.edu` test agent — confirmed scoped to own properties/contacts and Configuración reduced to "General".
+- **Flagged assumptions to revisit if wrong:** "Usuarios" nav item hidden for agentes (wasn't explicitly named); "Equipo"/"Reportes" team-wide views left open (not explicitly mentioned); property/contact notes stayed unrestricted (collaborative by design).
+
 ---
 
-## ✅ COMPLETED (this session)
+## ✅ COMPLETED (this session, 2026-06-22 → 2026-06-23)
 
 - [x] Three High-severity security fixes (H-01, H-02, H-03) + DELETE role-gate fix found in review
-- [x] Per-company API key feature (management + v1 endpoints)
-- [x] Rate limiting on /api/v1/* (in-memory, 60 req/min/company)
+- [x] Per-company API key feature (management + v1 endpoints) — tested live end-to-end
+- [x] Rate limiting on /api/v1/* — shipped at 60/min, tightened to 20/min + 50/page same day
 - [x] Propietarios/Sidebar/CSV feature (separate owners from leads)
 - [x] Security audit (OWASP Top 10 / ASVS)
 - [x] Marketing capabilities document (`PropSync-Capacidades.txt`)
-- [x] Capacitor plan drafted (Phase 1/2/3 breakdown)
-- [x] Migration 021 run in Supabase (confirmed via check script)
-- [x] **Committed + pushed to `main`** — 5 commits (`f4085a1..d7f7b09`), deployed to Vercel
+- [x] Capacitor + Codemagic CI scaffold (Phase 1 code done, Phase 2 needs user accounts)
+- [x] Migrations 021 + 022 run in Supabase (confirmed via check scripts)
+- [x] Fixed orphaned invited-agent bug (dashboard crash) — self-healing added to `lib/auth.ts`
+- [x] Per-agent permission system (agente scoped to own data, admin override UI, bot scoping)
+- [x] **Committed + pushed to `main`** — multiple commits through `172484c`, all deployed to Vercel
 
 ---
 
 ## 🎯 Immediate next steps
 
-1. **Verify the Vercel deploy** picked up `d7f7b09` and "API para desarrolladores" now shows at `/configuracion/general`
-2. **Test API key** end-to-end (generate, reveal, use in curl) — see step-by-step in conversation
-3. **Test security fixes** against the production build (H-01 escalation, H-02 account takeover, H-03 unsigned upload)
-4. Codemagic setup: account, Apple Developer account, `propsync_app_store_connect` integration, App Store Connect app shell, push `ios-1` tag
+All security + permissions verification is done. What's left is either external setup (accounts, signups) or business decisions — nothing else is blocked on more code review:
+
+1. Codemagic setup: account, Apple Developer account, `propsync_app_store_connect` integration, App Store Connect app shell, push `ios-1` tag
+2. Google Play account ($25) + Android Studio local build + 20 testers for internal track
+3. Pricing decision (unblocks Stripe work)
+4. Optional code work available now, not yet requested: IP-based rate limiting on `/api/v1/*` for invalid-key brute force, password-reset flow polish, custom domain DNS (needs your Vercel access either way)
 
 ---
 
