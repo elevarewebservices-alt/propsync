@@ -125,7 +125,7 @@ const FAQ_CATEGORIES: FAQCategory[] = [
     questions: [
       {
         question: '¿Qué incluye cada plan?',
-        answer: 'Individual ($30/mes): 50 propiedades, Facebook, 1 usuario. Pro ($60/mes): propiedades ilimitadas, conexión a portales, WhatsApp, marketing automation, API, 2 usuarios (+$7.99/usuario adicional).',
+        answer: 'Individual ($30/mes): 50 propiedades, conexión a portales (Compre o Alquile, Encuentra24, Página web), 1 usuario. Pro ($60/mes): propiedades ilimitadas, los mismos portales, WhatsApp, marketing automation, API, 2 usuarios (+$7.99/usuario adicional).',
       },
       {
         question: '¿Cómo cambio de plan?',

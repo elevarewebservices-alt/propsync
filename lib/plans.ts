@@ -1,4 +1,7 @@
 import { Plan, PlanId } from './types'
+import { CANALES_PUBLICACION } from './canales'
+
+const TODOS_LOS_CANALES = CANALES_PUBLICACION.map((c) => c.id)
 
 export const ASSISTANT_LIMITS: Record<string, number> = {
   starter: 200,
@@ -17,7 +20,7 @@ export const PLANS: Plan[] = [
       propiedades: 50,
       agentes: 1,
       fuentes: 1,
-      canales: ['facebook'],
+      canales: TODOS_LOS_CANALES,
       mantener: false,
       soporte: 'comunidad',
       api: false,
@@ -25,7 +28,7 @@ export const PLANS: Plan[] = [
     features: [
       'Hasta 50 propiedades',
       '1 usuario',
-      'Publicación en Facebook Marketplace',
+      'Conexión a portales (Compre o Alquile, Encuentra24, Página web)',
       '1 fuente de datos (Wasi)',
       'Dashboard básico',
       'Cola de publicación',
@@ -40,7 +43,7 @@ export const PLANS: Plan[] = [
       propiedades: 'ilimitado',
       agentes: 2,
       fuentes: 3,
-      canales: ['facebook', 'mercadolibre', 'olx'],
+      canales: TODOS_LOS_CANALES,
       mantener: true,
       soporte: 'email',
       api: true,
@@ -48,7 +51,7 @@ export const PLANS: Plan[] = [
     features: [
       'Propiedades ilimitadas',
       '2 usuarios (+$7.99/usuario adicional)',
-      'Conexión a portales',
+      'Conexión a portales (Compre o Alquile, Encuentra24, Página web)',
       '3 fuentes de datos',
       'Módulo Mantener completo',
       'Campaña WhatsApp automática',

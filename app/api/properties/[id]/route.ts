@@ -46,7 +46,7 @@ export async function PATCH(
     'agente_asignado_id', 'fecha_seguimiento', 'notas',
     'whatsapp_estado', 'telefono_propietario',
     'main_image_url', 'gallery_urls',
-    'tour_rooms',
+    'tour_rooms', 'canales_publicados',
     'features_internal', 'features_external',
     'commission_type', 'commission_value', 'commission_notes',
     'ext_commission_type', 'ext_commission_value', 'ext_commission_notes',

@@ -88,8 +88,8 @@ const T = {
     trialBadge: '15 días de prueba gratis',
     trialSub: 'Sin tarjeta de crédito · Cancela cuando quieras',
     plans: [
-      { n: 'Individual', p: '$30', per: '/mes', d: 'Para agentes independientes', f: ['50 propiedades', 'Base de datos centralizada', 'CRM básico', 'Asistente IA limitado', '1 usuario'], cta: 'Probar 15 días gratis' },
-      { n: 'Pro', p: '$60', per: '/mes', d: 'Para equipos en crecimiento', popular: true, f: ['200 propiedades', 'CRM completo + pipeline', 'Asistente IA completo', 'Conexión a portales', '2 usuarios (+$7.99/usuario adicional)', 'Web widget + API'], cta: 'Probar 15 días gratis' },
+      { n: 'Individual', p: '$30', per: '/mes', d: 'Para agentes independientes', f: ['50 propiedades', 'Base de datos centralizada', 'CRM básico', 'Asistente IA limitado', 'Conexión a portales (Compre o Alquile, Encuentra24, Página web)', '1 usuario'], cta: 'Probar 15 días gratis' },
+      { n: 'Pro', p: '$60', per: '/mes', d: 'Para equipos en crecimiento', popular: true, f: ['200 propiedades', 'CRM completo + pipeline', 'Asistente IA completo', 'Conexión a portales (Compre o Alquile, Encuentra24, Página web)', '2 usuarios (+$7.99/usuario adicional)', 'Web widget + API'], cta: 'Probar 15 días gratis' },
     ],
 
     ctaBand: 'Tu agencia, en una sola plataforma.',
@@ -246,8 +246,8 @@ const T = {
     trialBadge: '15-day free trial',
     trialSub: 'No credit card · Cancel anytime',
     plans: [
-      { n: 'Individual', p: '$30', per: '/mo', d: 'For independent agents', f: ['50 properties', 'Centralized database', 'Basic CRM', 'Limited AI assistant', '1 user'], cta: 'Start 15-day free trial' },
-      { n: 'Pro', p: '$60', per: '/mo', d: 'For growing teams', popular: true, f: ['200 properties', 'Full CRM + pipeline', 'Full AI assistant', 'Portal connections', '2 users (+$7.99/extra user)', 'Web widget + API'], cta: 'Start 15-day free trial' },
+      { n: 'Individual', p: '$30', per: '/mo', d: 'For independent agents', f: ['50 properties', 'Centralized database', 'Basic CRM', 'Limited AI assistant', 'Portal connections (Compre o Alquile, Encuentra24, Web page)', '1 user'], cta: 'Start 15-day free trial' },
+      { n: 'Pro', p: '$60', per: '/mo', d: 'For growing teams', popular: true, f: ['200 properties', 'Full CRM + pipeline', 'Full AI assistant', 'Portal connections (Compre o Alquile, Encuentra24, Web page)', '2 users (+$7.99/extra user)', 'Web widget + API'], cta: 'Start 15-day free trial' },
     ],
 
     ctaBand: 'Your agency, in one platform.',

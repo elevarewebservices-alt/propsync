@@ -16,6 +16,7 @@ import type { PropertyNote } from '@/lib/types'
 import { resizeImageFile } from '@/lib/image-resize'
 import { isNativeApp } from '@/lib/native'
 import { captureFromCamera, pickFromGallery } from '@/lib/native-camera'
+import { CANALES_PUBLICACION } from '@/lib/canales'
 
 const PROPERTY_TYPES = [
   'Apartamento', 'Casa', 'Local Comercial', 'Oficina', 'Bodega',
@@ -74,6 +75,7 @@ export default function EditarPropiedadPage() {
   const [extCommType, setExtCommType] = useState<'percentage' | 'fixed'>('percentage')
   const [extCommValue, setExtCommValue] = useState('')
   const [extCommNotes, setExtCommNotes] = useState('')
+  const [canalesPublicados, setCanalesPublicados] = useState<string[]>([])
 
   // Images: existing URLs + new File objects
   const [existingImages, setExistingImages] = useState<string[]>([])
@@ -144,6 +146,7 @@ export default function EditarPropiedadPage() {
         setExistingImages(Array.isArray(prop.gallery_urls) && prop.gallery_urls.length
           ? prop.gallery_urls
           : prop.main_image_url ? [prop.main_image_url] : [])
+        setCanalesPublicados(Array.isArray(prop.canales_publicados) ? prop.canales_publicados : [])
       } finally {
         setIsLoading(false)
       }
@@ -284,6 +287,7 @@ export default function EditarPropiedadPage() {
       ext_commission_type: extCommValue ? extCommType : null,
       ext_commission_value: extCommValue ? parseFloat(extCommValue) : null,
       ext_commission_notes: extCommNotes.trim() || null,
+      canales_publicados: canalesPublicados,
     }
 
     const res = await fetch(`/api/properties/${id}`, {
@@ -664,6 +668,30 @@ export default function EditarPropiedadPage() {
               </p>
             </div>
           )}
+        </section>
+
+        {/* Lugares de publicación */}
+        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Lugares de publicación</h2>
+          <p className="text-xs text-muted-foreground">Elige dónde se publicará esta propiedad</p>
+          <Separator />
+
+          <div className="flex flex-wrap gap-2">
+            {CANALES_PUBLICACION.map((canal) => (
+              <button
+                key={canal.id}
+                type="button"
+                onClick={() => toggleFeature(canalesPublicados, setCanalesPublicados, canal.id)}
+                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                  canalesPublicados.includes(canal.id)
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
+                    : 'border border-border bg-muted/40 text-muted-foreground hover:border-foreground/50 hover:text-foreground'
+                }`}
+              >
+                {canal.nombre}
+              </button>
+            ))}
+          </div>
         </section>
 
         {/* Notas internas */}

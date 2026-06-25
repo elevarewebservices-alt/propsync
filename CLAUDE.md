@@ -54,10 +54,6 @@ app/
 │   ├── layout.tsx          # App shell: Sidebar + Header + BottomNav + ChatWidget
 │   ├── dashboard/page.tsx
 │   ├── propiedades/page.tsx
-│   ├── publicar/
-│   │   ├── canales/page.tsx
-│   │   ├── cola/page.tsx
-│   │   └── historial/page.tsx
 │   ├── mantener/
 │   │   ├── page.tsx
 │   │   ├── campana-whatsapp/page.tsx
@@ -87,8 +83,7 @@ components/
 ├── propiedades/
 │   ├── PropertyCard.tsx          # Shows TWO badges: estado_publicacion + disponibilidad
 │   ├── PropertyFilters.tsx       # Filters by disponibilidad dropdown
-│   ├── PropertyDetailSheet.tsx   # Slide-over: CRM fields + immutable notes feed
-│   └── PublishModal.tsx
+│   └── PropertyDetailSheet.tsx   # Slide-over: CRM fields + immutable notes feed
 ├── assistant/
 │   └── ChatWidget.tsx
 ├── shared/
@@ -208,13 +203,22 @@ canAccessChannel(userPlanId, canal)   // boolean
 requiresPlan(userPlanId, required)    // boolean
 ```
 
-| Plan | Properties | Key features |
-|---|---|---|
-| `starter` | 50 | DB + basic CRM, Facebook only, 1 user |
-| `pro` | 200 | Full CRM, WhatsApp, marketing automation, 5 users, API |
-| `agency` | ∞ | Everything + unlimited users, dedicated support |
+| Plan (`id`) | Nombre | Precio | Properties | Key features |
+|---|---|---|---|---|
+| `starter` | Individual | $30/mes | 50 | DB + CRM básico, conexión a portales, 1 usuario, sin API |
+| `pro` | Pro | $60/mes (+$7.99/usuario adicional sobre 2 incluidos) | ilimitado | CRM completo, conexión a portales, WhatsApp, marketing automation, API |
 
-Prices are **pending final decision** — do not treat current landing page prices ($49/$99/$199) as final.
+**Final pricing as of 2026-06-23** — `agency` tier was removed entirely; large teams scale by adding extra users to Pro instead of a separate tier. See [[pricing-restructure-2tier]] in memory for the full rationale.
+
+### Lugares de publicación (canales)
+
+`lib/canales.ts` exports `CANALES_PUBLICACION` — the single source of truth for channel ids/labels, shared between `lib/plans.ts`'s `limites.canales` and the property form UI. Both plans currently include all three:
+
+- `comprealquile` — Compre o Alquile
+- `encuentra24` — Encuentra24
+- `pagina_web` — Página web (the property's own public PropSync page, not the Pro-exclusive developer API/embed widget — that's a separate `limites.api` gate)
+
+UI: a "Lugares de publicación" section (pill toggles) at the end of both `propiedades/nueva` and `propiedades/[id]/editar`, writing to `properties.canales_publicados` (`TEXT[]`). `canAccessChannel()` exists but isn't called anywhere yet — channel selection isn't currently plan-gated, only marketing copy reflects what's "included."
 
 ---
 

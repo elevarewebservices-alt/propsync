@@ -20,6 +20,7 @@ import Link from 'next/link'
 import { resizeImageFile } from '@/lib/image-resize'
 import { isNativeApp } from '@/lib/native'
 import { captureFromCamera, pickFromGallery } from '@/lib/native-camera'
+import { CANALES_PUBLICACION } from '@/lib/canales'
 
 const PROPERTY_TYPES = [
   'Apartamento', 'Casa', 'Local Comercial', 'Oficina', 'Bodega',
@@ -95,6 +96,9 @@ export default function NuevaPropiedadPage() {
   const [featuresExternal, setFeaturesExternal] = useState<string[]>([])
   const [customInternalInput, setCustomInternalInput] = useState('')
   const [customExternalInput, setCustomExternalInput] = useState('')
+
+  // Lugares de publicación
+  const [canalesPublicados, setCanalesPublicados] = useState<string[]>([])
 
   // Commissions
   const [commType, setCommType] = useState<'percentage' | 'fixed'>('percentage')
@@ -416,7 +420,7 @@ export default function NuevaPropiedadPage() {
       telefono_propietario: ownerTelefono1.trim() || null,
       owner_contact_id: resolvedOwnerContactId,
       notas: notas.trim() || null,
-      canales_publicados: [],
+      canales_publicados: canalesPublicados,
     }
 
     const res = await fetch('/api/properties', {
@@ -1161,6 +1165,30 @@ export default function NuevaPropiedadPage() {
               </p>
             </div>
           )}
+        </section>
+
+        {/* Lugares de publicación */}
+        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Lugares de publicación</h2>
+          <p className="text-xs text-muted-foreground">Elige dónde se publicará esta propiedad</p>
+          <Separator />
+
+          <div className="flex flex-wrap gap-2">
+            {CANALES_PUBLICACION.map((canal) => (
+              <button
+                key={canal.id}
+                type="button"
+                onClick={() => toggleFeature(canalesPublicados, setCanalesPublicados, canal.id)}
+                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                  canalesPublicados.includes(canal.id)
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
+                    : 'border border-border bg-muted/40 text-muted-foreground hover:border-foreground/50 hover:text-foreground'
+                }`}
+              >
+                {canal.nombre}
+              </button>
+            ))}
+          </div>
         </section>
 
         {/* Actions */}
