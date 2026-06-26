@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { resolveCompanyId, getSessionPermissions, getSessionPlan } from '@/lib/auth'
-import { hasAddon } from '@/lib/addons'
+import { requireAddon } from '@/lib/addons'
 import { createAdminClient } from '@/lib/supabase'
 import { decrypt } from '@/lib/crypto'
 import { listTemplates, createTemplate, type CreateTemplateInput } from '@/lib/whatsapp-templates'
 
 export const dynamic = 'force-dynamic'
-
-async function authorize() {
-  const companyId = await resolveCompanyId()
-  if (!(await getSessionPermissions()).accessSettings) {
-    return { error: NextResponse.json({ error: 'Sin permisos' }, { status: 403 }) }
-  }
-  const plan = await getSessionPlan()
-  if (plan !== 'pro' || !(await hasAddon(companyId, 'marketing'))) {
-    return { error: NextResponse.json({ error: 'Esto requiere el add-on Marketing (Pro)' }, { status: 403 }) }
-  }
-  return { companyId }
-}
 
 async function getConfig(companyId: string) {
   const db = createAdminClient()
@@ -34,8 +21,8 @@ async function getConfig(companyId: string) {
 }
 
 export async function GET() {
-  const auth = await authorize()
-  if ('error' in auth) return auth.error
+  const auth = await requireAddon('marketing')
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   const config = await getConfig(auth.companyId)
   if (!config) {
@@ -50,8 +37,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await authorize()
-  if ('error' in auth) return auth.error
+  const auth = await requireAddon('marketing')
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
   const config = await getConfig(auth.companyId)
   if (!config) {

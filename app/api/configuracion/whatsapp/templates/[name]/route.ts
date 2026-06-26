@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { resolveCompanyId, getSessionPermissions, getSessionPlan } from '@/lib/auth'
-import { hasAddon } from '@/lib/addons'
+import { requireAddon } from '@/lib/addons'
 import { createAdminClient } from '@/lib/supabase'
 import { decrypt } from '@/lib/crypto'
 import { deleteTemplate } from '@/lib/whatsapp-templates'
@@ -8,14 +7,9 @@ import { deleteTemplate } from '@/lib/whatsapp-templates'
 export const dynamic = 'force-dynamic'
 
 export async function DELETE(_request: Request, { params }: { params: { name: string } }) {
-  const companyId = await resolveCompanyId()
-  if (!(await getSessionPermissions()).accessSettings) {
-    return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
-  }
-  const plan = await getSessionPlan()
-  if (plan !== 'pro' || !(await hasAddon(companyId, 'marketing'))) {
-    return NextResponse.json({ error: 'Esto requiere el add-on Marketing (Pro)' }, { status: 403 })
-  }
+  const auth = await requireAddon('marketing')
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status })
+  const companyId = auth.companyId
 
   const db = createAdminClient()
   const { data } = await (db.from('companies') as any)

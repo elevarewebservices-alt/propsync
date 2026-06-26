@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
+import { UsageGuide } from '@/components/shared/UsageGuide'
 import { ArrowLeft, Loader2, AlertCircle, Plus, Trash2, Lock, ArrowRight } from 'lucide-react'
 
 interface Template {
@@ -258,6 +259,45 @@ export default function WhatsAppTemplatesPage() {
             Ver planes <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
+      )}
+
+      {/* Usage guide — only rendered for users who actually have access
+          (locked users see the upsell screen above instead). */}
+      {!locked && (
+        <UsageGuide
+          title="Guía de uso — Templates de WhatsApp"
+          intro={
+            <>
+              WhatsApp solo te deja escribirle a un cliente <strong>libremente durante 24h</strong> después
+              de su último mensaje. Pasada esa ventana, únicamente puedes iniciar la conversación con un
+              <strong> template aprobado por Meta</strong>. Aquí los creas, los envías a revisión y ves su estado.
+            </>
+          }
+          steps={[
+            {
+              title: 'Crea el template',
+              body: <>Pulsa <em>Nuevo template</em>. Ponle un nombre en minúsculas con guion bajo (ej. <code>confirmacion_visita</code>), elige categoría e idioma.</>,
+            },
+            {
+              title: 'Escribe el cuerpo con variables',
+              body: <>Usa <code>{'{{1}}'}</code>, <code>{'{{2}}'}</code>… donde quieras insertar datos al enviar (nombre del cliente, propiedad, fecha). El encabezado y el pie son opcionales.</>,
+            },
+            {
+              title: 'Envía a revisión de Meta',
+              body: <>Al guardar, el template queda en estado <strong>PENDING</strong>. Meta lo revisa (de minutos hasta ~24h) y pasa a <strong>APPROVED</strong> o <strong>REJECTED</strong>.</>,
+            },
+            {
+              title: 'Úsalo en tus campañas',
+              body: <>Solo los templates <strong>APPROVED</strong> se pueden enviar. Una vez aprobado, ya está disponible para las respuestas automáticas y campañas de WhatsApp.</>,
+            },
+          ]}
+          tips={[
+            <><strong>Utility</strong> (confirmaciones, recordatorios, seguimiento) se aprueba más fácil y rápido que <strong>Marketing</strong> (promociones).</>,
+            'Evita lenguaje promocional exagerado, mayúsculas excesivas o enlaces sospechosos: son la causa #1 de rechazo.',
+            'Si un template es rechazado, verás el motivo debajo de su nombre. Ajusta el texto y créalo de nuevo.',
+            'Los costos por mensaje de WhatsApp los cobra Meta directamente; el add-on Marketing no los incluye.',
+          ]}
+        />
       )}
 
       {!locked && loading && (

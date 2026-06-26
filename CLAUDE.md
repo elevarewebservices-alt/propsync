@@ -277,7 +277,9 @@ mapAvailability(id): 'disponible' | 'vendido' | 'alquilado'
 
 `company_addons` (`supabase/migrations/023_company_addons.sql` — run manually, not yet applied) tracks add-ons separately from `companies.plan_id` so new add-ons don't need a new migration: `{ company_id, addon_id, activo }`, unique on `(company_id, addon_id)`.
 
-`lib/addons.ts` — `ADDONS` catalog + `hasAddon(companyId, addonId)`.
+`lib/addons.ts` — `ADDONS` catalog + `hasAddon(companyId, addonId)` + `requireAddon(addonId)` (the single server-side gate; fails closed: 401 unauth → 403 no `accessSettings` → 403 wrong plan / missing add-on row). Both template routes call `requireAddon('marketing')` so enforcement can't drift.
+
+**Security — add-on activation is server-only.** `company_addons` RLS exposes a SELECT-only policy; there is intentionally **no** INSERT/UPDATE/DELETE policy, so the anon/authenticated PostgREST roles cannot self-grant or flip an add-on (despite migration 019's blanket GRANT). Only the service_role admin client (server side) can write a row. There is no self-serve activation endpoint yet — activation is a manual DB insert.
 
 - **`marketing`** — +$40/mes on top of Pro. WhatsApp message costs are NOT included (billed directly to the client by Meta/their BSP) — this only covers platform features: WhatsApp template management, automated lead-qualification flow, shared WhatsApp inbox, bulk email marketing. Requires `plan_id='pro'` AND an active `company_addons` row. No self-serve purchase flow yet (Stripe is still pending) — activation is currently a manual DB row.
 
@@ -286,7 +288,9 @@ mapAvailability(id): 'disponible' | 'vendido' | 'alquilado'
 Wraps Meta's Message Templates Management API (`lib/whatsapp-templates.ts` — `listTemplates`/`createTemplate`/`deleteTemplate` against `/{businessAccountId}/message_templates`, separate from `lib/whatsapp.ts`'s send functions which use `phoneNumberId`). Reuses the `businessAccountId`/`accessToken` already stored on `companies` for WhatsApp messaging.
 
 - `app/api/configuracion/whatsapp/templates/route.ts` (GET list, POST create) + `[name]/route.ts` (DELETE) — gated by `accessSettings` permission + `plan_id='pro'` + `hasAddon(companyId, 'marketing')`, returns 403 with an upsell message otherwise.
-- `app/(app)/configuracion/whatsapp/plantillas/page.tsx` — list with status badges (APPROVED/PENDING/REJECTED/...), create-template dialog (name, category, language, header/body/footer with `{{n}}` variables), delete. Shows an addon-upsell screen when the API returns 403. Linked from `configuracion/whatsapp/page.tsx`.
+- `app/(app)/configuracion/whatsapp/plantillas/page.tsx` — list with status badges (APPROVED/PENDING/REJECTED/...), create-template dialog (name, category, language, header/body/footer with `{{n}}` variables), delete. Shows an addon-upsell screen when the API returns 403. Linked from `configuracion/whatsapp/page.tsx`. Includes an in-app `UsageGuide` rendered only in the unlocked state (so the guide is exclusive to users who have the add-on).
+
+`components/shared/UsageGuide.tsx` — reusable collapsible usage-guide card (title, intro, numbered steps, tips). Render it inside an already-gated page so it's only visible to users with access to that feature.
 
 ### Not yet built (later phases of the Woztell-like Marketing addon)
 - Configurable lead-qualification flow/state machine
