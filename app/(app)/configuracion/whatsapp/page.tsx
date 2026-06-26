@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { ArrowLeft, MessageCircle, ExternalLink, Copy, Check, Loader2, AlertCircle } from 'lucide-react'
+import { ArrowLeft, MessageCircle, ExternalLink, Copy, Check, Loader2, AlertCircle, FileText, ArrowRight } from 'lucide-react'
 
 interface WhatsAppConfig {
   phoneNumberId: string | null
@@ -147,6 +147,25 @@ export default function WhatsAppConfigPage() {
           </p>
         </div>
       </div>
+
+      {/* Templates management */}
+      <Link
+        href="/configuracion/whatsapp/plantillas"
+        className="flex items-center justify-between rounded-xl border border-border bg-card p-5 hover:border-green-300 dark:hover:border-green-800 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30">
+            <FileText className="h-5 w-5 text-green-600 dark:text-green-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">Templates de mensajes</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Crea y administra templates aprobados por Meta — add-on Marketing
+            </p>
+          </div>
+        </div>
+        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+      </Link>
 
       {/* Webhook URL */}
       {webhookUrl && (

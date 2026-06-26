@@ -21,6 +21,18 @@ export type WhatsAppResponse =
 
 export type PlanId = 'starter' | 'pro'
 
+// Paid add-ons stacked on top of a plan — tracked in company_addons, not a
+// boolean on companies, so new add-ons don't each need a migration.
+export type AddonId = 'marketing'
+
+export interface CompanyAddon {
+  id: string
+  company_id: string
+  addon_id: AddonId
+  activo: boolean
+  created_at: string
+}
+
 export type EtapaCRM = string // dynamic — values come from crm_stages table
 
 export type ContactTipo = 'cliente' | 'propietario' | 'broker'

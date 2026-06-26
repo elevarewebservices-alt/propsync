@@ -273,6 +273,29 @@ mapAvailability(id): 'disponible' | 'vendido' | 'alquilado'
 
 ---
 
+## Add-ons (paid, stacked on top of a plan)
+
+`company_addons` (`supabase/migrations/023_company_addons.sql` — run manually, not yet applied) tracks add-ons separately from `companies.plan_id` so new add-ons don't need a new migration: `{ company_id, addon_id, activo }`, unique on `(company_id, addon_id)`.
+
+`lib/addons.ts` — `ADDONS` catalog + `hasAddon(companyId, addonId)`.
+
+- **`marketing`** — +$40/mes on top of Pro. WhatsApp message costs are NOT included (billed directly to the client by Meta/their BSP) — this only covers platform features: WhatsApp template management, automated lead-qualification flow, shared WhatsApp inbox, bulk email marketing. Requires `plan_id='pro'` AND an active `company_addons` row. No self-serve purchase flow yet (Stripe is still pending) — activation is currently a manual DB row.
+
+### WhatsApp template management (first addon feature shipped)
+
+Wraps Meta's Message Templates Management API (`lib/whatsapp-templates.ts` — `listTemplates`/`createTemplate`/`deleteTemplate` against `/{businessAccountId}/message_templates`, separate from `lib/whatsapp.ts`'s send functions which use `phoneNumberId`). Reuses the `businessAccountId`/`accessToken` already stored on `companies` for WhatsApp messaging.
+
+- `app/api/configuracion/whatsapp/templates/route.ts` (GET list, POST create) + `[name]/route.ts` (DELETE) — gated by `accessSettings` permission + `plan_id='pro'` + `hasAddon(companyId, 'marketing')`, returns 403 with an upsell message otherwise.
+- `app/(app)/configuracion/whatsapp/plantillas/page.tsx` — list with status badges (APPROVED/PENDING/REJECTED/...), create-template dialog (name, category, language, header/body/footer with `{{n}}` variables), delete. Shows an addon-upsell screen when the API returns 403. Linked from `configuracion/whatsapp/page.tsx`.
+
+### Not yet built (later phases of the Woztell-like Marketing addon)
+- Configurable lead-qualification flow/state machine
+- Shared WhatsApp inbox UI
+- Hardcoded MVP instant-qualification flow (original scoped MVP, deprioritized in favor of template management first)
+- Bulk/marketing email campaigns (distinct from existing transactional emails in `lib/email.ts`)
+
+---
+
 ## Implementation Status
 
 ### Completed
