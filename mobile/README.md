@@ -20,7 +20,14 @@ npm install
 npx cap add android        # genera la carpeta android/ (ignorada en git)
 npx cap add ios            # genera ios/ — requiere macOS
 npx cap sync
+npx capacitor-assets generate   # ícono + splash desde assets/icon.png y assets/splash.png
 ```
+
+El ícono y splash se regeneran desde `mobile/assets/icon.png` (1024×1024) y
+`mobile/assets/splash.png` (2732×2732) — como `android/` e `ios/` están en
+`.gitignore`, hay que correr `npx capacitor-assets generate` cada vez que se
+regeneran esas carpetas (ya está automatizado en el workflow de Codemagic
+para iOS; para Android hazlo manualmente después de `cap add android`).
 
 ## Abrir y correr
 

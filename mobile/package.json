@@ -6,7 +6,8 @@
   "scripts": {
     "sync": "cap sync",
     "open:ios": "cap open ios",
-    "open:android": "cap open android"
+    "open:android": "cap open android",
+    "assets": "capacitor-assets generate"
   },
   "dependencies": {
     "@capacitor/app": "^6.0.0",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@capacitor/cli": "^6.1.0",
     "@capacitor/android": "^6.1.0",
-    "@capacitor/ios": "^6.1.0"
+    "@capacitor/ios": "^6.1.0",
+    "@capacitor/assets": "^3.0.5"
   }
 }

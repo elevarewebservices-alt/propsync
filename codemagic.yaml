@@ -34,6 +34,14 @@ workflows:
           npx cap add ios
           npx cap sync ios
 
+      - name: Generate app icon + splash screen
+        # assets/icon.png (1024x1024) + assets/splash.png (2732x2732) →
+        # populates ios/App/App/Assets.xcassets, regenerated fresh every
+        # build since ios/ is gitignored.
+        script: |
+          cd mobile
+          npx capacitor-assets generate --ios
+
       - name: Install CocoaPods dependencies
         script: |
           cd mobile/ios/App

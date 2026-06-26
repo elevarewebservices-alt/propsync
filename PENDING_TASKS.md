@@ -34,7 +34,8 @@
 - ✅ Plugins in `mobile/package.json` (camera, push-notifications, app, splash-screen, status-bar)
 - ✅ `npx cap add android` + `npx cap add ios` — both native projects generated locally 2026-06-22 (gitignored per `mobile/.gitignore`, regenerated on demand)
 - ✅ **iOS path decided: Codemagic** (user has no Mac). Added `codemagic.yaml` at repo root — workflow `ios-capacitor-release`, triggers on `ios-*` tags, regenerates `ios/` in CI (since it's gitignored), signs via App Store Connect integration, publishes to TestFlight. Documented setup steps in `mobile/README.md`.
-- **Status:** ⏳ Pending — (1) Codemagic account ✅ done, (2) Apple Developer account ⏳ **payment processing 2026-06-23** ($99/yr, not yet confirmed/active — Apple's enrollment review can take hours to days). **Still needed once active**: (3) create the App Store Connect API key integration named exactly `propsync_app_store_connect` in Codemagic, (4) create the `com.propsyncia.app` app shell in App Store Connect, (5) push a tag like `ios-1` to trigger the first build.
+- **Status:** ⏳ In progress — (1) Codemagic account ✅ done, (2) Apple Developer account ✅ **approved 2026-06-25**. **Still needed**: (3) create the App Store Connect API key integration named exactly `propsync_app_store_connect` in Codemagic, (4) create the `com.propsyncia.app` app shell in App Store Connect, (5) push a tag like `ios-1` to trigger the first build. These three are all external dashboard steps (Codemagic + App Store Connect) — not blocked on any more code.
+- **App icon fixed 2026-06-25** — the icon baked into the native shell was still Capacitor's generic default, and the only brand assets in `public/` were non-square crops (~339×339, too low-res for Apple's 1024×1024 requirement anyway). Hand-built a clean vector recreation of the brand mark (`public/icon-mark.svg`, same gradient/house/sync-arrows concept) and rendered proper assets: `mobile/assets/icon.png` (1024×1024 opaque) + `mobile/assets/splash.png` (2732×2732), wired through `@capacitor/assets` (`npm run assets` in `mobile/`), auto-run in the Codemagic iOS workflow after `cap add ios`. Also fixed `public/icon-192.png`/`icon-512.png` — these were a different bug, silently non-square (760×339) despite the PWA manifest declaring them as square, now exact-size renders of the same mark.
 - **Android:** Google Play account ✅ **paid 2026-06-23** ($25). ⏸️ **On hold** — user needs to acquire a physical Android device before building/testing locally via Android Studio.
 - **Target date:** 2026-06-30 (before Phase 2 testing)
 
@@ -122,7 +123,7 @@
 
 All security + permissions verification is done. What's left is either external setup (accounts, signups) or business decisions — nothing else is blocked on more code review:
 
-1. Codemagic setup: account, Apple Developer account, `propsync_app_store_connect` integration, App Store Connect app shell, push `ios-1` tag
+1. Apple Developer approved 2026-06-25 — next: create `propsync_app_store_connect` integration in Codemagic, create the `com.propsyncia.app` app shell in App Store Connect, then push `ios-1` tag to trigger the first TestFlight build
 2. Google Play account ($25) + Android Studio local build + 20 testers for internal track
 3. Pricing is now finalized (Individual $30 / Pro $60+$7.99/usuario) — unblocks Stripe integration work (item 9) whenever you want to schedule it
 4. Password reset and virtual tours both turned out to be already done — verified 2026-06-23, no code changes needed
