@@ -29,6 +29,25 @@ El ícono y splash se regeneran desde `mobile/assets/icon.png` (1024×1024) y
 regeneran esas carpetas (ya está automatizado en el workflow de Codemagic
 para iOS; para Android hazlo manualmente después de `cap add android`).
 
+### Config nativa de iOS requerida por Apple (`ios-config/`)
+
+Como `ios/` se regenera en cada build, todo lo que App Store exige a nivel
+nativo se reaplica con un script — **no se commitea**:
+
+```bash
+cd mobile && bash ios-config/patch-ios.sh   # correr DESPUÉS de `cap add ios`
+```
+
+Esto inyecta en `ios/App/App/Info.plist`:
+- `NSCameraUsageDescription` y `NSPhotoLibraryUsageDescription` (la cámara y el
+  selector de fotos viven en "Nueva propiedad" — sin estos strings Apple rechaza).
+- `ITSAppUsesNonExemptEncryption = false` (solo HTTPS/TLS estándar → exento;
+  evita la pregunta de export compliance en cada subida a TestFlight).
+- Copia y registra `ios-config/PrivacyInfo.xcprivacy` (privacy manifest, obligatorio).
+
+En Codemagic ya corre solo (paso "Patch iOS native config"). Localmente en Mac,
+córrelo a mano tras `cap add ios`.
+
 ## Abrir y correr
 
 ```bash
@@ -68,11 +87,41 @@ firma con el perfil de App Store y sube directo a **TestFlight**.
 
 Sigue siendo local (Android Studio, ver arriba) — no requiere Mac ni Codemagic.
 
-## Pasos pendientes (fuera del código)
+## Lanzamiento iOS — checklist de submission
 
-1. Cuentas: Google Play ($25 único) + Apple Developer ($99/año).
-2. Setup de Codemagic (ver sección arriba) — API key de App Store Connect + integración.
+Apple Developer ya está **aprobado**. El código (config nativa, permisos,
+privacy manifest, icono, workflow de Codemagic) ya está listo. Lo que queda es
+todo fuera del repo, en orden:
+
+1. **App Store Connect → crear el app** con bundle id `com.propsyncia.app`
+   (nombre "PropSync", categoría Business, idioma principal Español).
+2. **Codemagic** (una sola vez):
+   - Conectar este repo de GitHub.
+   - *Team settings → Integrations → App Store Connect*: subir una API Key y
+     nombrarla `propsync_app_store_connect` (debe coincidir con `codemagic.yaml`).
+   - *Code signing → iOS*: dejar que Codemagic gestione cert + perfil vía esa API key.
+3. **App ID → habilitar la capability "Push Notifications"** en el portal de Apple
+   (aunque el envío de push nativo es Fase 3, conviene dejar el App ID listo).
+4. **Disparar el primer build**: `git tag ios-1 && git push origin ios-1`.
+   El workflow regenera `ios/`, aplica `ios-config/patch-ios.sh`, firma y sube a **TestFlight**.
+5. **Probar en TestFlight** (instalar en un iPhone real, validar login + tomar foto
+   de una propiedad con la cámara nativa).
+6. **Ficha de tienda + submit a revisión** en App Store Connect:
+   - Capturas (iPhone 6.7" y 6.5" mínimo), descripción, keywords, categoría.
+   - **URL de privacidad**: `https://www.propsyncia.com/privacidad`.
+   - **App Privacy** (cuestionario "nutrition label"): declarar los datos que
+     maneja la cuenta (email, datos de contacto/CRM) — sin tracking de terceros.
+   - Demo account para el revisor (usuario + contraseña de una empresa de prueba).
+   - Enviar a revisión.
+
+## Pasos pendientes — Android (cuando se retome)
+
+1. Cuenta Google Play Developer ($25 único).
+2. Build local: Android Studio → AAB firmado (ver "Build para tiendas").
 3. Android App Links: tras habilitar Play App Signing, copiar el **SHA-256** de Play
-   Console a `public/.well-known/assetlinks.json` (en el repo web) y redeploy.
-4. Push: configurar **FCM** (Android) y **APNs** (iOS) + endpoint de tokens nativos (Fase 3).
-5. Fichas de tienda: íconos, capturas, descripciones, URL de privacidad (`/privacidad`).
+   Console a `public/.well-known/assetlinks.json` (repo web) y redeploy.
+
+## Fase 3 (post-lanzamiento)
+
+Push nativo: configurar **APNs** (iOS) y **FCM** (Android) + endpoint de tokens
+nativos. El plugin ya está instalado pero el registro no está cableado en la web.

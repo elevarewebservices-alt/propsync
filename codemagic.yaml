@@ -42,6 +42,14 @@ workflows:
           cd mobile
           npx capacitor-assets generate --ios
 
+      - name: Patch iOS native config (permissions, privacy manifest, encryption)
+        # ios/ is regenerated every build, so the camera/photo usage strings,
+        # the export-compliance flag and Apple's privacy manifest must be
+        # (re)applied here — otherwise App Store review rejects the build.
+        script: |
+          cd mobile
+          bash ios-config/patch-ios.sh
+
       - name: Install CocoaPods dependencies
         script: |
           cd mobile/ios/App
