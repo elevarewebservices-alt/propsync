@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { resolveCompanyId } from '@/lib/auth'
+import { resolveCompanyId, getSessionPlan } from '@/lib/auth'
+import { hasAddon } from '@/lib/addons'
 import { createAdminClient } from '@/lib/supabase'
 import { sendTemplate, normalizePhone } from '@/lib/whatsapp'
 import { decrypt } from '@/lib/crypto'
@@ -65,6 +66,17 @@ export async function POST(request: NextRequest) {
     companyId = await resolveCompanyId()
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Sending campaigns is part of the Marketing add-on — gate server-side so it
+  // can't be triggered by a company that hasn't contracted it (these messages
+  // also incur Meta costs on the client's account).
+  const plan = await getSessionPlan()
+  if (plan !== 'pro' || !(await hasAddon(companyId, 'marketing'))) {
+    return NextResponse.json(
+      { error: 'Esto requiere el add-on Marketing (plan Pro + Marketing).' },
+      { status: 403 },
+    )
   }
 
   const body = await request.json() as {

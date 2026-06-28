@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSessionAgent, getSessionPlan } from '@/lib/auth'
 import { resolvePermissions } from '@/lib/permissions'
+import { hasAddon } from '@/lib/addons'
 import { createAdminClient } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
@@ -11,7 +12,7 @@ export async function GET() {
 
   if (!agent) {
     const permissions = resolvePermissions(process.env.NODE_ENV !== 'production' ? 'owner' : 'agente')
-    return NextResponse.json({ planId: 'starter', nombre: null, email: null, company: null, permissions })
+    return NextResponse.json({ planId: 'starter', nombre: null, email: null, company: null, permissions, hasMarketingAddon: false })
   }
 
   const db = createAdminClient()
@@ -22,6 +23,7 @@ export async function GET() {
     .single()
 
   const permissions = resolvePermissions((agent as any).rol, (agent as any).permissions)
+  const hasMarketingAddon = planId === 'pro' && (await hasAddon((agent as any).company_id, 'marketing'))
 
   return NextResponse.json({
     planId,
@@ -31,6 +33,7 @@ export async function GET() {
     agencia: (company as any)?.nombre ?? null,
     company: company ?? null,
     permissions,
+    hasMarketingAddon,
     agent: {
       id: (agent as any).id,
       nombre: (agent as any).nombre,

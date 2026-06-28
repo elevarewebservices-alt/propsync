@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { Pipeline } from '@/lib/types'
 import { useSessionPermissions } from '@/hooks/useSessionPermissions'
+import { useMarketingAddon } from '@/hooks/useMarketingAddon'
 
 interface NavSubItem {
   label: string
@@ -122,6 +123,7 @@ function PropSyncLogo() {
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname()
   const { permissions } = useSessionPermissions()
+  const hasMarketing = useMarketingAddon()
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [sections, setSections] = useState<NavSection[]>([])
@@ -134,7 +136,9 @@ export function Sidebar({ className }: { className?: string }) {
   }, [])
 
   useEffect(() => {
+    // Hide the Mantener section until the Marketing add-on is confirmed active.
     const baseSections = getNavSections(permissions.accessSettings)
+      .filter((s) => s.title !== 'Mantener' || hasMarketing === true)
 
     const pipelineChildren = pipelines.map((p) => ({
       label: p.nombre,
@@ -163,7 +167,7 @@ export function Sidebar({ className }: { className?: string }) {
 
 
     setSections(updatedSections)
-  }, [pipelines, permissions.accessSettings])
+  }, [pipelines, permissions.accessSettings, hasMarketing])
 
   const toggleExpand = (href: string) => {
     setExpandedItems((prev) => ({
