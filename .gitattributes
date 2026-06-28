@@ -1,0 +1,4 @@
+# Scripts that run on the Codemagic macOS/Linux build must stay LF, even when
+# committed from Windows — CRLF would break the shebang / `\r` would fail bash.
+*.sh   text eol=lf
+*.rb   text eol=lf
