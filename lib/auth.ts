@@ -34,6 +34,25 @@ async function linkInvitedAgentIfNeeded(user: { id: string; email?: string; user
     .is('auth_user_id', null)
 }
 
+// Self-heals self-signup users whose company was never provisioned — e.g. if
+// the email-confirmation link didn't route through /auth/callback (a Supabase
+// redirect-URL misconfig), so /api/auth/setup never ran. The signup metadata
+// (nombre + empresa) is baked into the JWT, so we can finish provisioning on
+// any later request. provisionCompanyForUser is idempotent, so this is a no-op
+// once the company exists. Skips invited users (handled above).
+async function provisionCompanyIfNeeded(user: { id: string; email?: string; user_metadata?: any }) {
+  const meta = user.user_metadata as { invited?: boolean; nombre?: string; empresa?: string } | undefined
+  if (meta?.invited || !meta?.nombre || !meta?.empresa || !user.email) return
+
+  const { provisionCompanyForUser } = await import('./provision')
+  await provisionCompanyForUser({
+    userId: user.id,
+    email: user.email,
+    nombre: meta.nombre,
+    empresa: meta.empresa,
+  })
+}
+
 // Returns company_id from the session, or null if no session.
 export async function getSessionCompanyId(): Promise<string | null> {
   try {
@@ -58,6 +77,7 @@ export async function getSessionCompanyId(): Promise<string | null> {
     if (agent) return (agent as any).company_id
 
     await linkInvitedAgentIfNeeded(session.user)
+    await provisionCompanyIfNeeded(session.user)
     const { data: retried } = await db
       .from('agents')
       .select('company_id')
@@ -134,6 +154,7 @@ export async function getSessionAgent() {
     if (data) return data as any
 
     await linkInvitedAgentIfNeeded(user)
+    await provisionCompanyIfNeeded(user)
     const { data: retried } = await db
       .from('agents')
       .select('*')
