@@ -96,7 +96,7 @@ export function Header() {
   const today = new Date().toISOString().split('T')[0]
 
   return (
-    <header className="shrink-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur md:px-6">
+    <header className="shrink-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur md:px-6 pt-safe">
       <div className="flex items-center gap-2">
         {showBack && (
           <Button

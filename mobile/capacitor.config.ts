@@ -23,7 +23,11 @@ const config: CapacitorConfig = {
     },
   },
   ios: {
-    contentInset: 'always',
+    // 'never' lets the web content go edge-to-edge (under the status bar and
+    // home indicator). Safe areas are handled in CSS instead (pt-safe on the
+    // header, pb-safe on the bottom nav), so the bars' backgrounds reach the
+    // physical screen edges while their content stays clear of the notch.
+    contentInset: 'never',
   },
   android: {
     allowMixedContent: false,
