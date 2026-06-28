@@ -65,7 +65,16 @@ workflows:
             --type IOS_APP_STORE \
             --create
           keychain add-certificates
-          xcode-project use-profiles
+          # Point use-profiles at the App project explicitly — pod install also
+          # generates Pods.xcodeproj, and the default glob can fail to wire the
+          # profile into the right target, leaving archive without a profile.
+          xcode-project use-profiles \
+            --project "mobile/ios/App/App.xcodeproj"
+          # Show which profile/identity got wired in, to confirm the match.
+          xcodebuild -workspace "$XCODE_WORKSPACE" -scheme "$XCODE_SCHEME" \
+            -showBuildSettings 2>/dev/null \
+            | grep -Ei "PRODUCT_BUNDLE_IDENTIFIER|PROVISIONING_PROFILE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM" \
+            | sort -u || true
 
       - name: Increment build number
         script: |
