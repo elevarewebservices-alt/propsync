@@ -6,6 +6,11 @@ workflows:
     integrations:
       app_store_connect: propsync_app_store_connect
     environment:
+      groups:
+        # Contains CERTIFICATE_PRIVATE_KEY (secure) — the persistent private key
+        # the distribution certificate is tied to, so every ephemeral build
+        # machine signs with the SAME cert instead of creating an orphan each run.
+        - propsync_signing
       vars:
         BUNDLE_ID: "com.propsyncia.app"
         XCODE_WORKSPACE: "mobile/ios/App/App.xcworkspace"
@@ -61,8 +66,12 @@ workflows:
         # profile into the Xcode project.
         script: |
           keychain initialize
+          # --certificate-key ties signing to a persistent private key (stored as
+          # a secure env var), so the distribution certificate is reused across
+          # builds instead of being recreated (and orphaned) every run.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key @env:CERTIFICATE_PRIVATE_KEY \
             --create
           keychain add-certificates
           # Point use-profiles at the App project explicitly — pod install also
