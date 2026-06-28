@@ -29,7 +29,7 @@ export function BottomNav({ className }: { className?: string }) {
         className
       )}
     >
-      <div className="flex">
+      <div className="flex w-full">
         {items.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href.split('/').slice(0, 2).join('/'))

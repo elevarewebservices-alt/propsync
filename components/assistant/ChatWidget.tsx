@@ -57,7 +57,10 @@ export function ChatWidget() {
       <button
         onClick={() => setOpen(v => !v)}
         className={cn(
-          'fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg',
+          // On mobile the bottom nav sits at the bottom edge, so lift the
+          // floating button above it (bottom-24) and drop back to bottom-6 on
+          // desktop where there's no bottom nav.
+          'fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full shadow-lg',
           'bg-primary text-primary-foreground',
           'flex items-center justify-center',
           'hover:scale-105 transition-transform',
@@ -72,7 +75,8 @@ export function ChatWidget() {
       {/* Chat panel */}
       <div
         className={cn(
-          'fixed bottom-6 right-6 z-50 w-[360px] max-w-[calc(100vw-1.5rem)]',
+          'fixed bottom-24 right-4 z-50 w-[360px] max-w-[calc(100vw-1.5rem)]',
+          'md:bottom-6 md:right-6',
           'bg-background border border-border rounded-2xl shadow-2xl',
           'flex flex-col overflow-hidden',
           'transition-all duration-300',
