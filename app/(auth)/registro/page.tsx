@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
+import { isNativeApp } from '@/lib/native'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,6 +12,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 export default function RegistroPage() {
   const router = useRouter()
+  // App Store compliance: the iOS app must not host signup/payment for a
+  // digital subscription. In the native app, send users to the web to register.
+  const [isNative, setIsNative] = useState(false)
+  useEffect(() => { setIsNative(isNativeApp()) }, [])
 
   const [nombre, setNombre] = useState('')
   const [empresa, setEmpresa] = useState('')
@@ -63,6 +68,25 @@ export default function RegistroPage() {
     // Email confirmation required
     setDone(true)
     setLoading(false)
+  }
+
+  if (isNative) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Crea tu cuenta en la web</CardTitle>
+          <CardDescription>
+            Para registrarte y activar tu plan, entra desde tu navegador a{' '}
+            <strong>propsyncia.com</strong>. Una vez creada tu cuenta, inicia sesión aquí en la app.
+          </CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Link href="/login" className="text-sm text-primary hover:underline">
+            Ya tengo cuenta — Iniciar sesión
+          </Link>
+        </CardFooter>
+      </Card>
+    )
   }
 
   if (done) {

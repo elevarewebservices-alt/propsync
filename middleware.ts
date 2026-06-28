@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 
 const PROTECTED = [
   '/dashboard', '/propiedades', '/crm', '/asistente',
-  '/publicar', '/mantener', '/configuracion',
+  '/publicar', '/mantener', '/configuracion', '/suscripcion',
 ]
 
 const AUTH_PAGES = ['/login', '/registro']

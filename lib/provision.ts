@@ -1,5 +1,6 @@
 import { createAdminClient } from './supabase'
 import { sendWelcomeEmail } from './email'
+import { TRIAL_DAYS } from './subscription'
 
 /**
  * Creates a company + owner agent (and seeds the default CRM) for a freshly
@@ -27,9 +28,17 @@ export async function provisionCompanyForUser(params: {
     .single()
   if (existing) return { companyId: (existing as any).company_id, created: false }
 
-  // Create company
+  // Create company — starts a 15-day free trial. trial_ends_at is set
+  // server-side here (clients can't write it), so the countdown can't be reset.
+  const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString()
   const { data: company, error: companyError } = await (db.from('companies') as any)
-    .insert({ nombre: empresa, email, plan_id: 'starter' })
+    .insert({
+      nombre: empresa,
+      email,
+      plan_id: 'starter',
+      subscription_status: 'trialing',
+      trial_ends_at: trialEndsAt,
+    })
     .select('id')
     .single()
   if (companyError || !company) return null

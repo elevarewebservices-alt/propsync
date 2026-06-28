@@ -1,9 +1,26 @@
+import { redirect } from 'next/navigation'
 import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { ChatWidget } from '@/components/assistant/ChatWidget'
+import { resolveCompanyId } from '@/lib/auth'
+import { getCompanyAccess } from '@/lib/subscription'
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  // Trial / subscription gate — server-side, can't be bypassed from the client.
+  // If the company's trial expired (or it's unpaid), kick it to /suscripcion
+  // before any app content renders. resolveCompanyId is verified from the
+  // session cookie; the verdict comes from getCompanyAccess (admin-read DB).
+  // Note: redirect() must run OUTSIDE the try/catch (it throws to redirect).
+  let blocked = false
+  try {
+    const companyId = await resolveCompanyId()
+    blocked = (await getCompanyAccess(companyId)).blocked
+  } catch {
+    blocked = false
+  }
+  if (blocked) redirect('/suscripcion')
+
   // App shell: the outer container fills the viewport and never scrolls, so the
   // header + bottom nav stay pinned. Only <main> scrolls. This kills the iOS
   // rubber-band that made the header drift on slide-down.
