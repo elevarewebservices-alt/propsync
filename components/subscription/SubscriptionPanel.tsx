@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -20,14 +20,64 @@ interface Props {
   daysLeft: number | null
   planNombre: string
   planPrecio: number
+  paypalClientId: string | null
+  paypalPlanId: string | null
 }
 
-export function SubscriptionPanel({ companyName, status, blocked, daysLeft, planNombre, planPrecio }: Props) {
+export function SubscriptionPanel({ companyName, status, blocked, daysLeft, planNombre, planPrecio, paypalClientId, paypalPlanId }: Props) {
   const router = useRouter()
   const [code, setCode] = useState('')
   const [applying, setApplying] = useState(false)
   const [promoMsg, setPromoMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [payError, setPayError] = useState<string | null>(null)
+  const paypalRef = useRef<HTMLDivElement>(null)
   const native = typeof window !== 'undefined' && isNativeApp()
+  const paypalReady = !native && !!paypalClientId && !!paypalPlanId
+
+  // Load the PayPal SDK and render the subscription button when configured.
+  useEffect(() => {
+    if (!paypalReady) return
+    const SCRIPT_ID = 'paypal-sdk'
+
+    function renderButton() {
+      const paypal = (window as any).paypal
+      if (!paypal || !paypalRef.current) return
+      paypalRef.current.innerHTML = ''
+      paypal.Buttons({
+        style: { layout: 'horizontal', color: 'blue', shape: 'pill', label: 'subscribe' },
+        createSubscription: (_data: unknown, actions: any) =>
+          actions.subscription.create({ plan_id: paypalPlanId }),
+        onApprove: async (data: { subscriptionID?: string }) => {
+          const res = await fetch('/api/subscription/paypal/confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscriptionID: data.subscriptionID }),
+          })
+          if (res.ok) {
+            router.refresh()
+          } else {
+            const d = await res.json().catch(() => ({}))
+            setPayError(d.error ?? 'No se pudo confirmar el pago')
+          }
+        },
+        onError: () => setPayError('Ocurrió un error con PayPal. Intenta de nuevo.'),
+      }).render(paypalRef.current)
+    }
+
+    if ((window as any).paypal) {
+      renderButton()
+      return
+    }
+    if (document.getElementById(SCRIPT_ID)) {
+      document.getElementById(SCRIPT_ID)!.addEventListener('load', renderButton)
+      return
+    }
+    const script = document.createElement('script')
+    script.id = SCRIPT_ID
+    script.src = `https://www.paypal.com/sdk/js?client-id=${paypalClientId}&vault=true&intent=subscription`
+    script.onload = renderButton
+    document.body.appendChild(script)
+  }, [paypalReady, paypalClientId, paypalPlanId, router])
 
   async function logout() {
     await createBrowserSupabaseClient().auth.signOut()
@@ -116,10 +166,20 @@ export function SubscriptionPanel({ companyName, status, blocked, daysLeft, plan
             </div>
           ) : (
             <>
-              {/* PayPal — wired once PayPal Business API credentials are added. */}
-              <Button id="paypal-button" className="w-full bg-[#0070ba] hover:bg-[#005ea6] text-white gap-2" disabled>
-                <CreditCard className="h-4 w-4" /> Pagar con PayPal (configurando…)
-              </Button>
+              {/* PayPal subscription button (rendered by the SDK) — or a
+                  placeholder until the PayPal env vars are configured. */}
+              {paypalReady ? (
+                <div ref={paypalRef} className="min-h-[45px]" />
+              ) : (
+                <Button className="w-full bg-[#0070ba] hover:bg-[#005ea6] text-white gap-2" disabled>
+                  <CreditCard className="h-4 w-4" /> Pagar con PayPal (configurando…)
+                </Button>
+              )}
+              {payError && (
+                <div className="flex items-start gap-2 text-xs text-red-600 dark:text-red-400">
+                  <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" /> {payError}
+                </div>
+              )}
 
               {/* ACH via WhatsApp */}
               <a
