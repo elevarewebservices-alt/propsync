@@ -103,7 +103,12 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # Upload the build to App Store Connect only. We intentionally do NOT
+        # submit_to_testflight: that submits to EXTERNAL beta review, which
+        # requires Beta App Information (feedback email + reviewer contact) and
+        # fails the build until it's filled. The uploaded build is still
+        # available for internal TestFlight testing and for App Store review.
+        submit_to_testflight: false
       email:
         recipients:
           - claudiojupiter55@gmail.com
