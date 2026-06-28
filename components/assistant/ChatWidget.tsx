@@ -57,12 +57,11 @@ export function ChatWidget() {
       <button
         onClick={() => setOpen(v => !v)}
         className={cn(
-          // On mobile the bottom nav sits at the bottom edge, so lift the
-          // floating button above it (bottom-24) and drop back to bottom-6 on
-          // desktop where there's no bottom nav.
-          'fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full shadow-lg',
+          // Hidden on phones (the AI lives in the bottom nav there); shown only
+          // on desktop/tablet where there's no bottom nav.
+          'hidden md:flex fixed z-50 w-14 h-14 rounded-full shadow-lg',
           'bg-primary text-primary-foreground',
-          'flex items-center justify-center',
+          'items-center justify-center',
           'hover:scale-105 transition-transform',
           'md:bottom-6 md:right-6',
           open && 'opacity-0 pointer-events-none'
@@ -75,10 +74,10 @@ export function ChatWidget() {
       {/* Chat panel */}
       <div
         className={cn(
-          'fixed bottom-24 right-4 z-50 w-[360px] max-w-[calc(100vw-1.5rem)]',
-          'md:bottom-6 md:right-6',
+          // Matches the button: desktop/tablet only.
+          'hidden md:flex fixed bottom-6 right-6 z-50 w-[360px] max-w-[calc(100vw-1.5rem)]',
           'bg-background border border-border rounded-2xl shadow-2xl',
-          'flex flex-col overflow-hidden',
+          'flex-col overflow-hidden',
           'transition-all duration-300',
           open ? 'opacity-100 scale-100 h-[520px]' : 'opacity-0 scale-95 h-0 pointer-events-none'
         )}

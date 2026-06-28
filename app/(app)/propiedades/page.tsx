@@ -216,14 +216,14 @@ export default function PropiedadesPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-foreground">Propiedades</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isLoading ? 'Cargando…' : `${properties.length} propiedades en tu inventario`}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 flex-wrap sm:shrink-0">
           {syncMessage && (
             <span className="text-xs text-muted-foreground">{syncMessage}</span>
           )}

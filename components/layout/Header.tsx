@@ -12,6 +12,7 @@ import { FollowUpNotification } from '@/lib/types'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { isNativeApp } from '@/lib/native'
+import { cn } from '@/lib/utils'
 
 function PropSyncLogo() {
   return (
@@ -114,8 +115,12 @@ export function Header() {
         <div className="hidden md:block" />
       </div>
 
-      <div className="flex items-center gap-2">
-        <PlanBadge planId={planId} />
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        {/* Plan badge has text and is the widest item — hide on mobile so the
+            action icons always fit. */}
+        <span className="hidden md:inline-flex">
+          <PlanBadge planId={planId} />
+        </span>
 
         {/* Notification bell */}
         <div className="relative" ref={dropdownRef}>
@@ -181,7 +186,7 @@ export function Header() {
           )}
         </div>
 
-        {/* Push notification toggle */}
+        {/* Push notification toggle — hidden on mobile to save header space */}
         {push.isSupported && (
           <Button
             variant="ghost"
@@ -189,7 +194,7 @@ export function Header() {
             title={push.isSubscribed ? 'Desactivar notificaciones push' : 'Activar notificaciones push'}
             onClick={() => push.isSubscribed ? push.unsubscribe() : push.requestPermission()}
             disabled={push.isLoading}
-            className={push.isSubscribed ? 'text-blue-600' : 'text-muted-foreground'}
+            className={cn('hidden sm:inline-flex', push.isSubscribed ? 'text-blue-600' : 'text-muted-foreground')}
           >
             {push.isSubscribed ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
           </Button>
