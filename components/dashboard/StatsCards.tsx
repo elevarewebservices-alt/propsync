@@ -39,18 +39,18 @@ export function StatsCards({ data }: { data: DashboardData }) {
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {items.map((item) => (
-        <Card key={item.title} className="border-border">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{item.title}</CardTitle>
-            <div className={`rounded-lg p-2 ${item.bg}`}>
+        <Card key={item.title} className="border-border overflow-hidden">
+          <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
+            <CardTitle className="min-w-0 text-sm font-medium leading-tight text-muted-foreground">{item.title}</CardTitle>
+            <div className={`shrink-0 rounded-lg p-2 ${item.bg}`}>
               <item.icon className={`h-4 w-4 ${item.color}`} />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-foreground">{item.value}</div>
-            <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+            <p className="mt-1 text-xs text-muted-foreground leading-snug">{item.description}</p>
           </CardContent>
         </Card>
       ))}
