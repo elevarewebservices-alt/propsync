@@ -1,8 +1,10 @@
 ﻿'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { isNativeApp } from '@/lib/native'
 
 // ── Translations ─────────────────────────────────────────────────────────────
 const T = {
@@ -370,11 +372,22 @@ const F = 'var(--font-outfit), sans-serif'
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const router = useRouter()
   const [lang, setLang] = useState<Lang>('es')
   const [scrolled, setScrolled] = useState(false)
   const [cycleIdx, setCycleIdx] = useState(0)
   const [cycleFade, setCycleFade] = useState(true)
+  // Inside the native app the marketing landing is useless — send users
+  // straight into the app (middleware bounces them to /login if no session).
+  const [isNative, setIsNative] = useState(false)
   const t = T[lang]
+
+  useEffect(() => {
+    if (isNativeApp()) {
+      setIsNative(true)
+      router.replace('/dashboard')
+    }
+  }, [router])
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 50)
@@ -452,6 +465,10 @@ export default function LandingPage() {
       setContactError(err instanceof Error ? err.message : 'Error')
     }
   }
+
+  // Native app: render nothing while we redirect into the app shell, so the
+  // marketing page never flashes inside the WebView.
+  if (isNative) return null
 
   return (
     <div style={{ background: '#06060d', color: '#fff', overflowX: 'hidden', fontFamily: F }}>

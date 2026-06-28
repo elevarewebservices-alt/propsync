@@ -1,16 +1,17 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { ThemeToggle } from './ThemeToggle'
 import { PlanBadge } from '@/components/shared/PlanBadge'
-import { Bell, CalendarDays, X, LogOut, User, BellOff } from 'lucide-react'
+import { Bell, CalendarDays, X, LogOut, User, BellOff, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import Image from 'next/image'
 import { FollowUpNotification } from '@/lib/types'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
+import { isNativeApp } from '@/lib/native'
 
 function PropSyncLogo() {
   return (
@@ -29,6 +30,13 @@ function PropSyncLogo() {
 
 export function Header() {
   const router = useRouter()
+  const pathname = usePathname()
+  // The native WebView has no browser chrome, so users can get stuck on a deep
+  // screen with no way back. Show an in-app back button (native only), except
+  // on the home/dashboard where there's nowhere to go back to.
+  const [isNative, setIsNative] = useState(false)
+  useEffect(() => { setIsNative(isNativeApp()) }, [])
+  const showBack = isNative && pathname !== '/dashboard'
   const [notifications, setNotifications] = useState<FollowUpNotification[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -88,7 +96,18 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur md:px-6 pt-safe">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        {showBack && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Atrás"
+            onClick={() => router.back()}
+            className="-ml-2"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </Button>
+        )}
         <div className="md:hidden">
           <PropSyncLogo />
         </div>
