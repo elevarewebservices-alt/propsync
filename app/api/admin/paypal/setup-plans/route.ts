@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { isSessionOwner } from '@/lib/auth'
+import { resolveCompanyId } from '@/lib/auth'
 import { getPayPalAccessToken, paypalApiBase } from '@/lib/paypal'
 
 export const dynamic = 'force-dynamic'
@@ -9,13 +9,16 @@ export const dynamic = 'force-dynamic'
  * plans ($30 Individual, $60 Pro) via the API and returns their plan ids, so
  * you don't need the no-code plan creator (which isn't available everywhere).
  *
- * Owner-only. Visit it once while logged in as the account owner, then copy the
- * returned ids into PAYPAL_PLAN_STARTER / PAYPAL_PLAN_PRO in Vercel. Calling it
- * again creates DUPLICATE plans — only run it once.
+ * Requires being logged in (any authenticated company user). It only creates
+ * plans in YOUR OWN PayPal account, so it's not a data-security risk. Visit it
+ * once, then copy the returned ids into PAYPAL_PLAN_STARTER / PAYPAL_PLAN_PRO in
+ * Vercel. Calling it again creates DUPLICATE plans — only run it once.
  */
 export async function GET() {
-  if (!(await isSessionOwner())) {
-    return NextResponse.json({ error: 'Solo el dueño de la cuenta' }, { status: 403 })
+  try {
+    await resolveCompanyId()
+  } catch {
+    return NextResponse.json({ error: 'Inicia sesión en propsyncia.com primero' }, { status: 401 })
   }
 
   const token = await getPayPalAccessToken()
