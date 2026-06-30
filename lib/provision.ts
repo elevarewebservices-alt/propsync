@@ -1,6 +1,7 @@
 import { createAdminClient } from './supabase'
 import { sendWelcomeEmail } from './email'
 import { TRIAL_DAYS } from './subscription'
+import { cleanText } from './validation'
 
 /**
  * Creates a company + owner agent (and seeds the default CRM) for a freshly
@@ -18,7 +19,10 @@ export async function provisionCompanyForUser(params: {
   nombre: string
   empresa: string
 }): Promise<{ companyId: string; created: boolean } | null> {
-  const { userId, email, nombre, empresa } = params
+  const { userId, email } = params
+  // Sanitize + cap the free-text inputs before they're stored.
+  const nombre = cleanText(params.nombre, 120)
+  const empresa = cleanText(params.empresa, 120)
   const db = createAdminClient()
 
   // Idempotent guard — never create a second company for the same user.

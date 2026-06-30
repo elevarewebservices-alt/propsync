@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase'
 import { sendPushToCompany } from '@/lib/push'
 import { sendNewLeadNotification } from '@/lib/email'
+import { checkWebhookRateLimit, getClientIp, rateLimited } from '@/lib/rate-limit'
 
 // Meta sends a GET request first to verify the webhook
 export async function GET(request: Request) {
@@ -28,6 +29,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const rl = checkWebhookRateLimit(getClientIp(request))
+  if (!rl.allowed) return Response.json({ error: 'Too many requests' }, { status: 429, ...rateLimited(rl.resetAt) })
+
   const { searchParams } = new URL(request.url)
   const token = searchParams.get('token')
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { verifyPayPalWebhook } from '@/lib/paypal'
+import { checkWebhookRateLimit, getClientIp, rateLimited } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,6 +12,9 @@ export const dynamic = 'force-dynamic'
  * (resource.id) back to the company via subscription_external_id.
  */
 export async function POST(request: NextRequest) {
+  const rl = checkWebhookRateLimit(getClientIp(request))
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429, ...rateLimited(rl.resetAt) })
+
   const raw = await request.text()
   let event: any
   try {

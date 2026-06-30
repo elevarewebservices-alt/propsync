@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
-import { isValidEmail } from '@/lib/validation'
+import { isValidEmail, cleanText } from '@/lib/validation'
+import { checkContactRateLimit, getClientIp, rateLimited } from '@/lib/rate-limit'
 
 function h(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -13,16 +14,29 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json() as {
+  // Public form → rate-limit per IP to stop spam bursts.
+  const rl = checkContactRateLimit(getClientIp(request))
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Demasiados envíos. Espera un minuto e intenta de nuevo.' },
+      { status: 429, ...rateLimited(rl.resetAt) },
+    )
+  }
+
+  const body = await request.json().catch(() => ({})) as {
     name?: string
     email?: string
     type?: string
     message?: string
   }
 
-  const { name = '', email = '', type = 'otro', message = '' } = body
+  // Sanitize + hard-cap every field (strips CRLF → no email-header injection).
+  const name    = cleanText(body.name, 120)
+  const email   = cleanText(body.email, 254)
+  const type    = cleanText(body.type, 20)
+  const message = cleanText(body.message, 5000)
 
-  if (!name.trim() || !email.trim() || !message.trim()) {
+  if (!name || !email || !message) {
     return NextResponse.json({ error: 'Faltan campos requeridos.' }, { status: 400 })
   }
   if (!isValidEmail(email)) {

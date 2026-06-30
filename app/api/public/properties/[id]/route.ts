@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
+import { isValidUuid } from '@/lib/validation'
+import { checkPublicReadRateLimit, getClientIp, rateLimited } from '@/lib/rate-limit'
 
 const SELECT = `
   id, titulo, descripcion, tipo, for_sale, for_rent,
@@ -15,9 +17,23 @@ const SELECT = `
 `
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const rl = checkPublicReadRateLimit(getClientIp(req))
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Demasiadas solicitudes. Intenta en un minuto.' },
+      { status: 429, ...rateLimited(rl.resetAt) },
+    )
+  }
+
+  // Validate the id before hitting the DB — avoids a wasted query (and a noisy
+  // Postgres cast error) on garbage ids.
+  if (!isValidUuid(params.id)) {
+    return NextResponse.json({ error: 'Propiedad no encontrada' }, { status: 404 })
+  }
+
   const db = createAdminClient()
   const { data, error } = await db
     .from('properties')

@@ -44,6 +44,28 @@ export function validatePhone(value: string, opts: { required?: boolean } = {}):
   return null
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** True if the value is a well-formed UUID (use before hitting the DB with an id). */
+export function isValidUuid(value: string): boolean {
+  return UUID_RE.test(value.trim())
+}
+
+/**
+ * Sanitizes free-text user input for safe storage/use: replaces control chars
+ * and newlines with spaces (prevents email-header / CRLF injection), trims, and
+ * hard-caps the length. Returns '' for non-strings.
+ */
+export function cleanText(value: unknown, maxLen = 500): string {
+  if (typeof value !== 'string') return ''
+  let out = ''
+  for (const ch of value) {
+    const code = ch.charCodeAt(0)
+    out += code < 0x20 || code === 0x7f ? ' ' : ch
+  }
+  return out.trim().slice(0, maxLen)
+}
+
 /** Cleans a phone for storage — keeps + and digits only. */
 export function normalizePhone(value: string): string {
   const v = value.trim()

@@ -41,6 +41,20 @@ export const checkApiRateLimit = makeLimiter(60_000, 20)
 // Supabase lookup behind every attempt) with junk requests.
 export const checkIpRateLimit = makeLimiter(60_000, 30)
 
+// ── Public (unauthenticated) endpoint limiters, all keyed by client IP ───────
+// Contact form: strict — a human submits once, so 5/min/IP stops spam bursts.
+export const checkContactRateLimit = makeLimiter(60_000, 5)
+// Public reads (property fichas): generous, just stops scraping floods.
+export const checkPublicReadRateLimit = makeLimiter(60_000, 60)
+// Inbound webhooks: legit providers can burst, but cap one IP so a flood can't
+// rack up signature-verification calls / DB writes.
+export const checkWebhookRateLimit = makeLimiter(60_000, 120)
+
+// Helper to build a 429 with Retry-After from a limiter result.
+export function rateLimited(resetAt: number): { headers: Record<string, string> } {
+  return { headers: { 'Retry-After': String(Math.max(1, Math.ceil((resetAt - Date.now()) / 1000))) } }
+}
+
 // Vercel/most proxies set x-forwarded-for to "client, proxy1, proxy2" — the
 // first entry is the original client.
 export function getClientIp(request: Request): string {

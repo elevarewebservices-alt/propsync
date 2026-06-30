@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase'
 import { parseInboundWebhook, detectAvailabilityIntent, normalizePhone } from '@/lib/whatsapp'
+import { checkWebhookRateLimit, getClientIp, rateLimited } from '@/lib/rate-limit'
 
 /**
  * GET — webhook verification handshake from Meta.
@@ -32,6 +33,9 @@ export async function GET(request: Request) {
  * POST — inbound messages and status updates from WhatsApp.
  */
 export async function POST(request: Request) {
+  const rl = checkWebhookRateLimit(getClientIp(request))
+  if (!rl.allowed) return Response.json({ error: 'Too many requests' }, { status: 429, ...rateLimited(rl.resetAt) })
+
   const { searchParams } = new URL(request.url)
   const token = searchParams.get('token')
 
