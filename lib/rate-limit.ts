@@ -10,7 +10,7 @@ interface LimitResult {
   resetAt: number
 }
 
-function makeLimiter(windowMs: number, limit: number) {
+export function makeLimiter(windowMs: number, limit: number) {
   const buckets = new Map<string, { count: number; resetAt: number }>()
 
   return function check(key: string): LimitResult {

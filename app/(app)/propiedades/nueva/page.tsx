@@ -15,12 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ArrowLeft, Upload, X, ImagePlus, Loader2, Sparkles, Camera, Images } from 'lucide-react'
+import { ArrowLeft, Upload, X, ImagePlus, Loader2, Sparkles, Camera, Images, Eraser } from 'lucide-react'
 import Link from 'next/link'
 import { resizeImageFile } from '@/lib/image-resize'
 import { isNativeApp } from '@/lib/native'
 import { captureFromCamera, pickFromGallery } from '@/lib/native-camera'
 import { CANALES_PUBLICACION } from '@/lib/canales'
+import { ImageCleanupEditor } from '@/components/propiedades/ImageCleanupEditor'
 
 const PROPERTY_TYPES = [
   'Apartamento', 'Casa', 'Local Comercial', 'Oficina', 'Bodega',
@@ -85,6 +86,7 @@ export default function NuevaPropiedadPage() {
   const [descripcion, setDescripcion] = useState('')
   const [notas, setNotas] = useState('')
   const [images, setImages] = useState<{ file: File; preview: string }[]>([])
+  const [cleanupIdx, setCleanupIdx] = useState<number | null>(null)
   const [isNative, setIsNative] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -187,6 +189,17 @@ export default function NuevaPropiedadPage() {
       URL.revokeObjectURL(prev[idx].preview)
       return prev.filter((_, i) => i !== idx)
     })
+  }
+
+  // Replace one image with its cleaned version (from the cleanup editor).
+  function replaceImage(idx: number, file: File) {
+    setImages((prev) => {
+      const next = [...prev]
+      URL.revokeObjectURL(next[idx].preview)
+      next[idx] = { file, preview: URL.createObjectURL(file) }
+      return next
+    })
+    setCleanupIdx(null)
   }
 
   useEffect(() => {
@@ -1148,6 +1161,14 @@ export default function NuevaPropiedadPage() {
                     >
                       <X className="h-3 w-3" />
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setCleanupIdx(idx)}
+                      title="Limpiar marca de agua / objeto"
+                      className="absolute top-1 left-1 flex items-center gap-1 rounded-full bg-blue-600/90 px-1.5 h-5 text-white text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Eraser className="h-3 w-3" /> Limpiar
+                    </button>
                   </div>
                 ))}
                 {images.length < 20 && (
@@ -1166,6 +1187,14 @@ export default function NuevaPropiedadPage() {
             </div>
           )}
         </section>
+
+        {cleanupIdx !== null && images[cleanupIdx] && (
+          <ImageCleanupEditor
+            file={images[cleanupIdx].file}
+            onCleaned={(f) => replaceImage(cleanupIdx, f)}
+            onClose={() => setCleanupIdx(null)}
+          />
+        )}
 
         {/* Lugares de publicación */}
         <section className="rounded-xl border border-border bg-card p-5 space-y-4">
