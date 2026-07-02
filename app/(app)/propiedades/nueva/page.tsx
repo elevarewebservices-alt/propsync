@@ -22,6 +22,9 @@ import { isNativeApp } from '@/lib/native'
 import { captureFromCamera, pickFromGallery } from '@/lib/native-camera'
 import { CANALES_PUBLICACION } from '@/lib/canales'
 import { ImageCleanupEditor } from '@/components/propiedades/ImageCleanupEditor'
+import { cn } from '@/lib/utils'
+
+const DRAFT_KEY = 'propsync:draft:nueva'
 
 const PROPERTY_TYPES = [
   'Apartamento', 'Casa', 'Local Comercial', 'Oficina', 'Bodega',
@@ -92,6 +95,9 @@ export default function NuevaPropiedadPage() {
   const [saving, setSaving] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [missing, setMissing] = useState<Set<string>>(new Set())
+  const [dirty, setDirty] = useState(false)
+  const [draftRestored, setDraftRestored] = useState(false)
 
   // Features
   const [featuresInternal, setFeaturesInternal] = useState<string[]>([])
@@ -142,6 +148,76 @@ export default function NuevaPropiedadPage() {
 
   // Detect the native (Capacitor) app once mounted — enables camera buttons.
   useEffect(() => { setIsNative(isNativeApp()) }, [])
+
+  // ── Draft persistence ──────────────────────────────────────────────────────
+  // Serializable snapshot of the form (photos are File objects, can't persist).
+  const draftSnapshot = JSON.stringify({
+    titulo, tipo, estadoPublicacion, disponibilidad, propertyType, condition,
+    precio, currency, maintenanceFee, pais, provincia, ciudad, zona, address,
+    bedrooms, bathrooms, garages, area, builtArea, privateArea, year,
+    descripcion, notas, featuresInternal, featuresExternal, canalesPublicados,
+    commType, commValue, commNotes, extCommType, extCommValue, extCommNotes,
+    ownerContactId, ownerNombre, ownerApellido, ownerEmail, ownerTelefono1, ownerTelefono2,
+  })
+
+  // Restore a saved draft once, on mount.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const d = JSON.parse(raw)
+      setTitulo(d.titulo ?? ''); setTipo(d.tipo ?? 'venta')
+      setEstadoPublicacion(d.estadoPublicacion ?? 'inactivo'); setDisponibilidad(d.disponibilidad ?? 'disponible')
+      setPropertyType(d.propertyType ?? ''); setCondition(d.condition ?? '')
+      setPrecio(d.precio ?? ''); setCurrency(d.currency ?? 'USD'); setMaintenanceFee(d.maintenanceFee ?? '')
+      setPais(d.pais ?? 'Panamá'); setProvincia(d.provincia ?? ''); setCiudad(d.ciudad ?? ''); setZona(d.zona ?? ''); setAddress(d.address ?? '')
+      setBedrooms(d.bedrooms ?? ''); setBathrooms(d.bathrooms ?? ''); setGarages(d.garages ?? '')
+      setArea(d.area ?? ''); setBuiltArea(d.builtArea ?? ''); setPrivateArea(d.privateArea ?? ''); setYear(d.year ?? '')
+      setDescripcion(d.descripcion ?? ''); setNotas(d.notas ?? '')
+      setFeaturesInternal(d.featuresInternal ?? []); setFeaturesExternal(d.featuresExternal ?? []); setCanalesPublicados(d.canalesPublicados ?? [])
+      setCommType(d.commType ?? 'percentage'); setCommValue(d.commValue ?? ''); setCommNotes(d.commNotes ?? '')
+      setExtCommType(d.extCommType ?? 'percentage'); setExtCommValue(d.extCommValue ?? ''); setExtCommNotes(d.extCommNotes ?? '')
+      setOwnerContactId(d.ownerContactId ?? null); setOwnerNombre(d.ownerNombre ?? ''); setOwnerApellido(d.ownerApellido ?? '')
+      setOwnerEmail(d.ownerEmail ?? ''); setOwnerTelefono1(d.ownerTelefono1 ?? ''); setOwnerTelefono2(d.ownerTelefono2 ?? '')
+      setDraftRestored(true)
+    } catch { /* ignore corrupt draft */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Autosave (debounced) whenever the snapshot changes — but not on the very
+  // first render, so restoring an empty form doesn't wipe an existing draft.
+  const firstRender = useRef(true)
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return }
+    setDirty(true)
+    const t = setTimeout(() => {
+      try { localStorage.setItem(DRAFT_KEY, draftSnapshot) } catch { /* quota */ }
+    }, 400)
+    return () => clearTimeout(t)
+  }, [draftSnapshot])
+
+  // Warn on browser close/refresh/navigation while there are unsaved changes.
+  useEffect(() => {
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (!dirty) return
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [dirty])
+
+  function clearDraft() {
+    try { localStorage.removeItem(DRAFT_KEY) } catch { /* ignore */ }
+    setDirty(false)
+    setDraftRestored(false)
+  }
+
+  function discardDraft() {
+    if (!confirm('¿Descartar el borrador guardado? Se borrará la información no publicada.')) return
+    clearDraft()
+    window.location.reload()
+  }
 
   // Close owner dropdown when clicking outside
   useEffect(() => {
@@ -324,24 +400,40 @@ export default function NuevaPropiedadPage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!titulo.trim()) { setError('El título es requerido.'); return }
-    if (!precio) { setError('El precio es requerido.'); return }
+  // publish=false → save as an incomplete draft (only a título needed).
+  // publish=true  → activate: full required set, else highlight what's missing.
+  async function saveProperty(publish: boolean) {
+    setError(null)
+    setMissing(new Set())
 
-    const ownerFilled = ownerNombre.trim() || ownerTelefono1.trim()
-    if (ownerFilled) {
-      if (!ownerNombre.trim() || !ownerApellido.trim()) {
-        setError('El nombre y apellido del propietario son requeridos.')
-        return
-      }
-      if (!ownerTelefono1.trim()) {
-        setError('El teléfono del propietario es requerido.')
-        return
+    const miss = new Set<string>()
+    if (!titulo.trim()) miss.add('titulo')
+    if (publish) {
+      if (!precio) miss.add('precio')
+      const ownerFilled = ownerNombre.trim() || ownerTelefono1.trim()
+      if (ownerFilled) {
+        if (!ownerNombre.trim()) miss.add('ownerNombre')
+        if (!ownerApellido.trim()) miss.add('ownerApellido')
+        if (!ownerTelefono1.trim()) miss.add('ownerTelefono1')
       }
     }
 
-    setError(null)
+    if (miss.size > 0) {
+      setMissing(miss)
+      setError(
+        publish
+          ? 'Campos incompletos: completa los campos resaltados en rojo para publicar.'
+          : 'Ponle al menos un título para guardar el borrador.',
+      )
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
+    // Draft → inactivo. Publish → activo (o destacado si ya lo eligió).
+    const estado: 'activo' | 'destacado' | 'inactivo' =
+      publish ? (estadoPublicacion === 'inactivo' ? 'activo' : estadoPublicacion) : 'inactivo'
+    const ownerComplete = !!(ownerNombre.trim() && ownerApellido.trim() && ownerTelefono1.trim())
+
     setSaving(true)
 
     let imageUrls: string[] = []
@@ -353,7 +445,7 @@ export default function NuevaPropiedadPage() {
 
     let resolvedOwnerContactId = ownerContactId
 
-    if (ownerFilled && !ownerContactId) {
+    if (ownerComplete && !ownerContactId) {
       // Dedupe by phone: if a contact already has this number, reuse it instead
       // of creating a duplicate. Otherwise create a new owner contact.
       const existing =
@@ -413,7 +505,7 @@ export default function NuevaPropiedadPage() {
       descripcion: descripcion.trim() || null,
       main_image_url: imageUrls[0] ?? null,
       gallery_urls: imageUrls,
-      estado_publicacion: estadoPublicacion,
+      estado_publicacion: estado,
       disponibilidad: disponibilidad,
       fuente: 'manual',
       features_internal: featuresInternal.map(n => ({
@@ -450,6 +542,7 @@ export default function NuevaPropiedadPage() {
       return
     }
 
+    clearDraft() // saved to DB — drop the local draft so it won't restore
     router.push('/propiedades')
     router.refresh()
   }
@@ -477,7 +570,18 @@ export default function NuevaPropiedadPage() {
       </div>
 
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {draftRestored && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 px-4 py-2.5">
+          <p className="text-sm text-amber-800 dark:text-amber-300">
+            Restauramos un borrador guardado. Continúa donde lo dejaste.
+          </p>
+          <button type="button" onClick={discardDraft} className="text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline shrink-0">
+            Descartar
+          </button>
+        </div>
+      )}
+
+      <form onSubmit={(e) => { e.preventDefault(); saveProperty(true) }} className="space-y-6">
 
         {/* Básico */}
         <section className="rounded-xl border border-border bg-card p-5 space-y-4">
@@ -491,7 +595,7 @@ export default function NuevaPropiedadPage() {
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
               placeholder="Ej. Apartamento moderno en Marbella"
-              required
+              className={cn(missing.has('titulo') && 'border-red-500 focus-visible:ring-red-500')}
             />
           </div>
 
@@ -573,7 +677,7 @@ export default function NuevaPropiedadPage() {
                 value={precio}
                 onChange={(e) => setPrecio(e.target.value)}
                 placeholder="250000"
-                required
+                className={cn(missing.has('precio') && 'border-red-500 focus-visible:ring-red-500')}
               />
             </div>
             <div className="space-y-1.5">
@@ -1229,21 +1333,37 @@ export default function NuevaPropiedadPage() {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <Link href="/propiedades">
-              <Button type="button" variant="outline">Cancelar</Button>
-            </Link>
+          <div className="flex items-center gap-2 shrink-0">
             <Button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white min-w-32"
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                if (dirty && !confirm('Tienes cambios sin publicar (se guardan como borrador). ¿Salir de todos modos?')) return
+                router.push('/propiedades')
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => saveProperty(false)}
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar borrador'}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => saveProperty(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white min-w-28"
               disabled={saving}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {uploading ? 'Subiendo fotos...' : 'Guardando...'}
+                  {uploading ? 'Subiendo...' : 'Guardando...'}
                 </span>
-              ) : 'Guardar propiedad'}
+              ) : 'Publicar'}
             </Button>
           </div>
         </div>
