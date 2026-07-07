@@ -110,7 +110,18 @@ export default function PropiedadesPage() {
       ])
       if (propsRes.ok) {
         const rows: PropertyRow[] = await propsRes.json()
-        setProperties(rows.map(rowToProperty))
+        const mapped = rows.map(rowToProperty)
+        setProperties(mapped)
+        // Deep link from the dashboard: /propiedades?ver=<id> opens that
+        // property's detail sheet directly. (window.location instead of
+        // useSearchParams to avoid the Suspense-boundary requirement.)
+        const ver = new URLSearchParams(window.location.search).get('ver')
+        if (ver) {
+          const match = mapped.find((p) => p.id === ver)
+          if (match) setSelectedProperty(match)
+          // Clean the param so closing the sheet doesn't feel "sticky" on refresh
+          window.history.replaceState(null, '', '/propiedades')
+        }
       }
       if (agentsRes.ok) {
         const data = await agentsRes.json()

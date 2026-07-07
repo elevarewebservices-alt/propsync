@@ -1,8 +1,11 @@
+'use client'
+
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { EstadoPublicacion, Disponibilidad } from '@/lib/types'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { RecentProperty } from '@/lib/dashboard'
@@ -20,6 +23,10 @@ const dispConfig: Record<Disponibilidad, { label: string; className: string }> =
 }
 
 export function RecentProperties({ properties }: { properties: RecentProperty[] }) {
+  const router = useRouter()
+  // Tapping a row opens the property's detail sheet on /propiedades (?ver=id).
+  const openDetail = (id: string) => router.push(`/propiedades?ver=${id}`)
+
   return (
     <div className="rounded-xl border border-border bg-card">
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
@@ -49,7 +56,11 @@ export function RecentProperties({ properties }: { properties: RecentProperty[] 
                 const estado = estadoConfig[prop.estado_publicacion]
                 const disp = dispConfig[prop.disponibilidad]
                 return (
-                  <tr key={prop.id} className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors">
+                  <tr
+                    key={prop.id}
+                    onClick={() => openDetail(prop.id)}
+                    className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
+                  >
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
                         <div className="relative h-10 w-14 overflow-hidden rounded-md shrink-0 bg-muted">
@@ -75,7 +86,7 @@ export function RecentProperties({ properties }: { properties: RecentProperty[] 
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Link href="/propiedades" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>Ver</Link>
+                      <span className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>Ver</span>
                     </td>
                   </tr>
                 )
