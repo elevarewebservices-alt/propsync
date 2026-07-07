@@ -145,8 +145,12 @@ export function TourViewer({ rooms, titulo, ciudad, onClose, embed = false }: Pr
           style={{ zIndex: 3, background: 'linear-gradient(to bottom, rgba(0,0,0,.45) 0%, transparent 28%, transparent 65%, rgba(0,0,0,.7) 100%)' }}
         />
 
-        {/* Top bar */}
-        <div className="absolute top-0 left-0 right-0 flex items-start justify-between px-5 pt-5" style={{ zIndex: 10 }}>
+        {/* Top bar — extra top padding keeps the title clear of the status bar
+            when the tour opens inside the native app's edge-to-edge WebView. */}
+        <div
+          className="absolute top-0 left-0 right-0 flex items-start justify-between px-5"
+          style={{ zIndex: 10, paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}
+        >
           <div>
             <p className="text-white font-semibold text-base leading-tight drop-shadow">{titulo}</p>
             {ciudad && <p className="text-white/70 text-xs mt-0.5 drop-shadow">{ciudad}</p>}

@@ -71,7 +71,9 @@ export default async function PublicPropertyPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-10">
+      {/* pt-safe: this public page can open inside the native app's WebView,
+          where sticky top-0 would otherwise sit under the status bar. */}
+      <header className="border-b border-border bg-card sticky top-0 z-10 pt-safe">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <span className="font-semibold text-foreground">{company?.nombre ?? 'PropSync'}</span>
           <div className="flex items-center gap-3">

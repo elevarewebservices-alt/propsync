@@ -103,3 +103,34 @@ html {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* ── Overlay safe areas ──────────────────────────────────────────────────────
+   The native app renders edge-to-edge (viewport-fit=cover + contentInset
+   'never'), so fixed overlays start at the physical screen edge. Pad every
+   sheet back into the safe area so the status bar / notch and home indicator
+   never cover its content. On the web these insets are 0 (no effect).
+   Targeted via data-slot/data-side because components/ui/ is generated shadcn
+   code we don't edit by hand. */
+[data-slot='sheet-content'][data-side='left'],
+[data-slot='sheet-content'][data-side='right'] {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+[data-slot='sheet-content'][data-side='top'] {
+  padding-top: env(safe-area-inset-top);
+}
+[data-slot='sheet-content'][data-side='bottom'] {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+/* The sheet's absolute-positioned ✕ button ignores the container padding —
+   push it below the status bar as well. */
+[data-slot='sheet-content'][data-side='left'] > [data-slot='sheet-close'],
+[data-slot='sheet-content'][data-side='right'] > [data-slot='sheet-close'] {
+  top: calc(0.75rem + env(safe-area-inset-top));
+}
+/* Centered dialogs: never let a tall dialog extend under the notch or home
+   indicator; inner content scrolls instead. */
+[data-slot='dialog-content'] {
+  max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem);
+  overflow-y: auto;
+}

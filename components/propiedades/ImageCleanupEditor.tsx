@@ -143,8 +143,17 @@ export function ImageCleanupEditor({ file, onCleaned, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
-      <div className="w-full max-w-xl rounded-2xl bg-background p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4"
+      // Keep the modal clear of the notch / home indicator in the native app
+      // (max() falls back to the normal 1rem gutter on the web).
+      style={{
+        paddingTop: 'max(1rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+      }}
+      onClick={onClose}
+    >
+      <div className="w-full max-w-xl max-h-full overflow-y-auto rounded-2xl bg-background p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Sparkles className="h-4 w-4 text-blue-600" /> Limpiar imagen
