@@ -26,7 +26,7 @@ const T = {
     platformBadge: 'Plataforma integral',
     platformTitle: 'Marketing, ventas y comunicación — en un solo lugar.',
     platformSub: 'PropSync centraliza toda la operación de tu negocio inmobiliario. Desde el primer contacto con el lead hasta el cierre del negocio, sin salir de la plataforma.',
-    platformPills: ['Base de datos', 'CRM nativo', 'Marketing automation', 'Captación de leads', 'Asistente IA', 'Tour virtual 360°', 'API REST', 'Web widget', 'Webhooks', 'Reportes', 'Multi-usuario', 'Meta Lead Ads'],
+    platformPills: ['Base de datos', 'CRM nativo', 'Marketing automation', 'Captación de leads', 'Asistente IA', 'Tour virtual 360°', 'API REST', 'Ficha web pública', 'App móvil (próximamente)', 'Reportes', 'Multi-usuario', 'Meta Lead Ads'],
 
     // How it works - pillars
     howTitle: 'Tres pilares',
@@ -41,7 +41,7 @@ const T = {
     mktTitle: 'Automatización de marketing y captación de leads',
     mktSub: 'Tu sitio web captura leads directamente a tu CRM. PropSync los nutre automáticamente con WhatsApp, email y seguimiento hasta el cierre.',
     mktPoints: [
-      'Widget de búsqueda en tu web captura leads al CRM',
+      'Meta Lead Ads y formularios web capturan leads directo al CRM',
       'Campañas de WhatsApp y email automatizadas',
       'Seguimiento automático de interesados por propiedad',
       'Alertas de nuevas propiedades a leads existentes',
@@ -78,11 +78,11 @@ const T = {
     // Web integration + API
     webApiTitle: 'Conecta tu sitio web y tu stack tecnológico',
     webApiSub: 'PropSync se integra con tu sitio web existente y expone una API REST completa para conectar cualquier herramienta.',
-    webTitle: 'Widget para tu sitio web',
-    webSub: 'Un script de dos líneas inserta un buscador de propiedades en tu web. Los leads se capturan automáticamente en tu CRM.',
+    webTitle: 'Tu inventario, visible en la web',
+    webSub: 'Cada propiedad tiene página pública con fotos y PDF descargable, y su tour 360° se incrusta en cualquier sitio web con una línea de código.',
     apiTitle: 'API REST + Webhooks',
     apiSub: 'Acceso completo a tu inventario desde cualquier aplicación. Webhooks en tiempo real para integraciones avanzadas.',
-    apiFeatures: ['Autenticación con API key', 'Filtros por precio, zona, tipo', 'Paginación + ordenamiento', 'Webhooks para cambios de estado', 'SDK para JavaScript y Python'],
+    apiFeatures: ['Autenticación con API key', 'Exporta tu inventario completo con fotos', 'Paginación y límites de uso seguros', 'Ficha pública y PDF por propiedad', 'Tours 360° incrustables por iframe'],
 
     // Pricing
     plansTitle: 'Planes',
@@ -91,7 +91,7 @@ const T = {
     trialSub: 'Sin tarjeta de crédito · Cancela cuando quieras',
     plans: [
       { n: 'Individual', p: '$30', per: '/mes', d: 'Para agentes independientes', f: ['50 propiedades', 'Base de datos centralizada', 'CRM básico', 'Asistente IA limitado', 'Conexión a portales (Compre o Alquile, Encuentra24, Página web)', '1 usuario'], cta: 'Probar 15 días gratis' },
-      { n: 'Pro', p: '$60', per: '/mes', d: 'Para equipos en crecimiento', popular: true, f: ['200 propiedades', 'CRM completo + pipeline', 'Asistente IA completo', 'Conexión a portales (Compre o Alquile, Encuentra24, Página web)', '2 usuarios (+$7.99/usuario adicional)', 'Web widget + API'], cta: 'Probar 15 días gratis' },
+      { n: 'Pro', p: '$60', per: '/mes', d: 'Para equipos en crecimiento', popular: true, f: ['Propiedades ilimitadas', 'CRM completo + pipeline', 'Asistente IA completo', 'Conexión a portales (Compre o Alquile, Encuentra24, Página web)', '2 usuarios (+$7.99/usuario adicional)', 'API de integración'], cta: 'Probar 15 días gratis' },
     ],
 
     ctaBand: 'Tu agencia, en una sola plataforma.',
@@ -189,7 +189,7 @@ const T = {
     platformBadge: 'Integral platform',
     platformTitle: 'Marketing, sales and communication — in one place.',
     platformSub: 'PropSync centralizes your entire real estate business operation. From the first lead contact to deal close, without leaving the platform.',
-    platformPills: ['Property database', 'Native CRM', 'Marketing automation', 'Lead capture', 'AI assistant', '360° virtual tour', 'REST API', 'Web widget', 'Webhooks', 'Reports', 'Multi-user', 'Meta Lead Ads'],
+    platformPills: ['Property database', 'Native CRM', 'Marketing automation', 'Lead capture', 'AI assistant', '360° virtual tour', 'REST API', 'Public property page', 'Mobile app (coming soon)', 'Reports', 'Multi-user', 'Meta Lead Ads'],
 
     howTitle: 'Three pillars',
     howSub: 'A platform built on what truly matters',
@@ -202,7 +202,7 @@ const T = {
     mktTitle: 'Marketing automation and lead capture',
     mktSub: 'Your website captures leads directly into your CRM. PropSync nurtures them automatically via WhatsApp, email, and follow-up until close.',
     mktPoints: [
-      'Search widget on your site captures leads to CRM',
+      'Meta Lead Ads and web forms capture leads straight to your CRM',
       'Automated WhatsApp and email campaigns',
       'Automatic follow-up of interested buyers per property',
       'Alerts for new matching properties to existing leads',
@@ -237,11 +237,11 @@ const T = {
 
     webApiTitle: 'Connect your website and tech stack',
     webApiSub: 'PropSync integrates with your existing website and exposes a full REST API to connect any tool.',
-    webTitle: 'Widget for your website',
-    webSub: 'A two-line script embeds a property search on your site. Leads are captured automatically into your CRM.',
+    webTitle: 'Your inventory, visible on the web',
+    webSub: 'Every property gets a public page with photos and a downloadable PDF, and its 360° tour embeds on any website with one line of code.',
     apiTitle: 'REST API + Webhooks',
     apiSub: 'Full access to your inventory from any application. Real-time webhooks for advanced integrations.',
-    apiFeatures: ['API key authentication', 'Filter by price, zone, type', 'Pagination + sorting', 'Status-change webhooks', 'JavaScript and Python SDK'],
+    apiFeatures: ['API key authentication', 'Full inventory export with photos', 'Pagination and safe rate limits', 'Public page and PDF per property', 'Embeddable 360° tours via iframe'],
 
     plansTitle: 'Plans',
     plansSub: 'Choose the tier that fits your agency',
@@ -249,7 +249,7 @@ const T = {
     trialSub: 'No credit card · Cancel anytime',
     plans: [
       { n: 'Individual', p: '$30', per: '/mo', d: 'For independent agents', f: ['50 properties', 'Centralized database', 'Basic CRM', 'Limited AI assistant', 'Portal connections (Compre o Alquile, Encuentra24, Web page)', '1 user'], cta: 'Start 15-day free trial' },
-      { n: 'Pro', p: '$60', per: '/mo', d: 'For growing teams', popular: true, f: ['200 properties', 'Full CRM + pipeline', 'Full AI assistant', 'Portal connections (Compre o Alquile, Encuentra24, Web page)', '2 users (+$7.99/extra user)', 'Web widget + API'], cta: 'Start 15-day free trial' },
+      { n: 'Pro', p: '$60', per: '/mo', d: 'For growing teams', popular: true, f: ['Unlimited properties', 'Full CRM + pipeline', 'Full AI assistant', 'Portal connections (Compre o Alquile, Encuentra24, Web page)', '2 users (+$7.99/extra user)', 'Integration API'], cta: 'Start 15-day free trial' },
     ],
 
     ctaBand: 'Your agency, in one platform.',
@@ -472,6 +472,42 @@ export default function LandingPage() {
 
   return (
     <div style={{ background: '#06060d', color: '#fff', overflowX: 'hidden', fontFamily: F }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@graph': [
+              {
+                '@type': 'Organization',
+                '@id': 'https://www.propsyncia.com/#org',
+                name: 'PropSync',
+                url: 'https://www.propsyncia.com',
+                logo: 'https://www.propsyncia.com/icon-mark-1024.png',
+                email: 'gerencia@elevarewebservices.com',
+                telephone: '+507 6513-9139',
+                address: { '@type': 'PostalAddress', addressCountry: 'PA' },
+                parentOrganization: { '@type': 'Organization', name: 'Elevare Tech & Marketing', url: 'https://elevarewebservices.com' },
+              },
+              {
+                '@type': 'SoftwareApplication',
+                name: 'PropSync',
+                url: 'https://www.propsyncia.com',
+                applicationCategory: 'BusinessApplication',
+                operatingSystem: 'Web',
+                description:
+                  'CRM inmobiliario con IA para Panamá: base de datos de propiedades, CRM nativo, tours virtuales 360° y publicación en portales (Encuentra24, Compre o Alquile).',
+                inLanguage: ['es', 'en'],
+                publisher: { '@id': 'https://www.propsyncia.com/#org' },
+                offers: [
+                  { '@type': 'Offer', name: 'Individual', price: '30', priceCurrency: 'USD', description: 'Hasta 50 propiedades, 1 usuario, CRM básico y conexión a portales.' },
+                  { '@type': 'Offer', name: 'Pro', price: '60', priceCurrency: 'USD', description: 'Propiedades ilimitadas, CRM completo, asistente IA completo, API y 2 usuarios.' },
+                ],
+              },
+            ],
+          }),
+        }}
+      />
       <style suppressHydrationWarning>{`
         @keyframes twinkle { 0%,100%{opacity:.07} 50%{opacity:.5} }
         @keyframes floatOrb { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
@@ -542,7 +578,7 @@ export default function LandingPage() {
                       onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,.38)')}>
                 {lang === 'es' ? 'EN' : 'ES'}
               </button>
-              <Link href="/login" className="text-sm px-4 py-2 rounded-full transition-colors"
+              <Link href="/login" className="text-sm px-4 py-2 rounded-full transition-colors hidden sm:inline-flex"
                     style={{ color: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.13)' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,.9)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,.3)' }}
                     onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,.55)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,.13)' }}>
@@ -816,13 +852,13 @@ export default function LandingPage() {
                       <div className="terminal-bar"><span className="dot-r"/><span className="dot-y"/><span className="dot-g"/>
                         <span style={{ marginLeft: 8, fontSize: '.68rem', color: 'rgba(255,255,255,.28)', fontFamily: 'monospace' }}>index.html</span>
                       </div>
-                      <pre>{`<span class="kw">&lt;script</span> <span class="at">src</span>=<span class="str">"https://cdn.propsync.io/v1/widget.js"</span><span class="kw">&gt;&lt;/script&gt;</span>\n<span class="kw">&lt;div</span> <span class="at">data-company</span>=<span class="str">"tu-agencia"</span> <span class="at">data-theme</span>=<span class="str">"dark"</span><span class="kw">&gt;&lt;/div&gt;</span>`}</pre>
+                      <pre>{`<span class="kw">&lt;iframe</span> <span class="at">src</span>=<span class="str">"https://propsyncia.com/tour/mi-propiedad?embed=true"</span>\n  <span class="at">width</span>=<span class="str">"100%"</span> <span class="at">height</span>=<span class="str">"480"</span> <span class="at">frameborder</span>=<span class="str">"0"</span> <span class="at">allowfullscreen</span><span class="kw">&gt;&lt;/iframe&gt;</span>`}</pre>
                     </div>
                     <div className="code-block">
                       <div className="terminal-bar"><span className="dot-r"/><span className="dot-y"/><span className="dot-g"/>
                         <span style={{ marginLeft: 8, fontSize: '.68rem', color: 'rgba(255,255,255,.28)', fontFamily: 'monospace' }}>curl</span>
                       </div>
-                      <pre>{`<span class="val">curl</span> https://api.propsync.io/v1/properties \\\n  -H <span class="str">"Authorization: Bearer {api_key}"</span> \\\n  -G -d <span class="str">"disponibilidad=disponible"</span>`}</pre>
+                      <pre>{`<span class="val">curl</span> https://propsyncia.com/api/v1/properties \\\n  -H <span class="str">"Authorization: Bearer {api_key}"</span> \\\n  -G -d <span class="str">"limit=50"</span> -d <span class="str">"offset=0"</span>`}</pre>
                     </div>
                   </div>
                 )}
@@ -863,7 +899,7 @@ export default function LandingPage() {
               </div>
             </div>
           </Reveal>
-          <div className="grid md:grid-cols-3 gap-5 items-start">
+          <div className="grid md:grid-cols-2 gap-5 items-start max-w-2xl mx-auto">
             {t.plans.map((plan, i) => (
               <Reveal key={i} delay={i * 70}>
                 <div style={{ borderRadius: '1.5rem', padding: '1.875rem', display: 'flex', flexDirection: 'column', height: '100%', transition: 'transform .3s ease', ...(plan.popular ? { background: 'rgba(251,191,36,.05)', border: '1px solid rgba(251,191,36,.28)' } : { background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)' }) }}
@@ -1070,6 +1106,20 @@ export default function LandingPage() {
                     onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,.7)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,.18)' }}>
                 {lang === 'es' ? 'Hablar con ventas' : 'Talk to sales'}
               </a>
+            </div>
+            {/* Apps coming soon */}
+            <div style={{ marginTop: '1.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '.68rem', letterSpacing: '.14em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,.28)', fontFamily: F, fontWeight: 500 }}>
+                {lang === 'es' ? 'Próximamente en' : 'Coming soon to'}
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 9999, border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.04)', fontSize: '.75rem', color: 'rgba(255,255,255,.6)', fontFamily: F }}>
+                <svg width="12" height="14" viewBox="0 0 12 14" fill="rgba(255,255,255,.6)"><path d="M9.9 7.4c0-1.6 1.3-2.4 1.4-2.4-.8-1.1-2-1.3-2.4-1.3-1-.1-2 .6-2.5.6s-1.3-.6-2.2-.6C3.1 3.7 2 4.4 1.4 5.5c-1.2 2.1-.3 5.3.9 7 .6.8 1.3 1.8 2.2 1.7.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2-.1 0-2-.8-2-3.1zM8.3 2.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-.9z"/></svg>
+                App Store
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 9999, border: '1px solid rgba(255,255,255,.14)', background: 'rgba(255,255,255,.04)', fontSize: '.75rem', color: 'rgba(255,255,255,.6)', fontFamily: F }}>
+                <svg width="12" height="13" viewBox="0 0 12 13" fill="none"><path d="M.8.9v11.2c0 .3.3.5.6.4l6.3-5.8L1.4.5C1.1.4.8.6.8.9z" fill="rgba(74,222,128,.7)"/><path d="M9.6 4.6L2.5.6l5.2 4.9 1.9-.9z" fill="rgba(251,191,36,.7)"/><path d="M9.6 8.4l-1.9-.9-5.2 4.9 7.1-4z" fill="rgba(248,113,113,.7)"/><path d="M11.3 6c.3.2.3.8 0 1l-1.7 1-2-1.5 2-1.5 1.7 1z" fill="rgba(129,140,248,.7)"/></svg>
+                Google Play
+              </span>
             </div>
           </div>
 

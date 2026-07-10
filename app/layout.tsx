@@ -13,8 +13,46 @@ const jakarta = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'PropSync — Base de datos, CRM e IA para inmobiliarias',
-  description: 'PropSync centraliza tu inventario de propiedades, gestiona clientes con CRM nativo y potencia tu agencia con inteligencia artificial.',
+  metadataBase: new URL('https://www.propsyncia.com'),
+  title: {
+    default: 'PropSync — CRM inmobiliario con IA para Panamá',
+    template: '%s · PropSync',
+  },
+  description:
+    'El CRM inmobiliario hecho para Panamá: base de datos de propiedades, CRM nativo, tours 360° y asistente con IA. Publica en Encuentra24 y Compre o Alquile desde un solo lugar. Prueba 15 días gratis.',
+  keywords: [
+    'CRM inmobiliario',
+    'CRM inmobiliario Panamá',
+    'software inmobiliario',
+    'software para inmobiliarias Panamá',
+    'base de datos de propiedades',
+    'tour virtual 360',
+    'bienes raíces Panamá',
+    'PropSync',
+  ],
+  alternates: { canonical: './' },
+  openGraph: {
+    type: 'website',
+    locale: 'es_PA',
+    url: 'https://www.propsyncia.com',
+    siteName: 'PropSync',
+    title: 'PropSync — CRM inmobiliario con IA para Panamá',
+    description:
+      'Base de datos · CRM · IA — todo en uno para inmobiliarias. Tu inventario, siempre activo, siempre publicado. Prueba 15 días gratis.',
+    images: [{ url: '/logo-lockup.png', width: 1536, height: 583, alt: 'PropSync — CRM inmobiliario con IA' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PropSync — CRM inmobiliario con IA para Panamá',
+    description:
+      'Base de datos · CRM · IA — todo en uno para inmobiliarias. Prueba 15 días gratis.',
+    images: ['/logo-lockup.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
+  },
   manifest: '/manifest.json',
   icons: {
     apple: '/icon-192.png',
