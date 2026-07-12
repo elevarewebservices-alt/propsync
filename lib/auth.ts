@@ -1,20 +1,49 @@
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient, createAdminClient } from './supabase'
 import { resolvePermissions, type AgentPermissions } from './permissions'
+import { getCompanyAccess } from './subscription'
+
+// Thrown by resolveCompanyId() when the company's trial has expired or its
+// subscription is unpaid. Distinct from the plain "not authenticated" case
+// so callers could special-case it if useful — today every route's generic
+// catch block still just rejects the request, which is exactly the point:
+// app/(app)/layout.tsx already redirects the UI to /suscripcion, so a real
+// user never hits this. It only stops someone bypassing that redirect by
+// calling the API directly with an otherwise-valid session.
+export class CompanyBlockedError extends Error {
+  constructor() {
+    super('Company access blocked — trial expired or subscription unpaid')
+    this.name = 'CompanyBlockedError'
+  }
+}
 
 // Returns the company_id for the currently authenticated user.
 // Falls back to NEXT_PUBLIC_DEV_COMPANY_ID when no session exists (dev mode).
-export async function resolveCompanyId(): Promise<string> {
+//
+// By default also enforces the same trial/subscription gate the app shell
+// (app/(app)/layout.tsx) applies to pages — previously that gate only ran at
+// render time, so a blocked company's still-valid session could keep calling
+// data APIs directly forever. Pass { skipBillingCheck: true } for the small
+// set of routes that must stay reachable while blocked (paying, redeeming a
+// promo code) — see app/api/subscription/paypal/confirm and
+// app/api/promo/redeem.
+export async function resolveCompanyId(options?: { skipBillingCheck?: boolean }): Promise<string> {
   const id = await getSessionCompanyId()
-  if (id) return id
-  // The dev fallback is ONLY allowed outside production. In production a request
-  // without a valid session must fail closed — never default to a company,
-  // otherwise an unauthenticated call could touch another tenant's data.
-  if (process.env.NODE_ENV !== 'production') {
-    const devId = process.env.NEXT_PUBLIC_DEV_COMPANY_ID
-    if (devId) return devId
+  let companyId: string
+  if (id) {
+    companyId = id
+  } else if (process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_COMPANY_ID) {
+    companyId = process.env.NEXT_PUBLIC_DEV_COMPANY_ID
+  } else {
+    throw new Error('No company context — user not authenticated')
   }
-  throw new Error('No company context — user not authenticated')
+
+  if (!options?.skipBillingCheck) {
+    const access = await getCompanyAccess(companyId)
+    if (access.blocked) throw new CompanyBlockedError()
+  }
+
+  return companyId
 }
 
 // Self-heals invited agents whose auth_user_id never got linked — e.g. if

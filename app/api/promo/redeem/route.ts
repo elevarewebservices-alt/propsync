@@ -7,7 +7,9 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   let companyId: string
   try {
-    companyId = await resolveCompanyId()
+    // A blocked (trial-expired/unpaid) company must still be able to redeem a
+    // promo code to unblock itself — see lib/auth.ts's resolveCompanyId doc.
+    companyId = await resolveCompanyId({ skipBillingCheck: true })
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

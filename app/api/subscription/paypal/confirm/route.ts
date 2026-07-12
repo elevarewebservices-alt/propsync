@@ -14,7 +14,10 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   let companyId: string
   try {
-    companyId = await resolveCompanyId()
+    // A blocked (trial-expired/unpaid) company is exactly who needs to reach
+    // this route to pay and unblock itself — see lib/auth.ts's
+    // resolveCompanyId doc.
+    companyId = await resolveCompanyId({ skipBillingCheck: true })
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -34,6 +37,20 @@ export async function POST(request: NextRequest) {
   }
 
   const db = createAdminClient()
+
+  // A subscription id must map to exactly one company (also enforced by a
+  // unique index in migration 025) — reject if another company already
+  // claimed it, so two tenants can never share billing state.
+  const { data: existing } = await (db.from('companies') as any)
+    .select('id')
+    .eq('subscription_external_id', subscriptionID)
+    .neq('id', companyId)
+    .maybeSingle()
+
+  if (existing) {
+    return NextResponse.json({ error: 'Esta suscripción ya está asociada a otra cuenta.' }, { status: 409 })
+  }
+
   await (db.from('companies') as any)
     .update({
       subscription_status: 'active',
