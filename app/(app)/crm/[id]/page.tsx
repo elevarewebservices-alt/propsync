@@ -16,6 +16,7 @@ import { ContactPropertiesTab } from '@/components/crm/detail/ContactPropertiesT
 import { ContactNotesTab } from '@/components/crm/detail/ContactNotesTab'
 import { ContactActivityTab } from '@/components/crm/detail/ContactActivityTab'
 import { ContactMatchesTab } from '@/components/crm/detail/ContactMatchesTab'
+import { PipelineFunnelBar } from '@/components/crm/PipelineFunnelBar'
 
 interface LinkedProperty {
   id: string
@@ -135,6 +136,11 @@ export default function ContactDetailPage() {
   }
 
   const currentStage = stages.find((s) => s.slug === contact.etapa_crm)
+  // Scope the funnel to the contact's own pipeline — position resets per pipeline,
+  // so mixing stages across pipelines would render a scrambled bar.
+  const pipelineStages = currentStage
+    ? stages.filter((s) => s.pipeline_id === currentStage.pipeline_id)
+    : stages
   const today = new Date().toISOString().slice(0, 10)
   const overdue = contact.fecha_seguimiento && contact.fecha_seguimiento < today
 
@@ -242,29 +248,10 @@ export default function ContactDetailPage() {
           )}
         </div>
 
-        {/* Stage stepper — clickable chips */}
+        {/* Funnel del pipeline — barra horizontal que se va llenando */}
         <div className="mt-5">
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Etapa del pipeline</div>
-          <div className="flex flex-wrap gap-2">
-            {stages.map((s) => (
-              <button
-                key={s.slug}
-                onClick={() => handleStageChange(s.slug)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                  contact.etapa_crm === s.slug
-                    ? 'shadow-sm border-2'
-                    : 'border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground'
-                }`}
-                style={
-                  contact.etapa_crm === s.slug
-                    ? { borderColor: s.color, color: s.color, backgroundColor: s.color + '14' }
-                    : {}
-                }
-              >
-                {s.nombre}
-              </button>
-            ))}
-          </div>
+          <PipelineFunnelBar stages={pipelineStages} currentSlug={contact.etapa_crm} onChange={handleStageChange} />
         </div>
 
         {overdue && (
