@@ -49,7 +49,9 @@ export default function PropietariosPage() {
     : contacts
 
   return (
-    <div className="flex flex-col h-full">
+    // overflow-hidden pins this page inside <main>'s height, same fix as /crm —
+    // otherwise <main> becomes the scroll container and drags the header along.
+    <div className="flex flex-col h-full overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="border-b border-border px-6 py-4">
         <div className="flex items-center justify-between gap-4 flex-wrap mb-4">

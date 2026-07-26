@@ -171,7 +171,11 @@ export default function ContactDetailPage() {
   const overdue = contact.fecha_seguimiento && contact.fecha_seguimiento < today
 
   return (
-    <div className="flex flex-col h-full">
+    // overflow-hidden pins this page inside <main>'s height — otherwise <main>
+    // itself becomes the scroll container the moment content runs a hair tall,
+    // dragging the top bar and identity card along with it instead of just the
+    // tab content below.
+    <div className="flex flex-col h-full overflow-hidden">
       {/* ── Top bar with back + actions ───────────────────────────────── */}
       <div className="border-b border-border px-6 py-3 flex items-center justify-between flex-wrap gap-3">
         <Link href="/crm">

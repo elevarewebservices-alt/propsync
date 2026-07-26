@@ -121,7 +121,12 @@ function CrmPageContent() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    // overflow-hidden here is load-bearing: without it, the moment this page's
+    // content is a hair taller than the space <main> gives it, <main> itself
+    // becomes the scroll container — dragging the pipeline tabs and header
+    // along with it instead of just the contacts list below. Pinning this
+    // wrapper forces every scroll gesture into the one designated inner region.
+    <div className="flex flex-col h-full overflow-hidden">
       {/* ── Pipeline tabs ──────────────────────────────────────────── */}
       {pipelines.length > 0 && (
         <div className="border-b border-border bg-background px-4 md:px-6 pt-3">
