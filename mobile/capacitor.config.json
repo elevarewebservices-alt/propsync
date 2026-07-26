@@ -1,0 +1,25 @@
+{
+  "appId": "com.propsyncia.app",
+  "appName": "PropSync",
+  "webDir": "www",
+  "server": {
+    "url": "https://www.propsyncia.com",
+    "cleartext": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#0f0f1a",
+      "showSpinner": false
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  },
+  "ios": {
+    "contentInset": "never"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

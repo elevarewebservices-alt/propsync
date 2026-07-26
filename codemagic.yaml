@@ -30,8 +30,8 @@ workflows:
           npm install
 
       - name: Regenerate native iOS project
-        # ios/ is gitignored (Capacitor regenerates it from capacitor.config.ts +
-        # installed plugins) — `cap add` only works against a clean checkout.
+        # ios/ is gitignored (Capacitor regenerates it from capacitor.config.json
+        # + installed plugins) — `cap add` only works against a clean checkout.
         script: |
           cd mobile
           npx cap add ios
