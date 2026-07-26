@@ -189,7 +189,7 @@ export interface PropertyRow {
   garages: number | null
   furnished: boolean | null
   building_date: string | null
-  estado_publicacion: 'activo' | 'destacado' | 'inactivo'
+  estado_publicacion: 'activo' | 'destacado' | 'inactivo' | 'basurero'
   disponibilidad: 'disponible' | 'vendido' | 'alquilado'
   id_status_on_page: string | null
   id_availability: string | null
@@ -263,7 +263,7 @@ export interface PropertyInsert {
   garages?: number | null
   furnished?: boolean | null
   building_date?: string | null
-  estado_publicacion?: 'activo' | 'destacado' | 'inactivo'
+  estado_publicacion?: 'activo' | 'destacado' | 'inactivo' | 'basurero'
   disponibilidad?: 'disponible' | 'vendido' | 'alquilado'
   id_status_on_page?: string | null
   id_availability?: string | null

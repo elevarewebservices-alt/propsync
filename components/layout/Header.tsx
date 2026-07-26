@@ -96,7 +96,10 @@ export function Header() {
   const today = new Date().toISOString().split('T')[0]
 
   return (
-    <header className="shrink-0 z-40 flex h-16 items-center justify-between bg-background/95 px-4 backdrop-blur md:px-6 pt-safe">
+    // Solid background, not `/95 + backdrop-blur`: nothing scrolls underneath
+    // this header (it sits above <main> in flow), so the translucency bought
+    // nothing and only muddied the band.
+    <header className="app-header shrink-0 z-40 flex items-center justify-between bg-background px-4 md:px-6">
       <div className="flex items-center gap-2">
         {showBack && (
           <Button

@@ -1,6 +1,8 @@
 export type PropertyType = 'venta' | 'arriendo'
 
-export type EstadoPublicacion = 'activo' | 'destacado' | 'inactivo'
+// 'basurero' = descartada. Hidden from the normal tabs; only surfaces behind
+// the "Ver basurero" toggle so a dropped listing can be reviewed or restored.
+export type EstadoPublicacion = 'activo' | 'destacado' | 'inactivo' | 'basurero'
 
 export type Disponibilidad = 'disponible' | 'vendido' | 'alquilado'
 

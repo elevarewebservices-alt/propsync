@@ -1,65 +1,77 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { Contact, CrmStage } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Phone, Mail, CalendarDays, ChevronDown, Zap } from 'lucide-react'
-
-const TIPO_COLORS: Record<string, string> = {
-  cliente: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  propietario: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  broker: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-}
-
-function tagColor(tag: string): string {
-  const colors = [
-    'bg-sky-100 text-sky-700','bg-pink-100 text-pink-700','bg-amber-100 text-amber-700',
-    'bg-lime-100 text-lime-700','bg-violet-100 text-violet-700','bg-orange-100 text-orange-700',
-  ]
-  let hash = 0
-  for (let i = 0; i < tag.length; i++) hash = (hash * 31 + tag.charCodeAt(i)) & 0xffff
-  return colors[hash % colors.length]
-}
+import { Phone, Mail, CalendarDays, Zap, MoreVertical } from 'lucide-react'
+import { avatarBg, initials, tagColor, tipoBadge } from '@/lib/crm-colors'
 
 interface Props {
   contact: Contact
   stages: CrmStage[]
   onMove: (toSlug: string) => void
   onOpen: () => void
+  /** Rendered inside the DragOverlay — no drag wiring, no interactive children. */
+  overlay?: boolean
 }
 
-export function KanbanCard({ contact, stages, onMove, onOpen }: Props) {
-  const router = useRouter()
-  // If parent provides an onOpen handler use it, otherwise navigate to the detail page.
-  const handleClick = () => onOpen ? onOpen() : router.push(`/crm/${contact.id}`)
+export function KanbanCard({ contact, stages, onMove, onOpen, overlay = false }: Props) {
+  const sortable = useSortable({ id: contact.id, data: { contact } })
+  const {
+    attributes, listeners, setNodeRef, transform, transition, isDragging,
+  } = sortable
+
   const today = new Date().toISOString().split('T')[0]
-  const isPastDue =
-    contact.fecha_seguimiento !== null &&
-    contact.fecha_seguimiento !== undefined &&
-    contact.fecha_seguimiento < today
+  const isPastDue = !!contact.fecha_seguimiento && contact.fecha_seguimiento < today
   const isDueToday = contact.fecha_seguimiento === today
   const otherStages = stages.filter((s) => s.slug !== contact.etapa_crm)
 
   return (
     <div
-      className="bg-card border border-border rounded-lg p-3 cursor-pointer hover:border-blue-400 hover:shadow-sm transition-all group"
-      onClick={handleClick}
+      ref={overlay ? undefined : setNodeRef}
+      style={
+        overlay
+          ? undefined
+          : { transform: CSS.Transform.toString(transform), transition }
+      }
+      className={`bg-card border border-border rounded-lg p-3 transition-shadow ${
+        overlay ? 'shadow-lg rotate-1 cursor-grabbing' : 'hover:border-blue-400 hover:shadow-sm'
+      } ${isDragging && !overlay ? 'opacity-40' : ''}`}
+      {...(overlay ? {} : attributes)}
+      {...(overlay ? {} : listeners)}
     >
-      {/* Header */}
+      {/* Header — the whole title block opens the contact; a button, so it is
+          reachable by keyboard and announced properly. Drag lives on the card. */}
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm text-foreground truncate">{contact.nombre}</p>
-          {contact.agente_nombre && (
-            <p className="text-[11px] text-muted-foreground truncate">{contact.agente_nombre}</p>
-          )}
-        </div>
-        <Badge className={`${TIPO_COLORS[contact.tipo] ?? ''} text-[10px] px-1.5 py-0 shrink-0 border-0`}>
+        <button
+          type="button"
+          onClick={onOpen}
+          disabled={overlay}
+          className="flex items-center gap-2 flex-1 min-w-0 text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span
+            className={`h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0 ${avatarBg(contact.nombre)}`}
+            aria-hidden="true"
+          >
+            {initials(contact.nombre)}
+          </span>
+          <span className="min-w-0">
+            <span className="block font-medium text-sm text-foreground truncate">{contact.nombre}</span>
+            {contact.agente_nombre && (
+              <span className="block text-[11px] text-muted-foreground truncate">{contact.agente_nombre}</span>
+            )}
+          </span>
+        </button>
+
+        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 capitalize border ${tipoBadge(contact.tipo)}`}>
           {contact.tipo}
         </Badge>
       </div>
@@ -68,30 +80,28 @@ export function KanbanCard({ contact, stages, onMove, onOpen }: Props) {
       <div className="space-y-1 mb-2">
         {contact.telefono && (
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Phone className="h-3 w-3 shrink-0" />
+            <Phone className="h-3 w-3 shrink-0" aria-hidden="true" />
             <span className="truncate">{contact.telefono}</span>
           </div>
         )}
         {contact.email && (
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Mail className="h-3 w-3 shrink-0" />
+            <Mail className="h-3 w-3 shrink-0" aria-hidden="true" />
             <span className="truncate">{contact.email}</span>
           </div>
         )}
       </div>
 
-      {/* Meta badge */}
       {contact.fuente === 'meta_leads' && (
         <div className="flex items-center gap-1 mb-2">
-          <Zap className="h-3 w-3 text-blue-500" />
-          <span className="text-[10px] text-blue-500 font-medium">Meta</span>
+          <Zap className="h-3 w-3 text-blue-500" aria-hidden="true" />
+          <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Meta</span>
           {contact.meta_campaign && (
             <span className="text-[10px] text-muted-foreground truncate">· {contact.meta_campaign}</span>
           )}
         </div>
       )}
 
-      {/* Tags */}
       {contact.tags && contact.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-2">
           {contact.tags.slice(0, 3).map((tag) => (
@@ -107,20 +117,19 @@ export function KanbanCard({ contact, stages, onMove, onOpen }: Props) {
         </div>
       )}
 
-      {/* Follow-up date */}
       {contact.fecha_seguimiento && (
         <div
-          className={`flex items-center gap-1 text-[11px] mb-2 ${
+          className={`flex items-center gap-1 text-[11px] ${
             isPastDue
               ? 'text-red-600 dark:text-red-400 font-medium'
               : isDueToday
-              ? 'text-amber-600 dark:text-amber-400 font-medium'
+              ? 'text-amber-700 dark:text-amber-400 font-medium'
               : 'text-muted-foreground'
           }`}
         >
-          <CalendarDays className="h-3 w-3 shrink-0" />
+          <CalendarDays className="h-3 w-3 shrink-0" aria-hidden="true" />
           <span>
-            {isPastDue ? '⚠ Vencido · ' : isDueToday ? 'Hoy · ' : ''}
+            {isPastDue ? 'Vencido · ' : isDueToday ? 'Hoy · ' : ''}
             {new Date(contact.fecha_seguimiento + 'T12:00:00').toLocaleDateString('es', {
               day: 'numeric',
               month: 'short',
@@ -129,26 +138,32 @@ export function KanbanCard({ contact, stages, onMove, onOpen }: Props) {
         </div>
       )}
 
-      {/* Move stage dropdown */}
-      {otherStages.length > 0 && (
-        <div onClick={(e) => e.stopPropagation()}>
+      {/* Move menu — always visible (it used to be opacity-0 until hover, which
+          made it unreachable on touch, the primary surface) and the accessible
+          path for anyone not using a pointer. 44px target on touch. */}
+      {!overlay && otherStages.length > 0 && (
+        <div
+          className="mt-2 pt-2 border-t border-border flex justify-end"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <DropdownMenu>
-            <DropdownMenuTrigger>
-              <span className="flex h-6 w-full items-center justify-between px-2 text-[11px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity border border-dashed border-border rounded-md cursor-pointer hover:bg-muted">
-                Mover a etapa
-                <ChevronDown className="h-3 w-3 ml-1" />
-              </span>
+            <DropdownMenuTrigger
+              aria-label={`Mover a ${contact.nombre} a otra etapa`}
+              className="inline-flex items-center justify-center gap-1 h-11 w-11 md:h-8 md:w-auto md:px-2 -my-1 rounded-md text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="hidden md:inline">Mover</span>
+              <MoreVertical className="h-4 w-4 md:h-3 md:w-3" aria-hidden="true" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-[160px]">
+            <DropdownMenuContent align="end" className="min-w-[180px]">
+              <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
+                Mover a etapa
+              </DropdownMenuLabel>
               {otherStages.map((s) => (
-                <DropdownMenuItem
-                  key={s.slug}
-                  onClick={() => onMove(s.slug)}
-                  className="text-xs"
-                >
+                <DropdownMenuItem key={s.slug} onClick={() => onMove(s.slug)} className="text-xs">
                   <span
                     className="inline-block w-2 h-2 rounded-full mr-2 shrink-0"
                     style={{ backgroundColor: s.color }}
+                    aria-hidden="true"
                   />
                   {s.nombre}
                 </DropdownMenuItem>

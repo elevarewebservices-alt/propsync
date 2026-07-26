@@ -1,5 +1,6 @@
 import nodemailer, { Transporter } from 'nodemailer'
-import { resolveSmtpConfig, SmtpConfig } from './email-config'
+import { getCompanySmtpConfig, resolveSmtpConfig, SmtpConfig } from './email-config'
+import { isBrevoEnabled, sendViaBrevo } from './brevo'
 
 function h(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -29,7 +30,17 @@ export async function sendTransactionalEmail({
   htmlContent: string
   companyId?: string | null
 }): Promise<void> {
-  const cfg = await resolveSmtpConfig(companyId)
+  // A tenant's own SMTP always wins — mail must keep leaving their domain.
+  // Everyone else goes through the Elevare Brevo account when it's configured,
+  // falling back to the generic platform SMTP when it isn't.
+  const own = await getCompanySmtpConfig(companyId)
+  if (!own && isBrevoEnabled()) {
+    const result = await sendViaBrevo({ to, toName, subject, htmlContent, tags: ['transactional'] })
+    if (result.ok) return
+    console.error('[email] Brevo send failed, falling back to SMTP:', result.error)
+  }
+
+  const cfg = own ?? (await resolveSmtpConfig(companyId))
   if (!cfg) {
     console.warn('[email] No SMTP config available — skipping email')
     return

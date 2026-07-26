@@ -27,35 +27,39 @@ function platformDefault(): SmtpConfig | null {
   }
 }
 
+/** The company's own SMTP, or null if it hasn't connected one. */
+export async function getCompanySmtpConfig(companyId?: string | null): Promise<SmtpConfig | null> {
+  if (!companyId) return null
+  const db = createAdminClient()
+  const { data } = await (db.from('companies') as any)
+    .select('smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password_enc, smtp_from_email, smtp_from_name')
+    .eq('id', companyId)
+    .single()
+
+  const c = data as any
+  if (c?.smtp_host && c?.smtp_user && c?.smtp_password_enc) {
+    try {
+      return {
+        host:      c.smtp_host,
+        port:      c.smtp_port ?? 587,
+        secure:    c.smtp_secure ?? false,
+        user:      c.smtp_user,
+        password:  decrypt(c.smtp_password_enc),
+        fromEmail: c.smtp_from_email ?? c.smtp_user,
+        fromName:  c.smtp_from_name  ?? 'PropSync',
+      }
+    } catch {
+      // Undecryptable stored password — fall through to the platform default.
+    }
+  }
+  return null
+}
+
 /**
  * Resolve SMTP config for sending. If `companyId` is provided and the company
  * has a configured SMTP, use it. Otherwise fall back to platform defaults
  * (used during onboarding before a tenant has connected their email).
  */
 export async function resolveSmtpConfig(companyId?: string | null): Promise<SmtpConfig | null> {
-  if (companyId) {
-    const db = createAdminClient()
-    const { data } = await (db.from('companies') as any)
-      .select('smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password_enc, smtp_from_email, smtp_from_name')
-      .eq('id', companyId)
-      .single()
-
-    const c = data as any
-    if (c?.smtp_host && c?.smtp_user && c?.smtp_password_enc) {
-      try {
-        return {
-          host:      c.smtp_host,
-          port:      c.smtp_port ?? 587,
-          secure:    c.smtp_secure ?? false,
-          user:      c.smtp_user,
-          password:  decrypt(c.smtp_password_enc),
-          fromEmail: c.smtp_from_email ?? c.smtp_user,
-          fromName:  c.smtp_from_name  ?? 'PropSync',
-        }
-      } catch {
-        // fall through to platform default
-      }
-    }
-  }
-  return platformDefault()
+  return (await getCompanySmtpConfig(companyId)) ?? platformDefault()
 }

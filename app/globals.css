@@ -102,6 +102,25 @@ html {
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
+
+  /* App header band. `h-16` + `pt-safe` was wrong: with border-box sizing the
+     notch inset was subtracted from the 4rem height instead of added to it, so
+     on a notched iPhone the row got crushed up against the clock/battery.
+     Here the inset is *added* on top of a fixed content row, and the extra
+     0.5rem pushes the logo further clear of the status bar. The band below the
+     row is solid background, which is what makes it read as clean. */
+  .app-header {
+    min-height: calc(4.5rem + env(safe-area-inset-top) + 0.5rem);
+    padding-top: calc(env(safe-area-inset-top) + 0.5rem);
+    padding-bottom: 0.75rem;
+  }
+  @media (min-width: 768px) {
+    .app-header {
+      min-height: 4rem;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+  }
 }
 
 /* ── Overlay safe areas ──────────────────────────────────────────────────────

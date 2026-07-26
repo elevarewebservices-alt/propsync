@@ -341,8 +341,39 @@ Wraps Meta's Message Templates Management API (`lib/whatsapp-templates.ts` — `
 - [x] Wasi auto-sync — `vercel.json` runs `/api/cron/wasi-sync` daily at 6am, real implementation (not a stub)
 - [x] Transactional emails — `lib/email.ts` (`sendWelcomeEmail`, `sendAgentWelcomeEmail`, `sendFollowUpReminderEmail`, `sendStageMilestoneEmail`, `sendNewLeadNotification`) over generic SMTP (`lib/email-config.ts`, per-company override or platform `SMTP_*` env vars — not Brevo-specific despite earlier docs calling it that). Welcome email fires from `/api/auth/setup`; follow-up reminders run via `/api/cron/follow-up-reminders` (daily 8am weekdays). What's actually outstanding here, if anything, is SMTP provider credentials/config, not code.
 
+- [x] XML property import — `/propiedades/importar`, generic feed parser + field mapping (see below)
+- [x] Brevo as the platform-level ("cuenta madre") email transport (see below)
+
 ### Pending
 - [ ] Stripe payments — plan upgrade/downgrade, webhook updates `companies.plan_id`
+
+---
+
+## Email transport — three tiers
+
+`sendTransactionalEmail()` in `lib/email.ts` picks, in order:
+
+1. **The company's own SMTP** (`getCompanySmtpConfig`) — always wins, so an agency's mail keeps leaving its own domain.
+2. **Brevo, the Elevare "cuenta madre"** (`lib/brevo.ts`) — used for every tenant without their own SMTP, when `BREVO_API_KEY` is set. Uses Brevo's HTTP API (`/v3/smtp/email`), not the SMTP relay, because the API reports per-message delivery errors synchronously.
+3. **Platform SMTP** (`SMTP_*` env vars) — the pre-existing fallback, also used if a Brevo send fails.
+
+**Deliberately server-only.** There is no per-company Brevo UI and no way for a tenant to enter a Brevo key: one client pasting a bad key would silently break every email the platform sends on their behalf. Env vars only (`BREVO_API_KEY`, `BREVO_FROM_EMAIL`, `BREVO_FROM_NAME` — documented commented-out in `.env.local`). `GET /api/configuracion/smtp` returns a `platformProvider` field (`'brevo' | 'smtp' | 'none'`) purely so `/configuracion/general` can *tell* the agency where its mail is going out from.
+
+---
+
+## XML property import
+
+`/propiedades/importar` → `components/propiedades/XmlImportWizard.tsx` → `POST /api/properties/import`.
+
+Generic, not portal-specific: works with any listings feed.
+
+- **Parsing runs in the browser** via the platform's own `DOMParser` — no XML dependency on either side. The server only ever receives plain mapped rows.
+- `lib/property-import.ts` holds all the pure logic (so it's testable outside React): `parseXmlFeed`, `detectRecordNodes`, `flattenRecord`, `guessMapping`, `parsePrice`, `parseOperacion`, `firstValue`.
+- **Record detection** picks the repeating tag with the most same-parent siblings *that carries sub-fields* — that last condition stops a repeated `<caracteristica>` leaf from beating the `<inmueble>` containing it. Feeds needing ≥2 distinct fields to count as listings.
+- **Field mapping** is auto-guessed from tag names then confirmed by the user. Matches are claimed strongest-first across all fields, not in field declaration order, so a weak substring hit can't steal a tag another field matches exactly.
+- `parsePrice` handles both separator conventions and Panamanian balboas: `"B/. 249,900"`, `"185.000"`, `"1.250.000,50"`, `"US$ 185,000.00"`. The last separator is a decimal point only when the other separator is also present, or when it isn't followed by exactly three digits.
+- Repeated sibling tags flatten to `"a | b"`; `firstValue()` takes the head for single-value columns (image URL, lat/lng, reference) and inside `parsePrice`/`parseIntOrNull`.
+- **Imports land `estado_publicacion: 'inactivo'`** on purpose — an agent reviews and activates rather than a feed silently going live on portals. Dedupes on `reference`, enforces the plan's property limit against the whole batch, and a restricted `agente` owns everything they import.
 
 ---
 

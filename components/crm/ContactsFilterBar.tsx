@@ -75,21 +75,24 @@ export function ContactsFilterBar({ filters, onChange, stages, allTags }: Props)
     filters.search !== '' || filters.tipo !== 'all' || filters.stage !== 'all'
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    // min-w-0 + full-width children on phones: fixed widths (w-72 / w-40 / w-44)
+    // are wider than what's left of a 430px screen after the page padding, which
+    // is what pushed the CRM sideways.
+    <div className="flex items-center gap-2 flex-wrap min-w-0">
       {/* Search */}
-      <div className="relative">
+      <div className="relative w-full sm:w-72">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
           value={filters.search}
           onChange={(e) => set('search', e.target.value)}
           placeholder="Buscar por nombre, email o teléfono…"
-          className="h-9 pl-8 w-72 text-sm"
+          className="h-9 pl-8 w-full text-sm"
         />
       </div>
 
       {/* Tipo */}
       <Select value={filters.tipo} onValueChange={(v) => set('tipo', v ?? 'all')}>
-        <SelectTrigger className="h-9 w-40 text-sm">
+        <SelectTrigger className="h-9 w-[calc(50%-0.25rem)] sm:w-40 text-sm">
           <SelectValue placeholder="Tipo" />
         </SelectTrigger>
         <SelectContent>
@@ -101,7 +104,7 @@ export function ContactsFilterBar({ filters, onChange, stages, allTags }: Props)
 
       {/* Etapa */}
       <Select value={filters.stage} onValueChange={(v) => set('stage', v ?? 'all')}>
-        <SelectTrigger className="h-9 w-44 text-sm">
+        <SelectTrigger className="h-9 w-[calc(50%-0.25rem)] sm:w-44 text-sm">
           <SelectValue placeholder="Etapa" />
         </SelectTrigger>
         <SelectContent>
@@ -125,7 +128,8 @@ export function ContactsFilterBar({ filters, onChange, stages, allTags }: Props)
             )}
           </span>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[28rem] p-4">
+        {/* 28rem is wider than a phone — clamp it to the viewport. */}
+        <DropdownMenuContent align="end" className="w-[min(28rem,calc(100vw-2rem))] p-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <Label className="text-xs mb-1 block text-muted-foreground">Fuente</Label>

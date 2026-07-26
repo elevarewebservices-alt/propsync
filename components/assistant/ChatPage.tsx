@@ -49,35 +49,26 @@ export function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] bg-background rounded-xl border border-border overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center">
-            <Bot className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div>
-            <p className="font-semibold text-sm">PropSync AI</p>
-            <p className="text-xs text-muted-foreground">
-              {loading ? 'Pensando…' : 'Listo para ayudarte'}
-            </p>
-          </div>
-        </div>
-        {messages.length > 0 && (
+    // No card frame, no identity header — the chat is the page. Fills whatever
+    // height it's given (min-h-0 so the messages area is what scrolls).
+    <div className="flex flex-col flex-1 min-h-0">
+      {/* Only a clear-chat action, and only once there's something to clear. */}
+      {messages.length > 0 && (
+        <div className="flex justify-end px-1 pb-2 shrink-0">
           <Button
             variant="ghost"
             size="sm"
-            className="text-muted-foreground gap-2"
+            className="text-muted-foreground gap-2 h-8"
             onClick={() => setMessages([])}
           >
             <Trash2 className="w-4 h-4" />
             Limpiar
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center max-w-md mx-auto">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -85,7 +76,7 @@ export function ChatPage() {
             </div>
             <div>
               <h2 className="font-semibold text-lg">Hola, soy PropSync AI</h2>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="hidden md:block text-sm text-muted-foreground mt-1">
                 Puedo consultar estadísticas, gestionar propiedades, iniciar campañas de WhatsApp y procesar respuestas de propietarios. ¿En qué te ayudo?
               </p>
             </div>
@@ -108,7 +99,7 @@ export function ChatPage() {
       <ChatInput
         onSend={sendMessage}
         disabled={loading}
-        placeholder="Escribe tu pregunta o instrucción… (Enter para enviar)"
+        placeholder="Escribe tu instrucción…"
       />
     </div>
   )

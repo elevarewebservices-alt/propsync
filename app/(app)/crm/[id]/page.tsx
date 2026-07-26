@@ -5,6 +5,9 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import {
   ArrowLeft, Mail, Phone, MessageCircle, Calendar, MapPin, Tag, Zap, AlertTriangle, Sparkles,
@@ -17,6 +20,8 @@ import { ContactNotesTab } from '@/components/crm/detail/ContactNotesTab'
 import { ContactActivityTab } from '@/components/crm/detail/ContactActivityTab'
 import { ContactMatchesTab } from '@/components/crm/detail/ContactMatchesTab'
 import { PipelineFunnelBar } from '@/components/crm/PipelineFunnelBar'
+import { Skeleton } from '@/components/ui/skeleton'
+import { avatarBg, initials, tipoBadge } from '@/lib/crm-colors'
 
 interface LinkedProperty {
   id: string
@@ -34,29 +39,6 @@ interface LinkedProperty {
   }
 }
 
-function initials(name: string): string {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('')
-}
-
-function avatarBg(name: string): string {
-  const palette = [
-    'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200',
-    'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200',
-    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200',
-    'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200',
-    'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200',
-  ]
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) & 0xffff
-  return palette[hash % palette.length]
-}
-
-const TIPO_BADGE: Record<string, string> = {
-  cliente:     'bg-blue-50  text-blue-700  border-blue-200  dark:bg-blue-950/40  dark:text-blue-300  dark:border-blue-900/60',
-  propietario: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/60',
-  broker:      'bg-amber-50  text-amber-700  border-amber-200  dark:bg-amber-950/40  dark:text-amber-300  dark:border-amber-900/60',
-}
-
 export default function ContactDetailPage() {
   const params  = useParams<{ id: string }>()
   const router  = useRouter()
@@ -68,6 +50,8 @@ export default function ContactDetailPage() {
   const [loading, setLoading]     = useState(true)
   const [notFound, setNotFound]   = useState(false)
   const [deactivating, setDeactivating] = useState(false)
+  const [confirmOpen, setConfirmOpen]   = useState(false)
+  const [actionError, setActionError]   = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -98,28 +82,66 @@ export default function ContactDetailPage() {
     if (!contact) return
     const prev = contact
     setContact({ ...contact, etapa_crm: slug })   // optimistic
-    const res = await fetch(`/api/crm/contacts/${contact.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ etapa_crm: slug }),
-    })
-    if (!res.ok) setContact(prev)
-    else { const u = await res.json(); setContact(u) }
+    setActionError(null)
+    try {
+      const res = await fetch(`/api/crm/contacts/${contact.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ etapa_crm: slug }),
+      })
+      if (!res.ok) throw new Error(String(res.status))
+      setContact(await res.json())
+    } catch {
+      // The bar used to snap back with no explanation, which reads as a UI bug
+      // rather than a failed save.
+      setContact(prev)
+      setActionError('No se pudo cambiar la etapa. Revisa tu conexión e inténtalo de nuevo.')
+    }
   }
 
   async function handleDeactivate() {
     if (!contact) return
-    if (!confirm(`¿Desactivar a ${contact.nombre}? Podrás reactivarlo desde la base de datos.`)) return
     setDeactivating(true)
-    const res = await fetch(`/api/crm/contacts/${contact.id}`, { method: 'DELETE' })
-    setDeactivating(false)
-    if (res.ok) router.push('/crm')
+    setActionError(null)
+    try {
+      const res = await fetch(`/api/crm/contacts/${contact.id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(String(res.status))
+      router.push('/crm')
+    } catch {
+      // Previously a failed DELETE did nothing at all — the dialog just sat there.
+      setDeactivating(false)
+      setConfirmOpen(false)
+      setActionError('No se pudo desactivar el contacto. Inténtalo de nuevo.')
+    }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-sm text-muted-foreground">Cargando contacto…</div>
+      <div className="flex flex-col h-full" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Cargando contacto…</span>
+        <div className="border-b border-border px-6 py-3 flex items-center justify-between">
+          <Skeleton className="h-8 w-28" />
+          <div className="hidden sm:flex gap-2">
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-8 w-24" />)}
+          </div>
+        </div>
+        <div className="border-b border-border px-6 py-5 bg-muted/20">
+          <div className="flex items-start gap-4">
+            <Skeleton className="h-14 w-14 rounded-full shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-6 w-56" />
+              <Skeleton className="h-4 w-72" />
+              <Skeleton className="h-6 w-48 rounded-full" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-full mt-6 rounded-full" />
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="flex gap-2">
+            {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-9 w-24" />)}
+          </div>
+          <Skeleton className="h-64 w-full rounded-lg" />
+        </div>
       </div>
     )
   }
@@ -137,10 +159,14 @@ export default function ContactDetailPage() {
 
   const currentStage = stages.find((s) => s.slug === contact.etapa_crm)
   // Scope the funnel to the contact's own pipeline — position resets per pipeline,
-  // so mixing stages across pipelines would render a scrambled bar.
-  const pipelineStages = currentStage
+  // so mixing stages across pipelines would render a scrambled bar. Discard-type
+  // stages are excluded from the thermometer itself (still available as Kanban
+  // columns) since they're dead ends, not forward progress.
+  const HIDDEN_FROM_FUNNEL = new Set(['descartado', 'basurero'])
+  const pipelineStages = (currentStage
     ? stages.filter((s) => s.pipeline_id === currentStage.pipeline_id)
     : stages
+  ).filter((s) => !HIDDEN_FROM_FUNNEL.has(s.slug))
   const today = new Date().toISOString().slice(0, 10)
   const overdue = contact.fecha_seguimiento && contact.fecha_seguimiento < today
 
@@ -157,21 +183,21 @@ export default function ContactDetailPage() {
         <div className="flex items-center gap-2">
           {contact.telefono && (
             <a href={`tel:${contact.telefono}`}>
-              <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+              <Button variant="outline" size="sm" className="gap-1.5 h-11 md:h-8 text-xs">
                 <Phone className="h-3.5 w-3.5" /> Llamar
               </Button>
             </a>
           )}
           {contact.whatsapp && (
             <a href={`https://wa.me/${contact.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+              <Button variant="outline" size="sm" className="gap-1.5 h-11 md:h-8 text-xs">
                 <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
               </Button>
             </a>
           )}
           {contact.email && (
             <a href={`mailto:${contact.email}`}>
-              <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+              <Button variant="outline" size="sm" className="gap-1.5 h-11 md:h-8 text-xs">
                 <Mail className="h-3.5 w-3.5" /> Email
               </Button>
             </a>
@@ -181,7 +207,7 @@ export default function ContactDetailPage() {
             const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Seguimiento: ${contact.nombre}`)}&dates=${d}/${d}&details=${encodeURIComponent(`Seguimiento CRM PropSync\nContacto: ${contact.nombre}${contact.telefono ? `\nTeléfono: ${contact.telefono}` : ''}`)}`
             return (
               <a href={gcal} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+                <Button variant="outline" size="sm" className="gap-1.5 h-11 md:h-8 text-xs">
                   <Calendar className="h-3.5 w-3.5" /> Agendar
                 </Button>
               </a>
@@ -190,14 +216,50 @@ export default function ContactDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            className="gap-1.5 h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
-            onClick={handleDeactivate}
+            className="gap-1.5 h-11 md:h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
+            onClick={() => setConfirmOpen(true)}
             disabled={deactivating}
           >
             Desactivar
           </Button>
         </div>
       </div>
+
+      {actionError && (
+        <div
+          role="alert"
+          className="mx-6 mt-3 flex items-center gap-2 text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/60 rounded-md px-3 py-2"
+        >
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          {actionError}
+        </div>
+      )}
+
+      {/* In-app confirm — window.confirm() renders as a raw browser dialog inside
+          the Capacitor WebView, which breaks the native feel of the app shell. */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>¿Desactivar a {contact.nombre}?</DialogTitle>
+            <DialogDescription>
+              El contacto deja de aparecer en el CRM, pero no se borra: su historial y sus notas se
+              conservan y podrás reactivarlo desde la base de datos.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={deactivating}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeactivate}
+              disabled={deactivating}
+            >
+              {deactivating ? 'Desactivando…' : 'Desactivar contacto'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Identity card ─────────────────────────────────────────────── */}
       <div className="border-b border-border px-6 py-5 bg-muted/20">
@@ -208,7 +270,7 @@ export default function ContactDetailPage() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-semibold tracking-tight">{contact.nombre}</h1>
-              <Badge variant="outline" className={`text-xs capitalize border ${TIPO_BADGE[contact.tipo] ?? ''}`}>
+              <Badge variant="outline" className={`text-xs capitalize border ${tipoBadge(contact.tipo)}`}>
                 {contact.tipo}
               </Badge>
               {contact.fuente === 'meta_leads' && (
@@ -265,14 +327,14 @@ export default function ContactDetailPage() {
       {/* ── Tabbed content ────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         <Tabs defaultValue="info" className="p-6">
-          <TabsList className="mb-6 flex-wrap h-auto gap-1">
-            <TabsTrigger value="info">Información</TabsTrigger>
-            <TabsTrigger value="interes">Interés</TabsTrigger>
-            <TabsTrigger value="matches" className="gap-1.5">
+          <TabsList className="mb-6 w-full justify-start overflow-x-auto flex-nowrap gap-1">
+            <TabsTrigger value="info" className="shrink-0 flex-none">Información</TabsTrigger>
+            <TabsTrigger value="interes" className="shrink-0 flex-none">Interés</TabsTrigger>
+            <TabsTrigger value="matches" className="shrink-0 flex-none gap-1.5">
               <Sparkles className="h-3.5 w-3.5" />
               Matches
             </TabsTrigger>
-            <TabsTrigger value="propiedades">
+            <TabsTrigger value="propiedades" className="shrink-0 flex-none">
               Propiedades
               {linked.length > 0 && (
                 <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-muted text-foreground text-[10px] font-semibold">
@@ -280,8 +342,8 @@ export default function ContactDetailPage() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="notas">Notas</TabsTrigger>
-            <TabsTrigger value="actividad">Actividad</TabsTrigger>
+            <TabsTrigger value="notas" className="shrink-0 flex-none">Notas</TabsTrigger>
+            <TabsTrigger value="actividad" className="shrink-0 flex-none">Actividad</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info">

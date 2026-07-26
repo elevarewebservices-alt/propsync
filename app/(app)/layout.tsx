@@ -31,7 +31,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           flex column past the viewport and dragging content off to the right. */}
       <div className="flex flex-col flex-1 min-w-0 md:ml-64">
         <Header />
-        <main className="flex-1 overflow-y-auto overscroll-contain pb-20 md:pb-0">
+        {/* overflow-x-hidden: the page itself must never drift sideways. Any
+            deliberately-scrollable strip (pipeline tabs, kanban lanes) owns its
+            own overflow-x-auto and still scrolls inside this. */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain pb-20 md:pb-0">
           {children}
         </main>
       </div>

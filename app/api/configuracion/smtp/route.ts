@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { resolveCompanyId, getSessionAgent } from '@/lib/auth'
 import { encrypt } from '@/lib/crypto'
+import { isBrevoEnabled } from '@/lib/brevo'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +25,10 @@ export async function GET() {
     fromName:    c?.smtp_from_name  ?? '',
     hasPassword: Boolean(c?.smtp_password_enc),
     verifiedAt:  c?.smtp_verified_at ?? null,
+    // Which transport carries this company's mail *today*. Tenants can't
+    // configure the platform account, but they should be able to see that
+    // their mail is going out through it rather than nowhere.
+    platformProvider: isBrevoEnabled() ? 'brevo' : (process.env.SMTP_HOST ? 'smtp' : 'none'),
   })
 }
 

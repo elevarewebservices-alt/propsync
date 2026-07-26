@@ -1,12 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { CheckCircle2, Mail, AlertCircle, Send, Trash2, ChevronDown, ChevronUp, ShieldCheck, Key, Eye, EyeOff, Copy, RefreshCw } from 'lucide-react'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
+import {
+  CheckCircle2, Mail, AlertCircle, Send, Trash2, ChevronDown, ChevronUp, ShieldCheck,
+  Key, Eye, EyeOff, Copy, RefreshCw, Sun, Moon, Monitor, Bell, Users, Layers, Sparkles,
+  Plug, CreditCard, MessageCircle, HelpCircle, ChevronRight,
+} from 'lucide-react'
 
 interface SmtpState {
   host:        string
@@ -44,9 +51,14 @@ export default function ConfigGeneralPage() {
   const [smtpTesting, setSmtpTesting] = useState(false)
   const [smtpMsg,     setSmtpMsg]     = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
   const [smtpOpen,    setSmtpOpen]    = useState(false)
+  // Transport used while this agency hasn't connected its own correo.
+  const [platformProvider, setPlatformProvider] = useState<'brevo' | 'smtp' | 'none'>('none')
   const [helpOpen,    setHelpOpen]    = useState(false)
 
   const [isOwner,       setIsOwner]       = useState(false)
+  const [canManage,     setCanManage]     = useState(false)
+  const { theme, setTheme } = useTheme()
+  const push = usePushNotifications()
   const [apiKeyOpen,     setApiKeyOpen]     = useState(false)
   const [hasApiKey,      setHasApiKey]      = useState(false)
   const [apiKeyCreatedAt, setApiKeyCreatedAt] = useState<string | null>(null)
@@ -58,14 +70,24 @@ export default function ConfigGeneralPage() {
   useEffect(() => {
     fetch('/api/auth/me')
       .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d) { setAgencia(d.agencia ?? ''); setEmail(d.email ?? ''); setIsOwner(d.rol === 'owner') } })
+      .then((d) => {
+        if (d) {
+          setAgencia(d.agencia ?? '')
+          setEmail(d.email ?? '')
+          setIsOwner(d.rol === 'owner')
+          setCanManage(Boolean(d.permissions?.accessSettings))
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
 
     fetch('/api/configuracion/smtp')
       .then((r) => r.ok ? r.json() : null)
       .then((d) => {
-        if (d) setSmtp({ ...EMPTY_SMTP, ...d, password: '' })
+        if (d) {
+          setSmtp({ ...EMPTY_SMTP, ...d, password: '' })
+          setPlatformProvider(d.platformProvider ?? 'none')
+        }
       })
       .catch(() => {})
       .finally(() => setSmtpLoading(false))
@@ -290,6 +312,15 @@ export default function ConfigGeneralPage() {
               <p className="text-xs text-muted-foreground mt-0.5">
                 Conecta tu correo para que los recordatorios y avisos lleguen desde tu dirección.
               </p>
+              {/* Without this, an agency that hasn't connected SMTP has no way
+                  to tell whether its notifications are being sent at all. */}
+              {!smtp.hasPassword && platformProvider !== 'none' && (
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Mientras tanto salen por la cuenta de PropSync
+                  {platformProvider === 'brevo' ? ' (Brevo)' : ''}. Todo funciona igual; solo cambia
+                  el remitente.
+                </p>
+              )}
             </div>
           </div>
           {smtpOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
@@ -536,6 +567,102 @@ Authorization: Bearer ${revealedKey ?? '<tu_api_key>'}`}
             </div>
           )}
         </div>
+      )}
+
+      {/* Preferences — apply to this device/user, no server round-trip. */}
+      <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+        <h2 className="text-sm font-semibold text-foreground">Preferencias</h2>
+        <Separator />
+
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Tema</Label>
+          <div className="inline-flex rounded-lg border border-border p-0.5">
+            {([
+              { val: 'light',  label: 'Claro',   icon: Sun },
+              { val: 'dark',   label: 'Oscuro',  icon: Moon },
+              { val: 'system', label: 'Sistema', icon: Monitor },
+            ] as const).map(({ val, label, icon: Icon }) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setTheme(val)}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  theme === val ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" /> {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {push.isSupported && (
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <Bell className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Notificaciones push</p>
+                <p className="text-xs text-muted-foreground">Avisos de seguimientos y nuevos leads en este dispositivo.</p>
+              </div>
+            </div>
+            <Switch
+              checked={push.isSubscribed}
+              disabled={push.isLoading}
+              onCheckedChange={(on) => (on ? push.requestPermission() : push.unsubscribe())}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Everything else the user can configure. Especially important on mobile,
+          where the sidebar (with these same links) is hidden. */}
+      {canManage && (
+        <div className="rounded-xl border border-border bg-card p-2">
+          <p className="px-4 pt-3 pb-1 text-sm font-semibold text-foreground">Más ajustes</p>
+          <nav className="flex flex-col">
+            {[
+              { href: '/configuracion/usuarios',    icon: Users,         label: 'Usuarios y equipo',      desc: 'Invita agentes y define permisos', show: true },
+              { href: '/configuracion/crm',         icon: Layers,        label: 'Pipelines y etapas CRM', desc: 'Configura tus embudos de ventas', show: true },
+              { href: '/configuracion/descripcion', icon: Sparkles,      label: 'Descripción con IA',     desc: 'Ajusta el generador de textos', show: true },
+              { href: '/configuracion/whatsapp',    icon: MessageCircle, label: 'WhatsApp',               desc: 'Conexión y plantillas de mensajes', show: true },
+              { href: '/configuracion/fuentes',     icon: Plug,          label: 'Fuentes y conexiones',   desc: 'Wasi, Meta Leads y más', show: true },
+              { href: '/configuracion/planes',      icon: CreditCard,    label: 'Plan y facturación',     desc: 'Tu plan actual y complementos', show: true },
+              { href: '/configuracion/ayuda',       icon: HelpCircle,    label: 'Ayuda y soporte',        desc: 'Cómo funciona PropSync + contacto', show: true },
+            ].filter((l) => l.show).map(({ href, icon: Icon, label, desc }) => (
+              <Link
+                key={href}
+                href={href}
+                className="flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-muted/50 transition-colors"
+              >
+                <div className="rounded-lg bg-muted p-2 shrink-0">
+                  <Icon className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{label}</p>
+                  <p className="text-xs text-muted-foreground truncate">{desc}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
+
+      {/* Ayuda link is visible to everyone, even agents without settings access. */}
+      {!canManage && (
+        <Link
+          href="/configuracion/ayuda"
+          className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 hover:bg-muted/50 transition-colors"
+        >
+          <div className="rounded-lg bg-muted p-2 shrink-0">
+            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">Ayuda y soporte</p>
+            <p className="text-xs text-muted-foreground truncate">Cómo funciona PropSync + contacto</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        </Link>
       )}
     </div>
   )

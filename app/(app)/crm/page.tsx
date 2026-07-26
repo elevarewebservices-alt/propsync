@@ -8,6 +8,7 @@ import { ContactsTable } from '@/components/crm/ContactsTable'
 import { ContactsFilterBar, EMPTY_FILTERS, ContactFilters, applyFilters } from '@/components/crm/ContactsFilterBar'
 import { Contact, CrmStage, Pipeline } from '@/lib/types'
 import { Plus, Download, Upload, Settings2, LayoutGrid, Rows3 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
 
 type ViewMode = 'tabla' | 'kanban'
@@ -85,9 +86,36 @@ function CrmPageContent() {
   }
 
   if (loading) {
+    // Skeletons rather than a "Cargando…" line: the layout lands in its final
+    // shape, so nothing jumps when the data arrives.
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-sm text-muted-foreground">Cargando CRM…</div>
+      <div className="flex flex-col h-full" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Cargando CRM…</span>
+        <div className="border-b border-border px-6 pt-3">
+          <div className="flex gap-6 pb-3">
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-5 w-28" />)}
+          </div>
+        </div>
+        <div className="border-b border-border px-6 py-4 space-y-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-32" />
+              <Skeleton className="h-9 w-28" />
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <Skeleton className="h-9 w-72" />
+            <Skeleton className="h-9 w-40" />
+            <Skeleton className="h-9 w-44" />
+          </div>
+        </div>
+        <div className="flex-1 p-4 md:p-6 space-y-2">
+          {[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+        </div>
       </div>
     )
   }
@@ -96,18 +124,22 @@ function CrmPageContent() {
     <div className="flex flex-col h-full">
       {/* ── Pipeline tabs ──────────────────────────────────────────── */}
       {pipelines.length > 0 && (
-        <div className="border-b border-border bg-background px-6 pt-3">
-          <div className="flex gap-0">
+        <div className="border-b border-border bg-background px-4 md:px-6 pt-3">
+          {/* Scrollable on narrow screens — four pipelines do not fit across a
+              phone, and a wrapped tab row breaks the underline baseline. */}
+          <div className="flex gap-0 overflow-x-auto" role="tablist" aria-label="Pipelines">
             {pipelines.map((p) => {
               const isActive = p.id === activePipelineId
               return (
                 <button
                   key={p.id}
+                  role="tab"
+                  aria-selected={isActive}
                   onClick={() => {
                     setActivePipelineId(p.id)
                     setFilters(EMPTY_FILTERS)
                   }}
-                  className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                  className={`relative flex items-center gap-2 shrink-0 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${
                     isActive
                       ? 'border-blue-600 text-blue-700 dark:text-blue-400'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -116,6 +148,7 @@ function CrmPageContent() {
                   <span
                     className="w-2 h-2 rounded-full shrink-0"
                     style={{ backgroundColor: p.color }}
+                    aria-hidden="true"
                   />
                   {p.nombre}
                   <span className="text-[10px] font-normal bg-muted px-1.5 py-0.5 rounded-full">
@@ -131,9 +164,9 @@ function CrmPageContent() {
       )}
 
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
-          <div>
+      <div className="border-b border-border px-4 md:px-6 py-4 min-w-0">
+        <div className="flex items-center justify-between gap-4 flex-wrap mb-4 min-w-0">
+          <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               {pipelines.find((p) => p.id === activePipelineId)?.nombre ?? 'Contactos'}
             </h1>
@@ -203,7 +236,16 @@ function CrmPageContent() {
       </div>
 
       {/* ── Body ───────────────────────────────────────────────────── */}
-      <div className={`flex-1 ${view === 'kanban' ? 'overflow-auto' : 'overflow-y-auto'} ${view === 'kanban' ? 'p-6' : 'p-4 md:p-6'}`}>
+      {/* Kanban pins vertically and scrolls only sideways (its lanes scroll
+          their own cards internally), so the board frame never drifts up/down.
+          The table view keeps normal vertical page scroll. */}
+      <div
+        className={`flex-1 min-h-0 min-w-0 ${
+          view === 'kanban'
+            ? 'overflow-hidden p-4 md:p-6 pb-2'
+            : 'overflow-y-auto overflow-x-hidden p-4 md:p-6'
+        }`}
+      >
         {pipelineStages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <p className="text-muted-foreground text-sm">
@@ -214,7 +256,12 @@ function CrmPageContent() {
             </Link>
           </div>
         ) : view === 'tabla' ? (
-          <ContactsTable contacts={filtered} stages={pipelineStages} />
+          <ContactsTable
+            contacts={filtered}
+            stages={pipelineStages}
+            filtered={filtered.length !== pipelineContacts.length}
+            onClearFilters={() => setFilters(EMPTY_FILTERS)}
+          />
         ) : (
           <KanbanBoard
             stages={pipelineStages}

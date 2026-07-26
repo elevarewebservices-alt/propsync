@@ -96,6 +96,7 @@ function getNavSections(accessSettings: boolean): NavSection[] {
               { label: 'Planes', href: '/configuracion/planes', icon: CreditCard },
             ]
           : []),
+        { label: 'Ayuda', href: '/configuracion/ayuda', icon: HelpCircle },
       ],
     },
   ]

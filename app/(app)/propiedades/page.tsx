@@ -9,7 +9,7 @@ import { PropertyFilters, PropertyFilterState, DEFAULT_FILTERS } from '@/compone
 import { PropertyDetailSheet } from '@/components/propiedades/PropertyDetailSheet'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Property, EstadoPublicacion, Disponibilidad, EtapaCRM } from '@/lib/types'
-import { Home, RefreshCw, Download, Plus, Map } from 'lucide-react'
+import { Home, RefreshCw, Download, Plus, Map, FileCode2, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import type { PropertyRow } from '@/lib/database.types'
 
@@ -99,6 +99,9 @@ export default function PropiedadesPage() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
   const [filters, setFilters] = useState<PropertyFilterState>(DEFAULT_FILTERS)
   const [activeTab, setActiveTab] = useState<EstadoPublicacion | 'todas'>('todas')
+  // Discarded ("basurero") listings live behind this toggle — off, they never
+  // appear in any tab; on, they're the only thing shown.
+  const [viewTrash, setViewTrash] = useState(false)
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
 
   const loadProperties = useCallback(async () => {
@@ -176,8 +179,16 @@ export default function PropiedadesPage() {
     }
   }
 
+  const trashCount = properties.filter((p) => p.estado_publicacion === 'basurero').length
+
   const filtered = properties.filter((p) => {
-    if (activeTab !== 'todas' && p.estado_publicacion !== activeTab) return false
+    const inTrash = p.estado_publicacion === 'basurero'
+    if (viewTrash) {
+      if (!inTrash) return false
+    } else {
+      if (inTrash) return false
+      if (activeTab !== 'todas' && p.estado_publicacion !== activeTab) return false
+    }
 
     const q = filters.search.toLowerCase()
     if (q && !p.titulo.toLowerCase().includes(q) &&
@@ -227,70 +238,95 @@ export default function PropiedadesPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-foreground">Propiedades</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {isLoading ? 'Cargando…' : `${properties.length} propiedades en tu inventario`}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap sm:shrink-0">
-          {syncMessage && (
-            <span className="text-xs text-muted-foreground">{syncMessage}</span>
-          )}
-          <Link href="/propiedades/mapa">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Map className="h-3.5 w-3.5" /> Mapa
-            </Button>
-          </Link>
+      {/* Title removed per request — the action row leads the page. */}
+      <div className="flex items-center gap-2 flex-wrap justify-end">
+        {syncMessage && (
+          <span className="text-xs text-muted-foreground mr-auto">{syncMessage}</span>
+        )}
+        {/* Ver basurero — hidden when empty; acts as the "back" out of trash. */}
+        {(trashCount > 0 || viewTrash) && (
           <Button
-            variant="outline"
+            variant={viewTrash ? 'default' : 'outline'}
             size="sm"
             className="gap-1.5"
-            onClick={handleWasiSync}
-            disabled={isSyncing}
+            onClick={() => setViewTrash((v) => !v)}
           >
-            {isSyncing
-              ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-              : <Download className="h-3.5 w-3.5" />
-            }
-            {isSyncing ? 'Importando…' : 'Importar Wasi'}
+            <Trash2 className="h-3.5 w-3.5" />
+            {viewTrash ? 'Salir del basurero' : 'Ver basurero'}
+            {!viewTrash && (
+              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium">{trashCount}</span>
+            )}
           </Button>
-          <Button
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
-            onClick={() => router.push('/propiedades/nueva')}
-          >
-            <Plus className="h-3.5 w-3.5" /> Nueva
+        )}
+        <Link href="/propiedades/mapa">
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <Map className="h-3.5 w-3.5" /> Mapa
           </Button>
-        </div>
+        </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={handleWasiSync}
+          disabled={isSyncing}
+        >
+          {isSyncing
+            ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            : <Download className="h-3.5 w-3.5" />
+          }
+          {isSyncing ? 'Importando…' : 'Importar Wasi'}
+        </Button>
+        <Link href="/propiedades/importar">
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <FileCode2 className="h-3.5 w-3.5" /> Importar XML
+          </Button>
+        </Link>
+        <Button
+          size="sm"
+          className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+          onClick={() => router.push('/propiedades/nueva')}
+        >
+          <Plus className="h-3.5 w-3.5" /> Nueva
+        </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as EstadoPublicacion | 'todas')}>
-        <TabsList className="h-auto gap-1">
-          {TABS.map((tab) => {
-            const count =
-              tab.value === 'todas'
-                ? properties.length
-                : properties.filter((p) => p.estado_publicacion === tab.value).length
-            return (
-              <TabsTrigger key={tab.value} value={tab.value}>
-                {tab.label}
-                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium">
-                  {count}
-                </span>
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
-      </Tabs>
+      {viewTrash ? (
+        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 dark:border-red-900/60 dark:bg-red-950/30 px-3 py-2 text-sm text-red-700 dark:text-red-300">
+          <Trash2 className="h-4 w-4 shrink-0" />
+          <span className="flex-1">
+            Basurero — {trashCount} propiedad{trashCount === 1 ? '' : 'es'} descartada{trashCount === 1 ? '' : 's'}.
+            Cambia su estado desde la tarjeta para restaurarla.
+          </span>
+        </div>
+      ) : (
+        <>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as EstadoPublicacion | 'todas')}>
+            <TabsList className="h-auto gap-1">
+              {TABS.map((tab) => {
+                const count =
+                  tab.value === 'todas'
+                    ? properties.filter((p) => p.estado_publicacion !== 'basurero').length
+                    : properties.filter((p) => p.estado_publicacion === tab.value).length
+                return (
+                  <TabsTrigger key={tab.value} value={tab.value}>
+                    {tab.label}
+                    <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+                      {count}
+                    </span>
+                  </TabsTrigger>
+                )
+              })}
+            </TabsList>
+          </Tabs>
 
-      <PropertyFilters
-        filters={filters}
-        onChange={setFilters}
-        properties={properties}
-        agents={agents}
-      />
+          <PropertyFilters
+            filters={filters}
+            onChange={setFilters}
+            properties={properties}
+            agents={agents}
+          />
+        </>
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

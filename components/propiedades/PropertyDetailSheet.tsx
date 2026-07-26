@@ -24,7 +24,7 @@ import {
   RefreshCw, CheckCircle2, Video, AlertCircle, Clapperboard, Pencil,
   Crown, Phone, Mail, MessageCircle, User, ExternalLink,
 } from 'lucide-react'
-import { Property, PropertyNote, TourRoom } from '@/lib/types'
+import { Property, PropertyNote, TourRoom, EstadoPublicacion } from '@/lib/types'
 
 interface LinkedContact {
   linkId: string | null
@@ -76,7 +76,7 @@ interface Props {
 
 export function PropertyDetailSheet({ property, open, onClose, onSaved }: Props) {
   const [disponibilidad, setDisponibilidad] = useState<'disponible' | 'vendido' | 'alquilado'>('disponible')
-  const [estadoPublicacion, setEstadoPublicacion] = useState<'activo' | 'destacado' | 'inactivo'>('inactivo')
+  const [estadoPublicacion, setEstadoPublicacion] = useState<EstadoPublicacion>('inactivo')
   const [saveState, setSaveState]         = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [notes, setNotes]                 = useState<PropertyNote[]>([])
   const [newNote, setNewNote]             = useState('')
@@ -286,6 +286,7 @@ export function PropertyDetailSheet({ property, open, onClose, onSaved }: Props)
                     <SelectItem value="activo">Activo</SelectItem>
                     <SelectItem value="destacado">Destacado</SelectItem>
                     <SelectItem value="inactivo">Inactivo</SelectItem>
+                    <SelectItem value="basurero">Basurero (descartada)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
