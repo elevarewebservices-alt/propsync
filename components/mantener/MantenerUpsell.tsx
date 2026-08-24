@@ -18,7 +18,7 @@ export function MantenerUpsell() {
           <h1 className="text-2xl font-bold text-foreground">Mantener inventario — Add-on Marketing</h1>
           <p className="max-w-xl text-sm text-muted-foreground">
             El contacto automático con propietarios por WhatsApp para mantener tu inventario siempre activo
-            es parte del add-on <strong>Marketing</strong> (+$40/mes sobre el plan Pro). Incluye nuestra
+            es parte del add-on <strong>Marketing</strong> (sobre el plan Pro). Incluye nuestra
             instalación de la conexión con Meta.
           </p>
         </div>

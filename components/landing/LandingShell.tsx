@@ -57,43 +57,36 @@ export function LandingShell({ children, lang: initialLang = 'es' }: { children:
   const f = FOOTER[lang]
 
   return (
-    <div style={{ background: '#06060d', color: '#fff', overflowX: 'hidden', fontFamily: F, minHeight: '100vh' }}>
+    <div className="ml" style={{ overflowX: 'hidden', fontFamily: F, minHeight: '100vh' }}>
       <style suppressHydrationWarning>{`
-        @keyframes twinkle { 0%,100%{opacity:.07} 50%{opacity:.5} }
         @keyframes pulse { 0%,100%{opacity:.7} 50%{opacity:1} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(26px)} to{opacity:1;transform:translateY(0)} }
-        .glass { background:rgba(255,255,255,.042); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:1px solid rgba(255,255,255,.085); }
-        .amber-grad { background:linear-gradient(135deg,#fbbf24 0%,#fb923c 38%,#e879f9 72%,#818cf8 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-        .pill-cta { background:rgba(255,255,255,.95); color:#06060d; border-radius:9999px; font-weight:600; font-family:${F}; transition:all .25s ease; display:inline-flex; align-items:center; gap:7px; }
-        .pill-cta:hover { background:#fff; transform:translateY(-2px); box-shadow:0 16px 48px rgba(251,191,36,.22); }
-        .nav-pill { background:rgba(255,255,255,.05); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,.09); border-radius:9999px; display:flex; align-items:center; padding:5px 8px; gap:2px; }
-        .nav-link { padding:6px 14px; border-radius:9999px; font-size:.8rem; font-weight:400; color:rgba(255,255,255,.45); transition:all .2s; white-space:nowrap; text-decoration:none; }
-        .nav-link:hover { color:rgba(255,255,255,.88); background:rgba(255,255,255,.07); }
-        .nav-link-active { color:rgba(255,255,255,.95); background:rgba(255,255,255,.08); }
-        .section-label { font-size:.68rem; letter-spacing:.2em; text-transform:uppercase; color:rgba(251,191,36,.5); margin-bottom:.75rem; display:block; font-family:${F}; }
-        .h2 { font-size:clamp(1.9rem,5vw,3rem); font-weight:200; letter-spacing:-.035em; line-height:1.2; font-family:${F}; }
-        .body-text { color:rgba(255,255,255,.36); font-size:1rem; line-height:1.75; font-weight:300; font-family:${F}; }
+        .ml {
+          --ml-bg: oklch(0.145 0 0);
+          --ml-fg: oklch(0.985 0 0);
+          --ml-muted: oklch(0.708 0 0);
+          --ml-border: oklch(1 0 0 / 12%);
+          --ml-border-soft: oklch(1 0 0 / 7%);
+          background: var(--ml-bg);
+          color: var(--ml-fg);
+        }
+        .glass { background:transparent; border:1px solid var(--ml-border); }
+        .amber-grad { background:none; -webkit-text-fill-color:currentColor; color:var(--ml-fg); }
+        .pill-cta { background:var(--ml-fg); color:var(--ml-bg); border-radius:.375rem; font-weight:500; font-family:${F}; transition:opacity .2s ease; display:inline-flex; align-items:center; gap:7px; }
+        .pill-cta:hover { opacity:.86; }
+        .nav-pill { background:transparent; border:1px solid var(--ml-border); border-radius:.375rem; display:flex; align-items:center; padding:4px 6px; gap:2px; }
+        .nav-link { padding:6px 12px; border-radius:.25rem; font-size:.8rem; font-weight:400; color:var(--ml-muted); transition:all .2s; white-space:nowrap; text-decoration:none; }
+        .nav-link:hover { color:var(--ml-fg); background:oklch(1 0 0 / 6%); }
+        .nav-link-active { color:var(--ml-fg); background:oklch(1 0 0 / 8%); }
+        .section-label { font-size:.72rem; font-weight:500; color:var(--ml-muted); margin-bottom:.6rem; display:block; font-family:${F}; letter-spacing:0; text-transform:none; }
+        .body-text { color:var(--ml-muted); font-size:.95rem; line-height:1.7; font-weight:400; font-family:${F}; text-wrap:pretty; }
       `}</style>
 
-      {/* Stars */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
-        {Array.from({ length: 80 }, (_, i) => (
-          <div key={i} className="absolute rounded-full bg-white" style={{
-            left: `${(i * 37 + 11) % 100}%`, top: `${(i * 53 + 7) % 100}%`,
-            width: i % 7 === 0 ? 2 : 1, height: i % 7 === 0 ? 2 : 1,
-            animation: `twinkle ${2 + (i % 4)}s ${(i * .11) % 3}s ease-in-out infinite`,
-          }} />
-        ))}
-      </div>
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, width: 700, height: 700, background: 'radial-gradient(ellipse at 0% 0%,rgba(251,146,60,.07) 0%,transparent 55%)' }} />
-        <div style={{ position: 'absolute', bottom: 0, right: 0, width: 600, height: 600, background: 'radial-gradient(ellipse at 100% 100%,rgba(139,92,246,.07) 0%,transparent 55%)' }} />
-      </div>
+      {/* Fondo plano de un solo color: sin estrellas ni halos radiales. */}
 
-      {/* Navbar */}
-      <nav className="fixed top-0 inset-x-0" style={{ zIndex: 50 }}>
+<nav className="fixed top-0 inset-x-0" style={{ zIndex: 50 }}>
         <div className={`transition-all duration-500 ${scrolled ? 'py-2' : 'py-5'}`}
-             style={scrolled ? { background: 'rgba(6,6,13,.9)', backdropFilter: 'blur(28px)', borderBottom: '1px solid rgba(255,255,255,.06)' } : undefined}>
+             style={scrolled ? { background: 'oklch(0.145 0 0 / 92%)', borderBottom: '1px solid var(--ml-border)' } : undefined}>
           <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
             <Link href="/" className="flex items-center" aria-label="PropSync inicio">
               <Image src="/logo-lockup.png" alt="PropSync" width={130} height={32} priority style={{ width: 'auto', height: 32, display: 'block' }} />
@@ -106,12 +99,12 @@ export function LandingShell({ children, lang: initialLang = 'es' }: { children:
               <Link href="/contacto" className="nav-link">{t.contact}</Link>
             </div>
             <div className="flex items-center gap-3">
-              <button onClick={toggleLang} className="text-xs px-3 py-1.5 rounded-full transition-colors"
-                      style={{ border: '1px solid rgba(255,255,255,.13)', color: 'rgba(255,255,255,.38)' }}>
+              <button onClick={toggleLang} className="text-xs px-3 py-1.5 rounded-md transition-colors"
+                      style={{ border: '1px solid var(--ml-border)', color: 'var(--ml-muted)' }}>
                 {lang === 'es' ? 'EN' : 'ES'}
               </button>
-              <Link href="/login" className="hidden sm:inline-flex text-sm px-4 py-2 rounded-full transition-colors"
-                    style={{ color: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.13)' }}>
+              <Link href="/login" className="hidden sm:inline-flex text-sm px-4 py-2 rounded-md transition-colors"
+                    style={{ color: 'var(--ml-muted)', border: '1px solid var(--ml-border)' }}>
                 {t.login}
               </Link>
               <Link href="/registro" className="pill-cta px-5 py-2 text-sm">
@@ -128,13 +121,13 @@ export function LandingShell({ children, lang: initialLang = 'es' }: { children:
       </main>
 
       {/* Footer */}
-      <footer className="px-6 pt-16 pb-8" style={{ borderTop: '1px solid rgba(255,255,255,.055)', zIndex: 10, position: 'relative', background: 'linear-gradient(180deg,transparent 0%,rgba(255,255,255,.012) 100%)' }}>
+      <footer className="px-6 pt-16 pb-8" style={{ borderTop: '1px solid var(--ml-border)', zIndex: 10, position: 'relative', background: 'transparent' }}>
         <div className="max-w-6xl mx-auto">
           <div className="mb-14 text-center">
             <h3 style={{ fontSize: 'clamp(1.6rem,4vw,2.4rem)', fontWeight: 200, letterSpacing: '-.03em', lineHeight: 1.2, fontFamily: F, marginBottom: '.5rem' }}>
               {f.ctaTitle}
             </h3>
-            <p style={{ fontSize: '.875rem', color: 'rgba(255,255,255,.38)', fontFamily: F, fontWeight: 300, marginBottom: '1.75rem' }}>
+            <p style={{ fontSize: '.875rem', color: 'var(--ml-muted)', fontFamily: F, fontWeight: 300, marginBottom: '1.75rem' }}>
               {f.ctaSub}
             </p>
             <div className="flex flex-wrap justify-center gap-3">
@@ -142,42 +135,42 @@ export function LandingShell({ children, lang: initialLang = 'es' }: { children:
                 {f.ctaPrimary}
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 11L11 1M11 1H3M11 1V9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
               </Link>
-              <Link href="/contacto" className="px-7 py-3 text-sm rounded-full transition-colors" style={{ border: '1px solid rgba(255,255,255,.18)', color: 'rgba(255,255,255,.7)', fontFamily: F, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <Link href="/contacto" className="px-7 py-3 text-sm rounded-md transition-colors" style={{ border: '1px solid var(--ml-border)', color: 'var(--ml-fg)', fontFamily: F, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 {f.ctaSecondary}
               </Link>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pb-10" style={{ borderBottom: '1px solid rgba(255,255,255,.055)' }}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pb-10" style={{ borderBottom: '1px solid var(--ml-border)' }}>
             <div className="col-span-2 md:col-span-1">
               <Link href="/" className="inline-flex items-center mb-3" aria-label="PropSync inicio">
                 <Image src="/logo-lockup.png" alt="PropSync" width={140} height={36} style={{ width: 'auto', height: 36, display: 'block' }} />
               </Link>
-              <p style={{ fontSize: '.78rem', color: 'rgba(255,255,255,.32)', fontFamily: F, fontWeight: 300, lineHeight: 1.6, maxWidth: 240 }}>
+              <p style={{ fontSize: '.78rem', color: 'var(--ml-muted)', fontFamily: F, fontWeight: 300, lineHeight: 1.6, maxWidth: 240 }}>
                 {f.tagline}
               </p>
             </div>
             <div>
-              <p style={{ fontSize: '.7rem', letterSpacing: '.16em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,.32)', fontFamily: F, fontWeight: 600, marginBottom: '.85rem' }}>{f.product}</p>
+              <p style={{ fontSize: '.7rem', letterSpacing: '.16em', textTransform: 'uppercase' as const, color: 'var(--ml-muted)', fontFamily: F, fontWeight: 600, marginBottom: '.85rem' }}>{f.product}</p>
               <ul style={{ display: 'flex', flexDirection: 'column', gap: '.55rem' }}>
-                <li><Link href="/plataforma" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.platform}</Link></li>
-                <li><Link href="/marketing" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.marketing}</Link></li>
-                <li><Link href="/ia" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.ai}</Link></li>
-                <li><Link href="/precios" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.pricing}</Link></li>
+                <li><Link href="/plataforma" style={{ fontSize: '.82rem', color: 'var(--ml-muted)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.platform}</Link></li>
+                <li><Link href="/marketing" style={{ fontSize: '.82rem', color: 'var(--ml-muted)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.marketing}</Link></li>
+                <li><Link href="/ia" style={{ fontSize: '.82rem', color: 'var(--ml-muted)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.ai}</Link></li>
+                <li><Link href="/precios" style={{ fontSize: '.82rem', color: 'var(--ml-muted)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.pricing}</Link></li>
               </ul>
             </div>
             <div>
-              <p style={{ fontSize: '.7rem', letterSpacing: '.16em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,.32)', fontFamily: F, fontWeight: 600, marginBottom: '.85rem' }}>{f.company}</p>
+              <p style={{ fontSize: '.7rem', letterSpacing: '.16em', textTransform: 'uppercase' as const, color: 'var(--ml-muted)', fontFamily: F, fontWeight: 600, marginBottom: '.85rem' }}>{f.company}</p>
               <ul style={{ display: 'flex', flexDirection: 'column', gap: '.55rem' }}>
-                <li><Link href="/contacto" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.contact}</Link></li>
-                <li><a href="https://elevarewebservices.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>Elevare</a></li>
+                <li><Link href="/contacto" style={{ fontSize: '.82rem', color: 'var(--ml-muted)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.contact}</Link></li>
+                <li><a href="https://elevarewebservices.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: '.82rem', color: 'var(--ml-muted)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>Elevare</a></li>
               </ul>
             </div>
             <div>
-              <p style={{ fontSize: '.7rem', letterSpacing: '.16em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,.32)', fontFamily: F, fontWeight: 600, marginBottom: '.85rem' }}>{f.account}</p>
+              <p style={{ fontSize: '.7rem', letterSpacing: '.16em', textTransform: 'uppercase' as const, color: 'var(--ml-muted)', fontFamily: F, fontWeight: 600, marginBottom: '.85rem' }}>{f.account}</p>
               <ul style={{ display: 'flex', flexDirection: 'column', gap: '.55rem' }}>
-                <li><Link href="/registro" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{f.register}</Link></li>
-                <li><Link href="/login" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.login}</Link></li>
+                <li><Link href="/registro" style={{ fontSize: '.82rem', color: 'var(--ml-muted)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{f.register}</Link></li>
+                <li><Link href="/login" style={{ fontSize: '.82rem', color: 'var(--ml-muted)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.login}</Link></li>
               </ul>
             </div>
           </div>
@@ -186,7 +179,7 @@ export function LandingShell({ children, lang: initialLang = 'es' }: { children:
             <span>© {new Date().getFullYear()} PropSync · {f.rights}</span>
             <span>{f.credit}{' '}
               <a href="https://elevarewebservices.com" target="_blank" rel="noopener noreferrer"
-                 style={{ color: 'rgba(255,255,255,.55)', fontWeight: 500, letterSpacing: '.06em', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,.2)', paddingBottom: 1 }}>
+                 style={{ color: 'var(--ml-muted)', fontWeight: 500, letterSpacing: '.06em', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,.2)', paddingBottom: 1 }}>
                 Elevare
               </a>
             </span>

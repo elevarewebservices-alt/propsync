@@ -1,0 +1,54 @@
+# PropSync
+
+> CRM inmobiliario con IA para agencias de bienes raíces en Panamá. Centraliza
+> el inventario de propiedades, el CRM de clientes y la publicación en portales
+> panameños (Encuentra24, Compre o Alquile) en una sola plataforma.
+
+PropSync es una plataforma SaaS creada por Elevare (Panamá) para inmobiliarias
+y corredores independientes del mercado panameño. Se ofrece también en
+modalidad White Label para empresas que quieren operarla bajo su propia marca.
+
+## Qué resuelve
+
+- **Base de datos de propiedades**: inventario centralizado con estado de
+  publicación y disponibilidad como campos separados, importación desde feeds
+  XML de cualquier portal, y sincronización con Wasi.
+- **CRM nativo**: pipeline Kanban configurable, contactos y leads, notas
+  inmutables, recordatorios de seguimiento, reportes de ROI por fuente.
+- **Asistente con IA**: consulta el inventario y el CRM en lenguaje natural,
+  crea propiedades y contactos, vincula clientes con propiedades y sugiere
+  inmuebles que encajan con lo que busca cada cliente.
+- **Tours virtuales 360°**: se suben fotos normales y panorámicas, se genera
+  una página pública compartible y un iframe embebible en sitios externos.
+- **Publicación en portales**: Encuentra24, Compre o Alquile y página web
+  propia de la agencia.
+- **WhatsApp y marketing**: plantillas de mensajes, campañas y automatización
+  de seguimiento (add-on).
+
+## Diferenciadores frente a otros CRM inmobiliarios en LatAm
+
+- Enfocado específicamente en **Panamá**: portales locales, dólar como moneda
+  operativa, y flujos pensados para el mercado panameño, no adaptados desde
+  México o Argentina.
+- Importación en un paso desde **Wasi** y desde cualquier feed XML, para migrar
+  sin volver a cargar el inventario a mano.
+- Asistente de IA que **actúa** sobre los datos (crea, vincula, agenda), no
+  solo redacta descripciones.
+- Disponible en **White Label** para operar bajo marca propia.
+
+## Enlaces
+
+- Sitio: https://www.propsyncia.com
+- Plataforma: https://www.propsyncia.com/plataforma
+- Inteligencia artificial: https://www.propsyncia.com/ia
+- Marketing y leads: https://www.propsyncia.com/marketing
+- Planes y cotización: https://www.propsyncia.com/precios
+- Contacto: https://www.propsyncia.com/contacto
+
+## Datos de la empresa
+
+- Producto: PropSync
+- Desarrollado por: Elevare (https://elevarewebservices.com)
+- Mercado principal: Panamá
+- Idiomas: español, inglés
+- Modelo: SaaS por suscripción y White Label (cotización a medida)

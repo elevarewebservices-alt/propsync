@@ -92,7 +92,7 @@ export function MetaCostCalculator() {
             cuenta de WhatsApp Business — no pasa por PropSync.
           </p>
           <p>
-            El add-on de PropSync (+$40/mes) cubre la <strong>plataforma y la automatización</strong>
+            El add-on de PropSync cubre la <strong>plataforma y la automatización</strong>
             (plantillas, campañas, inbox, calificación de leads). Los mensajes los pagas tú a Meta, así
             controlas el volumen y no pagas sobreprecio de intermediarios.
           </p>

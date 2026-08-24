@@ -2,14 +2,13 @@
 
 import Link from 'next/link'
 import { LandingShell } from '@/components/landing/LandingShell'
+import { FAQ } from './faq-data'
 
 const F = 'var(--font-outfit), sans-serif'
 
 const PLANS = [
   {
     name: 'Individual',
-    price: '$30',
-    per: '/mes',
     desc: 'Para agentes independientes que arrancan',
     features: [
       '50 propiedades',
@@ -20,13 +19,11 @@ const PLANS = [
       '1 usuario',
       'Soporte por email',
     ],
-    cta: 'Probar 15 días gratis',
+    cta: 'Solicitar cotización',
     popular: false,
   },
   {
     name: 'Pro',
-    price: '$60',
-    per: '/mes',
     desc: 'Para equipos que están creciendo',
     features: [
       'Propiedades ilimitadas',
@@ -34,41 +31,15 @@ const PLANS = [
       'Asistente IA completo',
       'Conexión a portales (Compre o Alquile, Encuentra24, Página web)',
       'API REST de integración',
-      '2 usuarios (+$7.99/usuario adicional)',
+      '2 usuarios (usuarios adicionales disponibles)',
       'Reportes ROI por fuente',
       'Soporte por email',
     ],
-    cta: 'Probar 15 días gratis',
+    cta: 'Solicitar cotización',
     popular: true,
   },
 ]
 
-const FAQ = [
-  {
-    q: '¿Qué incluye la prueba de 15 días?',
-    a: 'Acceso completo al plan Pro: CRM, IA, marketing automation, widget web y API. Sin tarjeta de crédito requerida. Al finalizar puedes elegir el plan que mejor se adapte.',
-  },
-  {
-    q: '¿Puedo cambiar de plan más adelante?',
-    a: 'Sí, puedes subir o bajar de plan en cualquier momento. Los cambios se aplican al siguiente ciclo de facturación y se prorratea el monto.',
-  },
-  {
-    q: '¿Cómo funciona el límite de propiedades?',
-    a: 'El límite es de propiedades activas en tu inventario. Las propiedades vendidas o archivadas no cuentan. Si superas el límite, se te avisa con anticipación.',
-  },
-  {
-    q: '¿Hay costos ocultos?',
-    a: 'No. El precio incluye todo lo que ves listado. Los add-ons (WhatsApp Business, publicación Facebook) son opcionales y se cotizan según configuración.',
-  },
-  {
-    q: '¿Aceptan facturación a empresa?',
-    a: 'Sí, emitimos factura fiscal según los requisitos de Panamá. Contáctanos para coordinar el alta como empresa.',
-  },
-  {
-    q: '¿Qué pasa con mis datos si cancelo?',
-    a: 'Tus datos quedan disponibles 30 días después de cancelar. Puedes exportar todo a CSV/Excel en cualquier momento desde la configuración.',
-  },
-]
 
 export default function PreciosPage() {
   return (
@@ -81,10 +52,11 @@ export default function PreciosPage() {
             <span className="amber-grad" style={{ fontSize: '.875rem', fontWeight: 600, fontFamily: F }}>15 días de prueba gratis</span>
           </div>
           <h1 style={{ fontSize: 'clamp(2.4rem,7vw,4.5rem)', fontWeight: 200, letterSpacing: '-.04em', lineHeight: 1.05, fontFamily: F }}>
-            Precios <span className="amber-grad" style={{ fontWeight: 700 }}>transparentes.</span>
+            Planes que <span className="amber-grad" style={{ fontWeight: 700 }}>se adaptan.</span>
           </h1>
           <p style={{ marginTop: '1.25rem', fontSize: '1.05rem', lineHeight: 1.75, color: 'rgba(255,255,255,.45)', fontFamily: F, fontWeight: 300 }}>
-            Sin tarjeta de crédito · Sin compromiso · Cancela cuando quieras.
+            Cada implementación se cotiza a medida. Cuéntanos el tamaño de tu equipo y te
+            armamos la propuesta.
           </p>
         </div>
       </section>
@@ -98,9 +70,9 @@ export default function PreciosPage() {
                 {plan.popular && <span style={{ fontSize: '.62rem', letterSpacing: '.16em', color: '#fbbf24', fontWeight: 600, display: 'block', marginBottom: '.75rem', textTransform: 'uppercase', fontFamily: F }}>Popular</span>}
                 <p style={{ fontSize: '.78rem', color: 'rgba(255,255,255,.32)', marginBottom: '.35rem', fontFamily: F }}>{plan.desc}</p>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 400, marginBottom: '1.25rem', fontFamily: F }}>{plan.name}</h3>
+                {/* White Label: el precio lo fija cada implementación. */}
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: '1.5rem' }}>
-                  <span style={{ fontSize: '2.75rem', fontWeight: 200, letterSpacing: '-.05em', fontFamily: F }}>{plan.price}</span>
-                  <span style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.28)', fontFamily: F }}>{plan.per}</span>
+                  <span className="amber-grad" style={{ fontSize: '1.35rem', fontWeight: 300, letterSpacing: '-.02em', fontFamily: F }}>Cotización a medida</span>
                 </div>
                 <ul style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', flex: 1, marginBottom: '1.5rem' }}>
                   {plan.features.map((feat, j) => (
@@ -110,7 +82,7 @@ export default function PreciosPage() {
                   ))}
                 </ul>
                 <Link
-                  href={plan.cta === 'Hablar con ventas' ? '/contacto' : '/registro'}
+                  href="/contacto"
                   style={{ display: 'block', width: '100%', textAlign: 'center', padding: '.625rem 0', borderRadius: 9999, fontSize: '.8rem', fontWeight: 500, fontFamily: F, transition: 'all .2s', ...(plan.popular ? { background: 'rgba(251,191,36,.16)', color: '#fde68a', border: '1px solid rgba(251,191,36,.28)' } : { background: 'transparent', color: 'rgba(255,255,255,.42)', border: '1px solid rgba(255,255,255,.13)' }) }}
                 >
                   {plan.cta}
@@ -130,7 +102,7 @@ export default function PreciosPage() {
               {[
                 { n: '01', t: 'Crea tu cuenta', d: 'Sin tarjeta de crédito. Solo email y contraseña. Listo en menos de 1 minuto.' },
                 { n: '02', t: 'Acceso al plan Pro', d: 'Durante 15 días tienes acceso completo a todas las funciones del plan Pro.' },
-                { n: '03', t: 'Elige tu plan', d: 'Al día 15 eliges el plan que mejor se adapta. Si no haces nada, tu cuenta se pausa sin cargo.' },
+                { n: '03', t: 'Elige tu plan', d: 'Al día 15 coordinamos contigo el plan que mejor se adapta. Si no haces nada, tu cuenta se pausa sin cargo.' },
               ].map((step, i) => (
                 <div key={i}>
                   <div className="amber-grad" style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-.04em', lineHeight: 1, fontFamily: F, marginBottom: '.75rem' }}>{step.n}</div>

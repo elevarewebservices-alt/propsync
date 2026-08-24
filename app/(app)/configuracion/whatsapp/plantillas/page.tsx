@@ -249,7 +249,7 @@ export default function WhatsAppTemplatesPage() {
             <h2 className="text-2xl font-bold text-foreground">Add-on Marketing</h2>
             <p className="max-w-md text-muted-foreground">
               Gestión de templates de WhatsApp, respuesta automática a leads y email marketing masivo.
-              Requiere plan Pro + add-on Marketing (+$40/mes).
+              Requiere plan Pro + add-on Marketing.
             </p>
           </div>
           <Link
