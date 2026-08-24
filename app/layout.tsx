@@ -3,6 +3,7 @@ import { Inter, Outfit, DM_Sans } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { PwaInit } from '@/components/PwaInit'
+import { NativeSplash } from '@/components/NativeSplash'
 
 const inter  = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' })
@@ -84,6 +85,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </Providers>
         <PwaInit />
+        {/* Mounted at the root, not inside (app), so the splash also lifts on
+            the login screen — the first thing a logged-out native user sees. */}
+        <NativeSplash />
       </body>
     </html>
   )

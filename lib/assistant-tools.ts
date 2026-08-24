@@ -24,6 +24,92 @@ async function checkContactAccess(db: Db, companyId: string, contactId: unknown,
   return !!data && (data as any).agente_asignado_id === agentId
 }
 
+// ── Name → UUID resolution ───────────────────────────────────────────────────
+// Most tools need a UUID, but users speak in names. Previously the model had to
+// spend a whole extra round trip on search_contacts/search_properties before it
+// could act, so "vincula a Juan con Marbella" cost three tool calls. These let a
+// tool accept a name directly and resolve it in the same call.
+//
+// An ambiguous name throws with the candidate list rather than guessing — the
+// model then asks one clarifying question instead of acting on the wrong record.
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// PostgREST parses `,` `(` `)` `.` as syntax inside an or() filter, so a raw
+// user string there can break the query or alter its meaning. Strip them.
+function sanitizeFilterTerm(term: string): string {
+  return term.replace(/[,()*.]/g, ' ').trim()
+}
+
+class AmbiguousMatchError extends Error {}
+
+async function resolveContactId(
+  db: Db, companyId: string, input: Record<string, unknown>, permissions: AgentPermissions, agentId: string | null,
+): Promise<string> {
+  const raw = input.contact_id
+  if (typeof raw === 'string' && UUID_RE.test(raw)) return raw
+
+  const name = String(input.contacto ?? input.contact_id ?? '').trim()
+  if (!name) throw new Error('Indica contact_id (UUID) o contacto (nombre/teléfono/email).')
+
+  const term = sanitizeFilterTerm(name)
+  if (!term) throw new Error(`No se pudo interpretar "${name}" como nombre de contacto.`)
+
+  let q = (db.from('contacts') as any)
+    .select('id, nombre, telefono, email, etapa_crm')
+    .eq('company_id', companyId)
+    .eq('is_active', true)
+    .or(`nombre.ilike.%${term}%,email.ilike.%${term}%,telefono.ilike.%${term}%`)
+    .limit(6)
+  if (!permissions.viewAllContacts) q = q.eq('agente_asignado_id', agentId ?? '')
+
+  const { data } = await q
+  const hits = data ?? []
+  if (hits.length === 0) throw new Error(`No encontré ningún contacto que coincida con "${name}".`)
+  if (hits.length > 1) {
+    const list = hits.map((c: any) => `${c.nombre}${c.telefono ? ` (${c.telefono})` : ''} — ${c.id}`).join('; ')
+    throw new AmbiguousMatchError(`Hay varios contactos que coinciden con "${name}": ${list}. Pregunta al usuario cuál es y vuelve a llamar con contact_id.`)
+  }
+  return hits[0].id
+}
+
+async function resolvePropertyId(
+  db: Db, companyId: string, input: Record<string, unknown>,
+): Promise<string> {
+  const raw = input.property_id
+  if (typeof raw === 'string' && UUID_RE.test(raw)) return raw
+
+  const name = String(input.propiedad ?? input.property_id ?? '').trim()
+  if (!name) throw new Error('Indica property_id (UUID) o propiedad (título/zona/dirección).')
+
+  const term = sanitizeFilterTerm(name)
+  if (!term) throw new Error(`No se pudo interpretar "${name}" como propiedad.`)
+
+  // Note: `codigo` is deliberately absent from this filter. It's typed as a
+  // number (lib/types.ts) and isn't declared in schema.sql, and Postgres throws
+  // on `ilike` against an integer column — including it would break every
+  // name-based lookup rather than widening it.
+  const { data } = await (db.from('properties') as any)
+    .select('id, titulo, ciudad, zona, precio, disponibilidad')
+    .eq('company_id', companyId)
+    .or(`titulo.ilike.%${term}%,zona.ilike.%${term}%,address.ilike.%${term}%`)
+    .limit(6)
+
+  const hits = data ?? []
+  if (hits.length === 0) throw new Error(`No encontré ninguna propiedad que coincida con "${name}".`)
+  if (hits.length > 1) {
+    const list = hits.map((p: any) => `${p.titulo}${p.zona ? ` (${p.zona})` : ''} — ${p.id}`).join('; ')
+    throw new AmbiguousMatchError(`Hay varias propiedades que coinciden con "${name}": ${list}. Pregunta al usuario cuál es y vuelve a llamar con property_id.`)
+  }
+  return hits[0].id
+}
+
+// The exact text the model must return for an out-of-scope question. Exported
+// so the route can recognise it and refund the credit — a refusal costs no
+// tools and almost no tokens, so charging a monthly consulta for it is unfair.
+export const OUT_OF_SCOPE_REPLY =
+  'Entiendo tu pregunta, pero este asistente está diseñado para ayudarte con temas inmobiliarios y la gestión de tu agencia. Puedo ayudarte a buscar propiedades, gestionar leads, dudas sobre zonas o el mercado, y más. ¿En qué puedo ayudarte hoy?'
+
 // ── System prompt (dynamic per tenant) ───────────────────────────────────────
 
 export function buildSystemPrompt(agencyName: string): string {
@@ -35,10 +121,16 @@ Tienes acceso en tiempo real a:
 - Vincular clientes con propiedades y sugerir propiedades que encajan con un cliente
 - El equipo de agentes y sus asignaciones
 
+EFICIENCIA — MUY IMPORTANTE:
+- Las herramientas que reciben un contacto o una propiedad aceptan el NOMBRE directamente en los campos "contacto" y "propiedad". NO hagas una búsqueda previa solo para conseguir el UUID.
+  Ej: "vincula a Juan con la propiedad de Marbella" → UNA sola llamada a link_contact_property con contacto="Juan" y propiedad="Marbella".
+- Solo usa search_contacts / search_properties cuando el usuario realmente quiera VER una lista, o cuando una herramienta te devuelva un error de ambigüedad.
+- Si una herramienta te dice que hay varias coincidencias, pregunta al usuario cuál es (no adivines) y vuelve a llamar con el UUID que te dio el error.
+- Agrupa lo que puedas en un solo turno: si necesitas dos herramientas independientes, pídelas a la vez en el mismo mensaje.
+
 FLUJO CLIENTE↔PROPIEDAD:
-- Cuando trabajes con nombres (ej: "vincula a Juan con la propiedad de Marbella"), primero busca el UUID con search_contacts y search_properties, luego usa link_contact_property.
-- Para recomendar inmuebles a un cliente ("¿qué tengo para María?"), usa match_properties_for_contact con su UUID y presenta las mejores opciones con sus razones.
-- Para registrar interacciones usa add_contact_note; para recordatorios usa schedule_followup.
+- Para recomendar inmuebles a un cliente ("¿qué tengo para María?"), usa match_properties_for_contact con contacto="María" y presenta las mejores opciones con sus razones.
+- Para registrar interacciones usa add_contact_note; para recordatorios usa schedule_followup. Ambas aceptan contacto="nombre".
 
 REGLAS IMPORTANTES:
 1. NUNCA elimines datos. Para propiedades: usa inactivar / marcar vendida / marcar alquilada.
@@ -68,8 +160,8 @@ Sé útil y concreto. Si das estimaciones de precios o datos de mercado, aclara 
 
 FUERA DE ÁMBITO (rechazar): Solo si la pregunta NO tiene relación con inmobiliaria ni con la agencia
 (ej: cocina, clima, deportes, programación general, entretenimiento, salud, etc.),
-responde EXACTAMENTE así, sin usar ninguna herramienta:
-"Entiendo tu pregunta, pero este asistente está diseñado para ayudarte con temas inmobiliarios y la gestión de tu agencia. Puedo ayudarte a buscar propiedades, gestionar leads, dudas sobre zonas o el mercado, y más. ¿En qué puedo ayudarte hoy?"`
+responde EXACTAMENTE así, sin usar ninguna herramienta y sin añadir nada más:
+"${OUT_OF_SCOPE_REPLY}"`
 }
 
 // ── Tool executor ─────────────────────────────────────────────────────────────
@@ -91,35 +183,39 @@ export async function executeTool(
       const week  = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
       const today = now.toISOString().slice(0, 10)
 
-      const [props, leads, followUps, closed] = await Promise.all([
-        (db.from('properties') as any)
-          .select('id, estado_publicacion, disponibilidad', { count: 'exact' })
-          .eq('company_id', companyId),
-        (db.from('contacts') as any)
-          .select('id', { count: 'exact' })
+      // Count in the database, not in JS. This used to SELECT every property row
+      // in the company just to call .filter().length on it — on a large
+      // inventory that shipped thousands of rows over the wire (and into the
+      // model's latency budget) to produce five integers. `head: true` returns
+      // the count with no rows at all.
+      const countProps = (build: (q: any) => any) =>
+        build((db.from('properties') as any)
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', companyId))
+      const countContacts = (build: (q: any) => any) =>
+        build((db.from('contacts') as any)
+          .select('*', { count: 'exact', head: true })
           .eq('company_id', companyId)
-          .eq('is_active', true)
-          .gte('created_at', week),
-        (db.from('contacts') as any)
-          .select('id', { count: 'exact' })
-          .eq('company_id', companyId)
-          .eq('is_active', true)
-          .lte('fecha_seguimiento', today),
-        (db.from('contacts') as any)
-          .select('id', { count: 'exact' })
-          .eq('company_id', companyId)
-          .eq('is_active', true)
-          .eq('etapa_crm', 'cerrado')
-          .gte('updated_at', month),
-      ])
+          .eq('is_active', true))
 
-      const rows = props.data ?? []
+      const [total, activas, disponibles, vendidas, alquiladas, leads, followUps, closed] =
+        await Promise.all([
+          countProps(q => q),
+          countProps(q => q.in('estado_publicacion', ['activo', 'destacado'])),
+          countProps(q => q.eq('disponibilidad', 'disponible')),
+          countProps(q => q.eq('disponibilidad', 'vendido')),
+          countProps(q => q.eq('disponibilidad', 'alquilado')),
+          countContacts(q => q.gte('created_at', week)),
+          countContacts(q => q.lte('fecha_seguimiento', today)),
+          countContacts(q => q.eq('etapa_crm', 'cerrado').gte('updated_at', month)),
+        ])
+
       return {
-        total_propiedades:      rows.length,
-        propiedades_activas:    rows.filter((p: any) => p.estado_publicacion === 'activo' || p.estado_publicacion === 'destacado').length,
-        propiedades_disponibles:rows.filter((p: any) => p.disponibilidad === 'disponible').length,
-        propiedades_vendidas:   rows.filter((p: any) => p.disponibilidad === 'vendido').length,
-        propiedades_alquiladas: rows.filter((p: any) => p.disponibilidad === 'alquilado').length,
+        total_propiedades:      total.count ?? 0,
+        propiedades_activas:    activas.count ?? 0,
+        propiedades_disponibles:disponibles.count ?? 0,
+        propiedades_vendidas:   vendidas.count ?? 0,
+        propiedades_alquiladas: alquiladas.count ?? 0,
         nuevos_leads_7d:        leads.count ?? 0,
         seguimientos_pendientes:followUps.count ?? 0,
         cerrados_este_mes:      closed.count ?? 0,
@@ -248,11 +344,30 @@ export async function executeTool(
       if (input.disponibilidad) q = q.eq('disponibilidad', input.disponibilidad)
       if (input.estado)         q = q.eq('estado_publicacion', input.estado)
       if (input.tipo)           q = q.ilike('tipo', input.tipo as string)
-      if (input.search)         q = q.ilike('titulo', `%${input.search}%`)
       if (input.ciudad)         q = q.ilike('ciudad', `%${input.ciudad}%`)
+      if (input.zona)           q = q.ilike('zona', `%${input.zona}%`)
       if (input.precio_max)     q = q.lte('precio', Number(input.precio_max))
       if (input.precio_min)     q = q.gte('precio', Number(input.precio_min))
       if (input.bedrooms)       q = q.gte('bedrooms', Number(input.bedrooms))
+      if (input.bathrooms)      q = q.gte('bathrooms', Number(input.bathrooms))
+
+      // Free text used to match `titulo` only, so "casa con piscina" or a search
+      // by neighbourhood/reference returned nothing and the model burned extra
+      // round trips retrying with different wording. Search the fields a person
+      // would actually expect.
+      if (input.search) {
+        const term = sanitizeFilterTerm(String(input.search))
+        if (term) {
+          // `codigo` is excluded on purpose — see the note in resolvePropertyId.
+          q = q.or([
+            `titulo.ilike.%${term}%`,
+            `descripcion.ilike.%${term}%`,
+            `zona.ilike.%${term}%`,
+            `address.ilike.%${term}%`,
+            `property_type_label.ilike.%${term}%`,
+          ].join(','))
+        }
+      }
 
       const { data, error } = await q
       if (error) throw new Error(error.message)
@@ -261,17 +376,18 @@ export async function executeTool(
 
     // ── Property detail + notes ────────────────────────────────────────────
     case 'get_property_detail': {
+      const propertyId = await resolvePropertyId(db, companyId, input)
       const { data: prop, error } = await (db.from('properties') as any)
         .select('*')
         .eq('company_id', companyId)
-        .eq('id', input.property_id)
+        .eq('id', propertyId)
         .single()
       if (error) throw new Error(error.message)
 
       const { data: notes } = await (db.from('property_notes') as any)
         .select('agent_nombre, contenido, created_at')
         .eq('company_id', companyId)
-        .eq('property_id', input.property_id)
+        .eq('property_id', propertyId)
         .order('created_at', { ascending: false })
         .limit(10)
 
@@ -280,7 +396,8 @@ export async function executeTool(
 
     // ── Update property availability ───────────────────────────────────────
     case 'update_property_availability': {
-      if (!(await checkPropertyAccess(db, companyId, input.property_id, agentId, permissions))) {
+      const propertyId = await resolvePropertyId(db, companyId, input)
+      if (!(await checkPropertyAccess(db, companyId, propertyId, agentId, permissions))) {
         throw new Error('Esa propiedad no está asignada a ti — no puedes modificarla.')
       }
       const allowed = ['disponible', 'vendido', 'alquilado']
@@ -296,7 +413,7 @@ export async function executeTool(
       const { data, error } = await (db.from('properties') as any)
         .update(patch)
         .eq('company_id', companyId)
-        .eq('id', input.property_id)
+        .eq('id', propertyId)
         .select('id, titulo, disponibilidad, estado_publicacion')
         .single()
       if (error) throw new Error(error.message)
@@ -305,7 +422,8 @@ export async function executeTool(
 
     // ── Update property CRM fields ─────────────────────────────────────────
     case 'update_property_crm': {
-      if (!(await checkPropertyAccess(db, companyId, input.property_id, agentId, permissions))) {
+      const propertyId = await resolvePropertyId(db, companyId, input)
+      if (!(await checkPropertyAccess(db, companyId, propertyId, agentId, permissions))) {
         throw new Error('Esa propiedad no está asignada a ti — no puedes modificarla.')
       }
       const patch: Record<string, unknown> = {}
@@ -318,7 +436,7 @@ export async function executeTool(
       const { data, error } = await (db.from('properties') as any)
         .update(patch)
         .eq('company_id', companyId)
-        .eq('id', input.property_id)
+        .eq('id', propertyId)
         .select('id, titulo, etapa_crm, agente_asignado_id, fecha_seguimiento')
         .single()
       if (error) throw new Error(error.message)
@@ -328,10 +446,11 @@ export async function executeTool(
     // ── Add immutable note to property ─────────────────────────────────────
     case 'add_property_note': {
       if (!input.contenido) throw new Error('contenido es requerido.')
+      const propertyId = await resolvePropertyId(db, companyId, input)
 
       const { data, error } = await (db.from('property_notes') as any)
         .insert({
-          property_id:  input.property_id,
+          property_id:  propertyId,
           company_id:   companyId,
           agent_nombre: 'PropSync AI',
           contenido:    String(input.contenido),
@@ -364,20 +483,21 @@ export async function executeTool(
 
     // ── Contact detail + linked properties ────────────────────────────────
     case 'get_contact_detail': {
-      if (!(await checkContactAccess(db, companyId, input.contact_id, agentId, permissions))) {
+      const contactId = await resolveContactId(db, companyId, input, permissions, agentId)
+      if (!(await checkContactAccess(db, companyId, contactId, agentId, permissions))) {
         throw new Error('Contacto no encontrado.')
       }
       const { data: contact, error } = await (db.from('contacts') as any)
         .select('*')
         .eq('company_id', companyId)
-        .eq('id', input.contact_id)
+        .eq('id', contactId)
         .single()
       if (error) throw new Error(error.message)
 
       const { data: links } = await (db.from('contact_property_links') as any)
         .select('property_id, interes, created_at, properties(id, titulo, precio, disponibilidad)')
         .eq('company_id', companyId)
-        .eq('contact_id', input.contact_id)
+        .eq('contact_id', contactId)
 
       return { contact, linked_properties: links ?? [] }
     }
@@ -420,7 +540,8 @@ export async function executeTool(
 
     // ── Update contact ─────────────────────────────────────────────────────
     case 'update_contact': {
-      if (!(await checkContactAccess(db, companyId, input.contact_id, agentId, permissions))) {
+      const contactId = await resolveContactId(db, companyId, input, permissions, agentId)
+      if (!(await checkContactAccess(db, companyId, contactId, agentId, permissions))) {
         throw new Error('Contacto no encontrado.')
       }
       const allowed = ['nombre','email','telefono','whatsapp','tipo','ciudad','zona_interes','tipo_operacion','presupuesto_min','presupuesto_max','etapa_crm','agente_asignado_id','agente_nombre','fecha_seguimiento','notas','tags','is_active']
@@ -433,7 +554,7 @@ export async function executeTool(
       const { data, error } = await (db.from('contacts') as any)
         .update(patch)
         .eq('company_id', companyId)
-        .eq('id', input.contact_id)
+        .eq('id', contactId)
         .select('id, nombre, etapa_crm, agente_nombre, fecha_seguimiento')
         .single()
       if (error) throw new Error(error.message)
@@ -490,9 +611,13 @@ export async function executeTool(
 
     // ── Link a contact to a property ───────────────────────────────────────
     case 'link_contact_property': {
-      if (!input.contact_id)  throw new Error('contact_id es requerido.')
-      if (!input.property_id) throw new Error('property_id es requerido.')
-      if (!(await checkContactAccess(db, companyId, input.contact_id, agentId, permissions))) {
+      // Resolve both sides concurrently — this is the flow that used to cost
+      // three separate tool calls (search contact, search property, then link).
+      const [contactId, propertyId] = await Promise.all([
+        resolveContactId(db, companyId, input, permissions, agentId),
+        resolvePropertyId(db, companyId, input),
+      ])
+      if (!(await checkContactAccess(db, companyId, contactId, agentId, permissions))) {
         throw new Error('Contacto no encontrado.')
       }
       const allowed = ['interesado', 'propietario', 'visitó', 'ofertó', 'descartado']
@@ -500,14 +625,14 @@ export async function executeTool(
 
       // Confirm both belong to this company.
       const [{ data: contact }, { data: property }] = await Promise.all([
-        (db.from('contacts') as any).select('id, nombre').eq('id', input.contact_id).eq('company_id', companyId).single(),
-        (db.from('properties') as any).select('id, titulo').eq('id', input.property_id).eq('company_id', companyId).single(),
+        (db.from('contacts') as any).select('id, nombre').eq('id', contactId).eq('company_id', companyId).single(),
+        (db.from('properties') as any).select('id, titulo').eq('id', propertyId).eq('company_id', companyId).single(),
       ])
       if (!contact)  throw new Error('Contacto no encontrado.')
       if (!property) throw new Error('Propiedad no encontrada.')
 
       const { error } = await (db.from('contact_property_links') as any)
-        .insert({ company_id: companyId, contact_id: input.contact_id, property_id: input.property_id, interes })
+        .insert({ company_id: companyId, contact_id: contactId, property_id: propertyId, interes })
       if (error && error.code !== '23505') throw new Error(error.message)  // 23505 = already linked
 
       return {
@@ -521,13 +646,13 @@ export async function executeTool(
 
     // ── Match properties for a contact ─────────────────────────────────────
     case 'match_properties_for_contact': {
-      if (!input.contact_id) throw new Error('contact_id es requerido.')
-      if (!(await checkContactAccess(db, companyId, input.contact_id, agentId, permissions))) {
+      const contactId = await resolveContactId(db, companyId, input, permissions, agentId)
+      if (!(await checkContactAccess(db, companyId, contactId, agentId, permissions))) {
         throw new Error('Contacto no encontrado.')
       }
 
       const { data: contact, error: cErr } = await (db.from('contacts') as any)
-        .select('*').eq('id', input.contact_id).eq('company_id', companyId).single()
+        .select('*').eq('id', contactId).eq('company_id', companyId).single()
       if (cErr || !contact) throw new Error('Contacto no encontrado.')
 
       const { data: props, error: pErr } = await (db.from('properties') as any)
@@ -568,19 +693,15 @@ export async function executeTool(
 
     // ── Add a note to a contact ────────────────────────────────────────────
     case 'add_contact_note': {
-      if (!input.contact_id) throw new Error('contact_id es requerido.')
       if (!input.contenido)  throw new Error('contenido es requerido.')
-      if (!(await checkContactAccess(db, companyId, input.contact_id, agentId, permissions))) {
+      const contactId = await resolveContactId(db, companyId, input, permissions, agentId)
+      if (!(await checkContactAccess(db, companyId, contactId, agentId, permissions))) {
         throw new Error('Contacto no encontrado.')
       }
 
-      const { data: contact } = await (db.from('contacts') as any)
-        .select('id').eq('id', input.contact_id).eq('company_id', companyId).single()
-      if (!contact) throw new Error('Contacto no encontrado.')
-
       const { data, error } = await (db.from('contact_notes') as any)
         .insert({
-          contact_id:   input.contact_id,
+          contact_id:   contactId,
           company_id:   companyId,
           agent_nombre: 'PropSync AI',
           contenido:    String(input.contenido),
@@ -593,8 +714,8 @@ export async function executeTool(
 
     // ── Schedule a follow-up for a contact ─────────────────────────────────
     case 'schedule_followup': {
-      if (!input.contact_id) throw new Error('contact_id es requerido.')
-      if (!(await checkContactAccess(db, companyId, input.contact_id, agentId, permissions))) {
+      const contactId = await resolveContactId(db, companyId, input, permissions, agentId)
+      if (!(await checkContactAccess(db, companyId, contactId, agentId, permissions))) {
         throw new Error('Contacto no encontrado.')
       }
 
@@ -615,7 +736,7 @@ export async function executeTool(
 
       const { data, error } = await (db.from('contacts') as any)
         .update(patch)
-        .eq('id', input.contact_id)
+        .eq('id', contactId)
         .eq('company_id', companyId)
         .select('id, nombre, fecha_seguimiento, etapa_crm')
         .single()
@@ -624,7 +745,7 @@ export async function executeTool(
       // Optionally leave a note so the reason is recorded.
       if (input.motivo) {
         await (db.from('contact_notes') as any).insert({
-          contact_id:   input.contact_id,
+          contact_id:   contactId,
           company_id:   companyId,
           agent_nombre: 'PropSync AI',
           contenido:    `Seguimiento programado para ${fecha}: ${input.motivo}`,
@@ -649,18 +770,20 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'search_properties',
-    description: 'Busca propiedades del inventario con filtros opcionales. Úsala para responder preguntas sobre propiedades disponibles, vendidas, de venta/arriendo, por ciudad o precio.',
+    description: 'Busca propiedades del inventario con filtros opcionales. Úsala SOLO cuando el usuario quiera ver una lista de propiedades. Si solo necesitas identificar una propiedad para actuar sobre ella, pasa su nombre en el campo "propiedad" de la herramienta correspondiente en vez de buscar primero.',
     input_schema: {
       type: 'object',
       properties: {
-        search:         { type: 'string',  description: 'Texto libre en el título de la propiedad' },
+        search:         { type: 'string',  description: 'Texto libre — busca en título, descripción, zona, dirección y tipo de inmueble' },
         tipo:           { type: 'string',  description: '"venta" o "arriendo"' },
         disponibilidad: { type: 'string',  description: '"disponible", "vendido" o "alquilado"' },
         estado:         { type: 'string',  description: '"activo", "destacado" o "inactivo"' },
         ciudad:         { type: 'string',  description: 'Filtrar por ciudad (búsqueda parcial)' },
+        zona:           { type: 'string',  description: 'Filtrar por zona o barrio (búsqueda parcial)' },
         precio_min:     { type: 'number',  description: 'Precio mínimo' },
         precio_max:     { type: 'number',  description: 'Precio máximo' },
         bedrooms:       { type: 'number',  description: 'Mínimo de habitaciones' },
+        bathrooms:      { type: 'number',  description: 'Mínimo de baños' },
         limit:          { type: 'number',  description: 'Máximo de resultados (default 20)' },
       },
       required: [],
@@ -698,25 +821,27 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_property_detail',
-    description: 'Obtiene todos los detalles de una propiedad específica, incluyendo sus últimas notas.',
+    description: 'Obtiene todos los detalles de una propiedad específica, incluyendo sus últimas notas. Acepta el nombre de la propiedad — no busques primero.',
     input_schema: {
       type: 'object',
       properties: {
-        property_id: { type: 'string', description: 'UUID de la propiedad' },
+        property_id: { type: 'string', description: 'UUID de la propiedad (si ya lo tienes)' },
+        propiedad:   { type: 'string', description: 'Alternativa al UUID: título, zona o dirección de la propiedad. Úsalo cuando el usuario la menciona por nombre.' },
       },
-      required: ['property_id'],
+      required: [],
     },
   },
   {
     name: 'update_property_availability',
-    description: 'Cambia la disponibilidad de una propiedad: disponible, vendido o alquilado. Cuando se marca vendida o alquilada, también se inactiva automáticamente (se oculta de los portales).',
+    description: 'Cambia la disponibilidad de una propiedad: disponible, vendido o alquilado. Cuando se marca vendida o alquilada, también se inactiva automáticamente (se oculta de los portales). Acepta el nombre de la propiedad — no busques primero.',
     input_schema: {
       type: 'object',
       properties: {
-        property_id:    { type: 'string', description: 'UUID de la propiedad' },
+        property_id:    { type: 'string', description: 'UUID de la propiedad (si ya lo tienes)' },
+        propiedad:      { type: 'string', description: 'Alternativa al UUID: título, zona o dirección de la propiedad.' },
         disponibilidad: { type: 'string', description: '"disponible", "vendido" o "alquilado"' },
       },
-      required: ['property_id', 'disponibilidad'],
+      required: ['disponibilidad'],
     },
   },
   {
@@ -725,12 +850,13 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        property_id:         { type: 'string', description: 'UUID de la propiedad' },
+        property_id:         { type: 'string', description: 'UUID de la propiedad (si ya lo tienes)' },
+        propiedad:           { type: 'string', description: 'Alternativa al UUID: título, zona o dirección de la propiedad.' },
         etapa_crm:           { type: 'string', description: 'Etapa CRM: prospecto, contactado, visita, oferta, negociando, cerrado' },
         agente_asignado_id:  { type: 'string', description: 'UUID del agente a asignar' },
         fecha_seguimiento:   { type: 'string', description: 'Fecha de seguimiento en formato YYYY-MM-DD' },
       },
-      required: ['property_id'],
+      required: [],
     },
   },
   {
@@ -739,10 +865,11 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        property_id: { type: 'string', description: 'UUID de la propiedad' },
+        property_id: { type: 'string', description: 'UUID de la propiedad (si ya lo tienes)' },
+        propiedad:   { type: 'string', description: 'Alternativa al UUID: título, zona o dirección de la propiedad.' },
         contenido:   { type: 'string', description: 'Texto de la nota' },
       },
-      required: ['property_id', 'contenido'],
+      required: ['contenido'],
     },
   },
   {
@@ -762,13 +889,14 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'get_contact_detail',
-    description: 'Obtiene el perfil completo de un contacto y las propiedades que tiene vinculadas.',
+    description: 'Obtiene el perfil completo de un contacto y las propiedades que tiene vinculadas. Acepta el nombre del contacto — no busques primero.',
     input_schema: {
       type: 'object',
       properties: {
-        contact_id: { type: 'string', description: 'UUID del contacto' },
+        contact_id: { type: 'string', description: 'UUID del contacto (si ya lo tienes)' },
+        contacto:   { type: 'string', description: 'Alternativa al UUID: nombre, teléfono o email del contacto. Úsalo cuando el usuario lo menciona por nombre.' },
       },
-      required: ['contact_id'],
+      required: [],
     },
   },
   {
@@ -801,7 +929,8 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        contact_id:         { type: 'string',  description: 'UUID del contacto' },
+        contact_id:         { type: 'string',  description: 'UUID del contacto (si ya lo tienes)' },
+        contacto:           { type: 'string',  description: 'Alternativa al UUID: nombre, teléfono o email del contacto a modificar.' },
         nombre:             { type: 'string',  description: 'Nuevo nombre' },
         email:              { type: 'string',  description: 'Nuevo email' },
         telefono:           { type: 'string',  description: 'Nuevo teléfono' },
@@ -812,7 +941,7 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
         notas:              { type: 'string',  description: 'Notas adicionales' },
         is_active:          { type: 'boolean', description: 'false para desactivar (nunca elimina)' },
       },
-      required: ['contact_id'],
+      required: [],
     },
   },
   {
@@ -832,54 +961,59 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: 'link_contact_property',
-    description: 'Vincula un contacto/cliente con una propiedad (ej: marcar que un cliente está interesado en una propiedad, que la visitó, ofertó, o es el propietario). Necesitas el UUID del contacto y de la propiedad — búscalos primero con search_contacts y search_properties si solo tienes nombres.',
+    description: 'Vincula un contacto/cliente con una propiedad (ej: marcar que un cliente está interesado en una propiedad, que la visitó, ofertó, o es el propietario). Acepta NOMBRES directamente en "contacto" y "propiedad" — NO hagas búsquedas previas para conseguir los UUID.',
     input_schema: {
       type: 'object',
       properties: {
-        contact_id:  { type: 'string', description: 'UUID del contacto' },
-        property_id: { type: 'string', description: 'UUID de la propiedad' },
+        contact_id:  { type: 'string', description: 'UUID del contacto (si ya lo tienes)' },
+        contacto:    { type: 'string', description: 'Alternativa al UUID: nombre, teléfono o email del contacto.' },
+        property_id: { type: 'string', description: 'UUID de la propiedad (si ya lo tienes)' },
+        propiedad:   { type: 'string', description: 'Alternativa al UUID: título, zona o dirección de la propiedad.' },
         interes:     { type: 'string', description: 'Tipo de relación: "interesado" (default), "propietario", "visitó", "ofertó" o "descartado"' },
       },
-      required: ['contact_id', 'property_id'],
+      required: [],
     },
   },
   {
     name: 'match_properties_for_contact',
-    description: 'Sugiere las propiedades del inventario que mejor encajan con lo que busca un cliente, según su presupuesto, tipo de operación (compra/alquiler) y zona/ciudad de interés. Devuelve un puntaje y las razones del match. Usa search_contacts primero si solo tienes el nombre del cliente.',
+    description: 'Sugiere las propiedades del inventario que mejor encajan con lo que busca un cliente, según su presupuesto, tipo de operación (compra/alquiler) y zona/ciudad de interés. Devuelve un puntaje y las razones del match. Acepta el nombre del cliente en "contacto" — no busques primero.',
     input_schema: {
       type: 'object',
       properties: {
-        contact_id: { type: 'string', description: 'UUID del contacto/cliente' },
+        contact_id: { type: 'string', description: 'UUID del contacto/cliente (si ya lo tienes)' },
+        contacto:   { type: 'string', description: 'Alternativa al UUID: nombre, teléfono o email del cliente.' },
         limit:      { type: 'number', description: 'Máximo de propiedades sugeridas (default 5)' },
       },
-      required: ['contact_id'],
+      required: [],
     },
   },
   {
     name: 'add_contact_note',
-    description: 'Agrega una nota a un contacto/cliente del CRM (ej: "llamó y quiere visita el sábado", "pidió rebaja"). Las notas quedan en el historial del contacto.',
+    description: 'Agrega una nota a un contacto/cliente del CRM (ej: "llamó y quiere visita el sábado", "pidió rebaja"). Las notas quedan en el historial del contacto. Acepta el nombre del contacto — no busques primero.',
     input_schema: {
       type: 'object',
       properties: {
-        contact_id: { type: 'string', description: 'UUID del contacto' },
+        contact_id: { type: 'string', description: 'UUID del contacto (si ya lo tienes)' },
+        contacto:   { type: 'string', description: 'Alternativa al UUID: nombre, teléfono o email del contacto.' },
         contenido:  { type: 'string', description: 'Texto de la nota' },
       },
-      required: ['contact_id', 'contenido'],
+      required: ['contenido'],
     },
   },
   {
     name: 'schedule_followup',
-    description: 'Programa un seguimiento/recordatorio para un contacto. Acepta una fecha exacta (YYYY-MM-DD) o un número de días desde hoy (en_dias). Opcionalmente registra el motivo como nota.',
+    description: 'Programa un seguimiento/recordatorio para un contacto. Acepta una fecha exacta (YYYY-MM-DD) o un número de días desde hoy (en_dias). Opcionalmente registra el motivo como nota. Acepta el nombre del contacto — no busques primero.',
     input_schema: {
       type: 'object',
       properties: {
-        contact_id: { type: 'string', description: 'UUID del contacto' },
+        contact_id: { type: 'string', description: 'UUID del contacto (si ya lo tienes)' },
+        contacto:   { type: 'string', description: 'Alternativa al UUID: nombre, teléfono o email del contacto.' },
         fecha:      { type: 'string', description: 'Fecha exacta del seguimiento en formato YYYY-MM-DD' },
         en_dias:    { type: 'number', description: 'Alternativa: número de días desde hoy (ej: 3 = en 3 días)' },
         motivo:     { type: 'string', description: 'Motivo del seguimiento (se guarda como nota, opcional)' },
         etapa_crm:  { type: 'string', description: 'Slug de etapa a la que mover el contacto (opcional)' },
       },
-      required: ['contact_id'],
+      required: [],
     },
   },
 ]

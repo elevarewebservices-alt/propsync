@@ -59,6 +59,18 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      keyframes: {
+        // Loading shimmer: a highlight band sweeps left→right across a
+        // placeholder block. Translating a wide overlay (rather than animating
+        // background-position) keeps it on the compositor, which matters on the
+        // low-end Android devices the native shell runs on.
+        shimmer: {
+          "100%": { transform: "translateX(100%)" },
+        },
+      },
+      animation: {
+        shimmer: "shimmer 1.6s infinite",
+      },
     },
   },
   plugins: [],

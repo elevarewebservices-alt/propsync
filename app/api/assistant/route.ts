@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextRequest, NextResponse } from 'next/server'
-import { ASSISTANT_TOOLS, buildSystemPrompt, executeTool } from '@/lib/assistant-tools'
+import { ASSISTANT_TOOLS, buildSystemPrompt, executeTool, OUT_OF_SCOPE_REPLY } from '@/lib/assistant-tools'
 import { ASSISTANT_LIMITS } from '@/lib/plans'
 import { resolveCompanyId, getSessionPlan, getSessionAgent, getSessionPermissions } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
@@ -8,6 +8,28 @@ import { createAdminClient } from '@/lib/supabase'
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 type ConversationMessage = Anthropic.MessageParam
+
+// The client re-sends the whole conversation on every turn, so input tokens grow
+// without bound on a long thread. Keep the most recent turns only — the system
+// prompt carries the standing instructions, and older small talk contributes far
+// more cost than context. Trimming from the start keeps the newest exchange.
+//
+// Safe because both consumers (ChatWidget, ChatPage) persist plain text turns
+// only; tool_use/tool_result blocks live inside a single request and never reach
+// the client, so trimming can't orphan a tool_use block.
+const MAX_HISTORY_MESSAGES = 20
+
+function trimHistory(messages: ConversationMessage[]): ConversationMessage[] {
+  if (messages.length <= MAX_HISTORY_MESSAGES) return messages
+  const trimmed = messages.slice(-MAX_HISTORY_MESSAGES)
+  // The window must start on a user turn — the API rejects a leading assistant
+  // message, and a dangling assistant reply has no question attached anyway.
+  while (trimmed.length && trimmed[0].role !== 'user') trimmed.shift()
+  // Both UIs always send a user message last, so the loop normally stops there.
+  // A hand-rolled caller could pass assistant-only turns and empty the window,
+  // which would then be rejected as `messages: []` — fall back to the tail.
+  return trimmed.length ? trimmed : messages.slice(-1)
+}
 
 export async function POST(req: NextRequest) {
   // Tracks whether we have consumed a credit, so we can refund it if the
@@ -87,9 +109,19 @@ export async function POST(req: NextRequest) {
       { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
     ]
 
-    let currentMessages: ConversationMessage[] = [...messages]
+    let currentMessages: ConversationMessage[] = trimHistory(messages)
     let iterations      = 0
     const MAX_ITERATIONS = 12
+
+    // Refunds the credit reserved up front. Used whenever the turn ends without
+    // delivering real value, so the user isn't billed a monthly consulta for it.
+    const refund = async () => {
+      if (!creditState) return
+      await (db as any)
+        .rpc('refund_assistant_credit', { p_company_id: creditState.companyId, p_month: creditState.month })
+        .catch(() => {})
+      creditState = null
+    }
 
     while (iterations < MAX_ITERATIONS) {
       iterations++
@@ -106,40 +138,51 @@ export async function POST(req: NextRequest) {
         const textBlock = response.content.find(b => b.type === 'text')
         const text      = textBlock?.type === 'text' ? textBlock.text : ''
 
-        // Credit was already consumed atomically up front — nothing to do here.
+        // An out-of-scope question is answered from a fixed string with no tool
+        // calls and almost no tokens. Charging a monthly consulta for "what's
+        // the weather" is the fastest way to burn a user's quota on nothing, so
+        // give the credit back. Compared on a normalised prefix because the
+        // model occasionally varies trailing whitespace/punctuation.
+        const norm = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, 80)
+        if (norm(text) === norm(OUT_OF_SCOPE_REPLY)) await refund()
+
         return NextResponse.json({ role: 'assistant', content: text })
       }
 
       if (response.stop_reason === 'tool_use') {
-        const toolUseBlocks = response.content.filter(b => b.type === 'tool_use')
+        const toolUseBlocks = response.content.filter(
+          (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
+        )
 
         currentMessages = [
           ...currentMessages,
           { role: 'assistant', content: response.content },
         ]
 
-        const toolResults: Anthropic.ToolResultBlockParam[] = []
+        // Run every tool the model asked for concurrently. They were executed
+        // one after another before, so a turn requesting three lookups paid the
+        // sum of three DB round trips while the user watched a spinner; they're
+        // independent, so the turn now costs the slowest one instead.
+        const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
+          toolUseBlocks.map(async (block): Promise<Anthropic.ToolResultBlockParam> => {
+            let result: unknown
+            let isError = false
 
-        for (const block of toolUseBlocks) {
-          if (block.type !== 'tool_use') continue
+            try {
+              result = await executeTool(block.name, block.input as Record<string, unknown>, toolContext)
+            } catch (err) {
+              result  = { error: err instanceof Error ? err.message : String(err) }
+              isError = true
+            }
 
-          let result: unknown
-          let isError = false
-
-          try {
-            result = await executeTool(block.name, block.input as Record<string, unknown>, toolContext)
-          } catch (err) {
-            result  = { error: err instanceof Error ? err.message : String(err) }
-            isError = true
-          }
-
-          toolResults.push({
-            type:        'tool_result',
-            tool_use_id: block.id,
-            content:     JSON.stringify(result),
-            is_error:    isError,
+            return {
+              type:        'tool_result',
+              tool_use_id: block.id,
+              content:     JSON.stringify(result),
+              is_error:    isError,
+            }
           })
-        }
+        )
 
         currentMessages = [
           ...currentMessages,
@@ -155,9 +198,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ role: 'assistant', content: text })
     }
 
+    // Hit the iteration ceiling without producing an answer. The user got
+    // nothing usable and is about to retry, so don't charge them for it.
+    await refund()
     return NextResponse.json({
       role:    'assistant',
-      content: 'Se alcanzó el límite de iteraciones. Por favor intenta de nuevo.',
+      content: 'Se alcanzó el límite de iteraciones. Por favor intenta de nuevo, si puedes con una pregunta más concreta.',
     })
 
   } catch (err) {

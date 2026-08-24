@@ -3,8 +3,7 @@ import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { ChatWidget } from '@/components/assistant/ChatWidget'
-import { resolveCompanyId } from '@/lib/auth'
-import { getCompanyAccess } from '@/lib/subscription'
+import { resolveCompanyId, CompanyBlockedError } from '@/lib/auth'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Trial / subscription gate — server-side, can't be bypassed from the client.
@@ -12,12 +11,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // before any app content renders. resolveCompanyId is verified from the
   // session cookie; the verdict comes from getCompanyAccess (admin-read DB).
   // Note: redirect() must run OUTSIDE the try/catch (it throws to redirect).
+  //
+  // resolveCompanyId() already runs getCompanyAccess internally and throws
+  // CompanyBlockedError when blocked, so the previous explicit second call was
+  // a duplicate round trip on every page load. Both it and the session lookup
+  // are memoized per request (React cache), so the page rendered below reuses
+  // these results instead of repeating them.
   let blocked = false
   try {
-    const companyId = await resolveCompanyId()
-    blocked = (await getCompanyAccess(companyId)).blocked
-  } catch {
-    blocked = false
+    await resolveCompanyId()
+  } catch (err) {
+    blocked = err instanceof CompanyBlockedError
   }
   if (blocked) redirect('/suscripcion')
 

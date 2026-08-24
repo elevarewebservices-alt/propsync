@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createAdminClient } from './supabase'
 
 export const TRIAL_DAYS = 15
@@ -21,8 +22,12 @@ export interface CompanyAccess {
  * - 'active'     → paid → allowed.
  * - 'trialing'   → allowed only while trial_ends_at is in the future.
  * - past_due/canceled → blocked until they pay.
+ *
+ * Cached per request (keyed on companyId): resolveCompanyId() runs this gate on
+ * every call, and the app shell layout used to ask for it again on top of that.
+ * Deduping is safe — a subscription can't change mid-render.
  */
-export async function getCompanyAccess(companyId: string): Promise<CompanyAccess> {
+export const getCompanyAccess = cache(async function getCompanyAccess(companyId: string): Promise<CompanyAccess> {
   const db = createAdminClient()
   const { data } = await (db.from('companies') as any)
     .select('subscription_status, trial_ends_at')
@@ -58,4 +63,4 @@ export async function getCompanyAccess(companyId: string): Promise<CompanyAccess
 
   // past_due / canceled → blocked.
   return { blocked: true, status, trialEndsAt, daysLeft, reason: 'unpaid' }
-}
+})

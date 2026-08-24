@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient, createAdminClient } from './supabase'
 import { resolvePermissions, type AgentPermissions } from './permissions'
@@ -83,7 +84,12 @@ async function provisionCompanyIfNeeded(user: { id: string; email?: string; user
 }
 
 // Returns company_id from the session, or null if no session.
-export async function getSessionCompanyId(): Promise<string | null> {
+//
+// Wrapped in React's cache() so it runs at most once per request. The app shell
+// layout, the page it renders, and any server component below them all call
+// this (directly or via resolveCompanyId), which previously meant repeating the
+// session read + agents lookup 3-4x serially before anything painted.
+export const getSessionCompanyId = cache(async function getSessionCompanyId(): Promise<string | null> {
   try {
     const cookieStore = cookies()
     const supabase = createServerSupabaseClient({
@@ -118,10 +124,11 @@ export async function getSessionCompanyId(): Promise<string | null> {
   } catch {
     return null
   }
-}
+})
 
-// Returns the full session user object, or null.
-export async function getSessionUser() {
+// Returns the full session user object, or null. Cached per request — the
+// session cookie can't change mid-render, so re-reading it is pure overhead.
+export const getSessionUser = cache(async function getSessionUser() {
   try {
     const cookieStore = cookies()
     const supabase = createServerSupabaseClient({
@@ -134,10 +141,10 @@ export async function getSessionUser() {
   } catch {
     return null
   }
-}
+})
 
 // Returns the company's plan_id for the current session, or 'starter' as the safe default.
-export async function getSessionPlan(): Promise<'starter' | 'pro'> {
+export const getSessionPlan = cache(async function getSessionPlan(): Promise<'starter' | 'pro'> {
   try {
     const companyId = await getSessionCompanyId()
     if (!companyId) return 'starter'
@@ -155,7 +162,7 @@ export async function getSessionPlan(): Promise<'starter' | 'pro'> {
   } catch {
     return 'starter'
   }
-}
+})
 
 // True when the current session user is the account owner (the user that
 // created the company). Used to gate owner-only actions like CSV export.
@@ -166,8 +173,9 @@ export async function isSessionOwner(): Promise<boolean> {
   return process.env.NODE_ENV !== 'production'
 }
 
-// Returns the agent row for the current session user, or null.
-export async function getSessionAgent() {
+// Returns the agent row for the current session user, or null. Cached per
+// request: the Header, the permission gates and several pages all ask for it.
+export const getSessionAgent = cache(async function getSessionAgent() {
   try {
     const user = await getSessionUser()
     if (!user) return null
@@ -195,7 +203,7 @@ export async function getSessionAgent() {
   } catch {
     return null
   }
-}
+})
 
 // Returns the effective permissions for the current session user — role
 // defaults merged with any per-agent override (agents.permissions). In dev

@@ -8,9 +8,15 @@
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 1200,
+      "launchShowDuration": 6000,
+      "launchAutoHide": true,
       "backgroundColor": "#0f0f1a",
-      "showSpinner": false
+      "showSpinner": true,
+      "spinnerColor": "#fbbf24",
+      "androidSpinnerStyle": "large",
+      "iosSpinnerStyle": "large",
+      "splashFullScreen": true,
+      "splashImmersive": false
     },
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"]
