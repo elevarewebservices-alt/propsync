@@ -1,3 +1,4 @@
+import type { TourRow } from './virtual-tours'
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
 
 // ── Row types ───────────────────────────────────────────────────────────────
@@ -316,6 +317,12 @@ export interface PropertyNoteInsert {
 export interface Database {
   public: {
     Tables: {
+      virtual_tours: {
+        Row: TourRow
+        Insert: Pick<TourRow, 'company_id' | 'created_by' | 'property_id' | 'slug' | 'document'> & Partial<TourRow>
+        Update: Partial<TourRow>
+        Relationships: []
+      }
       companies: {
         Row: CompanyRow
         Insert: Omit<CompanyRow, 'id' | 'created_at' | 'updated_at'> & { id?: string }

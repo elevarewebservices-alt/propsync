@@ -57,6 +57,7 @@ function getNavSections(accessSettings: boolean): NavSection[] {
       items: [
         { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { label: 'Propiedades', href: '/propiedades', icon: Home },
+        { label: 'Virtual Tours', href: '/virtual-tours', icon: Layers },
       ],
     },
     {

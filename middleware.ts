@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 const PROTECTED = [
-  '/dashboard', '/propiedades', '/crm', '/asistente',
+  '/dashboard', '/propiedades', '/virtual-tours', '/crm', '/asistente',
   '/publicar', '/mantener', '/configuracion', '/suscripcion',
 ]
 

@@ -240,6 +240,7 @@ export default function PropiedadesPage() {
     <div className="p-4 md:p-6 space-y-4">
       {/* Title removed per request — the action row leads the page. */}
       <div className="flex items-center gap-2 flex-wrap justify-end">
+        <Link href="/virtual-tours"><Button variant="outline" size="sm">Virtual Tours</Button></Link>
         {syncMessage && (
           <span className="text-xs text-muted-foreground mr-auto">{syncMessage}</span>
         )}

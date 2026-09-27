@@ -40,3 +40,6 @@ next-env.d.ts
 
 # Salida generada por graphify (grafo de conocimiento, ~7MB) — no versionar
 graphify-out/
+
+.env*
+/supabase/.temp/

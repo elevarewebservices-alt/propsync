@@ -1,0 +1,660 @@
+.vt-public {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #141a1d;
+  color: #fff;
+  font-family: inherit;
+}
+.vt-public *,
+.vt-admin * {
+  box-sizing: border-box;
+}
+.vt-public button,
+.vt-admin button,
+.vt-button {
+  min-height: 44px;
+  cursor: pointer;
+}
+.vt-public button:disabled,
+.vt-admin button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.vt-public :focus-visible,
+.vt-admin :focus-visible {
+  outline: 3px solid #78b8ff;
+  outline-offset: 3px;
+}
+.vt-public-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: max(16px, env(safe-area-inset-top)) 28px 16px;
+}
+.vt-brand {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+.vt-brand span {
+  font-size: 12px;
+  color: #b9c5cb;
+  font-weight: 400;
+  margin-left: 8px;
+}
+.vt-public h1 {
+  font-size: clamp(18px, 2.3vw, 28px);
+  line-height: 1.2;
+  margin: 8px 0 5px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.vt-public-header p {
+  color: #bbc6cb;
+  font-size: 12px;
+}
+.vt-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.vt-actions button,
+.vt-actions a,
+.vt-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.vt-public .vt-actions button {
+  border-color: #47555d;
+}
+.vt-public-main {
+  flex: 1;
+  min-height: 180px;
+  position: relative;
+  overflow: hidden;
+  background: #0c1114;
+}
+.vt-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.vt-panorama {
+  position: absolute;
+  inset: 0;
+}
+.vt-photo-stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.vt-photo-plane {
+  position: relative;
+  flex-shrink: 0;
+  line-height: 0;
+  width: max-content;
+  height: max-content;
+  max-width: 100%;
+  max-height: 100%;
+}
+.vt-photo-plane > img {
+  display: block;
+  max-height: 100%;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+}
+.vt-public-main .vt-photo-plane > img {
+  max-height: calc(100dvh - 260px);
+}
+.vt-editor-canvas .vt-photo-plane > img {
+  max-height: 480px;
+}
+.vt-hotspot {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 48px;
+  background: #fff;
+  color: #17252e;
+  border: 1px solid #d4e0e7;
+  border-radius: 50%;
+  box-shadow: 0 4px 14px #0004;
+  z-index: 2;
+  line-height: 1.2;
+}
+.vt-hotspot span {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border-radius: 5px;
+  background: #14252eef;
+  color: white;
+  font-size: 12px;
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vt-hotspot:hover {
+  background: #dbeeff;
+}
+.vt-panorama-hotspot {
+  min-height: 48px;
+  min-width: 48px;
+  background: #fff;
+  color: #16232d;
+  padding: 12px 16px;
+  border-radius: 24px;
+  font-size: 14px;
+  border: 2px solid #438bdc;
+}
+.vt-zoom {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  border-radius: 8px;
+  background: #15232dec;
+  color: white;
+  z-index: 3;
+}
+.vt-zoom button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+}
+.vt-scene-caption {
+  position: absolute;
+  bottom: 18px;
+  left: 24px;
+  pointer-events: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #111d26ed;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.vt-scene-caption strong {
+  font-size: 14px;
+}
+.vt-scene-caption span {
+  font-size: 11px;
+  color: #ccd7df;
+}
+.vt-public-footer {
+  padding: 16px 24px max(16px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.vt-thumbnails {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  min-width: 0;
+  flex: 1;
+  padding: 3px;
+}
+.vt-thumbnails button {
+  flex-shrink: 0;
+  width: 128px;
+  text-align: left;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 6px;
+}
+.vt-thumbnails button[aria-current='true'] {
+  border-bottom-color: #78b8ff;
+}
+.vt-thumbnails img {
+  width: 128px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+.vt-thumbnails span {
+  display: block;
+  font-size: 11px;
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #d1dbe1;
+}
+.vt-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 8px;
+  background: #1a73e8;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  min-height: 48px;
+}
+.vt-dialog {
+  background: #fff;
+  color: #18242e;
+  border: none;
+  border-radius: 14px;
+  padding: 24px;
+  width: min(520px, calc(100% - 24px));
+  max-height: 85dvh;
+  overflow: auto;
+}
+.vt-dialog::backdrop {
+  background: #081017b8;
+}
+.vt-dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.vt-dialog-head h2 {
+  font-size: 22px;
+  font-weight: 600;
+}
+.vt-dialog-head button {
+  width: 44px;
+  display: grid;
+  place-items: center;
+}
+.vt-property p,
+.vt-share p {
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 12px 0;
+  color: #4c5e6b;
+}
+.vt-property h3 {
+  font-size: 20px;
+}
+.vt-price {
+  display: block;
+  font-size: 28px;
+  margin: 20px 0;
+}
+.vt-property dl {
+  display: flex;
+  gap: 24px;
+  margin: 20px 0;
+}
+.vt-property dt {
+  font-size: 12px;
+  color: #536674;
+}
+.vt-property dd {
+  font-size: 18px;
+}
+.vt-share input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #b8c4cd;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+.vt-share > img {
+  margin: 20px auto;
+}
+.vt-share > .vt-button {
+  display: flex;
+}
+.vt-image-error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  padding: 32px;
+  color: #ccd8de;
+  text-align: center;
+  pointer-events: none;
+}
+.vt-admin {
+  max-width: 1400px;
+  margin: auto;
+  padding: 28px;
+  color: var(--foreground);
+}
+.vt-admin h1 {
+  font-size: 30px;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+.vt-admin h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+.vt-admin p {
+  line-height: 1.6;
+}
+.vt-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.vt-muted {
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+.vt-alert {
+  padding: 12px 16px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 16px 0;
+  overflow-wrap: anywhere;
+}
+.vt-list {
+  display: grid;
+  gap: 0;
+}
+.vt-tour-row {
+  display: grid;
+  grid-template-columns: 160px 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--border);
+}
+.vt-tour-row > img,
+.vt-tour-placeholder {
+  width: 160px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--muted);
+}
+.vt-tour-row h2 {
+  font-size: 19px;
+}
+.vt-status {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+  background: var(--muted);
+  margin: 8px 8px 8px 0;
+}
+.vt-tour-row .vt-actions {
+  max-width: 340px;
+}
+.vt-admin label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.vt-admin input:not([type='checkbox']),
+.vt-admin select,
+.vt-admin textarea {
+  width: 100%;
+  padding: 11px 12px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 14px;
+}
+.vt-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin: 20px 0;
+}
+.vt-form-grid .vt-wide {
+  grid-column: 1/-1;
+}
+.vt-editor-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 24px;
+  margin-top: 24px;
+}
+.vt-scene-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.vt-scene-list button {
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.vt-scene-list button[aria-current='true'] {
+  border-color: #1a73e8;
+  background: var(--muted);
+}
+.vt-scene-list img {
+  width: 64px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.vt-editor-canvas {
+  height: 480px;
+  max-height: 60dvh;
+  background: #0c1114;
+  overflow: hidden;
+  border-radius: 10px;
+  margin: 18px 0;
+}
+.vt-upload {
+  padding: 20px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  margin: 20px 0;
+}
+.vt-upload input {
+  margin-top: 12px;
+}
+.vt-empty {
+  padding: 48px 24px;
+  text-align: center;
+  background: var(--muted);
+  border-radius: 12px;
+}
+.vt-admin details {
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+}
+.vt-admin summary {
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  min-height: 32px;
+}
+.vt-hotspot-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.vt-danger {
+  color: #c23535;
+}
+.vt-admin .vt-primary {
+  background: #1a73e8;
+  color: white;
+  border-color: #1a73e8;
+}
+.vt-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #141a1d;
+}
+.vt-preview > .vt-close-preview {
+  position: absolute;
+  right: 18px;
+  top: 8px;
+  z-index: 5;
+  background: white;
+  color: #14252e;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.vt-preview .vt-public-header {
+  padding-top: 60px;
+}
+.vt-preview .vt-public-main .vt-photo-plane > img {
+  max-height: calc(100dvh - 310px);
+}
+@media (max-width: 700px) {
+  .vt-public-header {
+    padding: max(12px, env(safe-area-inset-top)) 14px 12px;
+    gap: 8px;
+  }
+  .vt-public-header > .vt-actions {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+  .vt-public-header > .vt-actions button {
+    padding: 10px;
+  }
+  .vt-public-header > .vt-actions button span {
+    display: none;
+  }
+  .vt-public-header p {
+    font-size: 10px;
+  }
+  .vt-brand {
+    font-size: 14px;
+  }
+  .vt-brand span {
+    font-size: 10px;
+  }
+  .vt-public-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 14px max(12px, env(safe-area-inset-bottom));
+  }
+  .vt-thumbnails {
+    flex: none;
+    width: 100%;
+  }
+  .vt-thumbnails button,
+  .vt-thumbnails img {
+    width: 100px;
+  }
+  .vt-thumbnails img {
+    height: 52px;
+  }
+  .vt-public-main .vt-photo-plane > img {
+    max-height: calc(100dvh - 300px);
+  }
+  .vt-scene-caption {
+    bottom: 12px;
+    left: 12px;
+    max-width: 55%;
+    padding: 8px;
+  }
+  .vt-scene-caption span {
+    font-size: 9px;
+  }
+  .vt-zoom {
+    bottom: 12px;
+    right: 10px;
+  }
+  .vt-admin {
+    padding: 18px 14px;
+  }
+  .vt-admin h1 {
+    font-size: 26px;
+  }
+  .vt-tour-row {
+    grid-template-columns: 92px 1fr;
+    gap: 14px;
+  }
+  .vt-tour-row > img,
+  .vt-tour-placeholder {
+    width: 92px;
+    height: 92px;
+  }
+  .vt-tour-row > .vt-actions {
+    grid-column: 1/-1;
+    max-width: none;
+  }
+  .vt-editor-layout {
+    grid-template-columns: 1fr;
+  }
+  .vt-scene-list {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .vt-scene-list button {
+    flex: 0 0 165px;
+  }
+  .vt-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .vt-hotspot-row {
+    grid-template-columns: 1fr;
+  }
+  .vt-editor-canvas {
+    height: 340px;
+  }
+  .vt-editor-canvas .vt-photo-plane > img {
+    max-height: 340px;
+  }
+  .vt-hotspot span {
+    font-size: 10px;
+    max-width: 125px;
+  }
+  .vt-public .vt-cta {
+    padding: 12px;
+  }
+  .vt-property dl {
+    gap: 18px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .vt-photo-plane > img {
+    animation: vt-reveal 0.3s ease-out;
+  }
+  @keyframes vt-reveal {
+    from {
+      opacity: 0.55;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
