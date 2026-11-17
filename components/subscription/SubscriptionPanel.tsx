@@ -19,12 +19,11 @@ interface Props {
   blocked: boolean
   daysLeft: number | null
   planNombre: string
-  planPrecio: number
   paypalClientId: string | null
   paypalPlanId: string | null
 }
 
-export function SubscriptionPanel({ companyName, status, blocked, daysLeft, planNombre, planPrecio, paypalClientId, paypalPlanId }: Props) {
+export function SubscriptionPanel({ companyName, status, blocked, daysLeft, planNombre, paypalClientId, paypalPlanId }: Props) {
   const router = useRouter()
   const [code, setCode] = useState('')
   const [applying, setApplying] = useState(false)
@@ -150,12 +149,9 @@ export function SubscriptionPanel({ companyName, status, blocked, daysLeft, plan
 
         {/* Plan + pay */}
         <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
-          <div className="flex items-baseline justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Tu plan</p>
-              <p className="text-lg font-bold text-foreground">{planNombre}</p>
-            </div>
-            <p className="text-2xl font-bold text-foreground">${planPrecio}<span className="text-sm font-normal text-muted-foreground">/mes</span></p>
+          <div>
+            <p className="text-sm text-muted-foreground">Tu plan</p>
+            <p className="text-lg font-bold text-foreground">{planNombre}</p>
           </div>
 
           {native ? (
