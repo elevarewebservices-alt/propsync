@@ -60,8 +60,23 @@ export async function provisionCompanyForUser(params: {
     })
   if (agentError) return null
 
-  // Seed the default CRM: 3 pipelines + 7 stages. Best-effort — a seeding
-  // hiccup must not block account creation.
+  await seedDefaultCrm(companyId)
+
+  // Non-blocking welcome email
+  sendWelcomeEmail(email, nombre, empresa, companyId).catch((err) =>
+    console.error('[provision] welcome email failed:', err),
+  )
+
+  return { companyId, created: true }
+}
+
+/**
+ * Seeds the default CRM (3 pipelines + 7 stages) for a new company. Best-effort:
+ * a seeding hiccup must not block account creation. Shared by self-signup
+ * provisioning and the Elevare admin panel's "Nueva cuenta".
+ */
+export async function seedDefaultCrm(companyId: string): Promise<void> {
+  const db = createAdminClient()
   try {
     const { data: pipes } = await (db.from('pipelines') as any)
       .insert([
@@ -99,10 +114,4 @@ export async function provisionCompanyForUser(params: {
     console.error('[provision] CRM seeding failed:', seedErr)
   }
 
-  // Non-blocking welcome email
-  sendWelcomeEmail(email, nombre, empresa, companyId).catch((err) =>
-    console.error('[provision] welcome email failed:', err),
-  )
-
-  return { companyId, created: true }
 }

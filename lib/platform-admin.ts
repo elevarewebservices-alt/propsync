@@ -1,3 +1,6 @@
+import { cookies } from 'next/headers'
+import { createServerSupabaseClient } from './supabase'
+
 // Platform-owner (Elevare) access control — separate from per-tenant auth.
 // A platform admin can see ALL companies' usage, so the gate must be strict.
 // Configurable via PLATFORM_ADMIN_EMAILS (comma-separated); defaults to Elevare.
@@ -23,4 +26,23 @@ export const R2_STORAGE_PER_GB = 0.015
 // Estimated GB stored for a given number of images.
 export function estStorageGB(imageCount: number): number {
   return (imageCount * AVG_IMAGE_KB) / (1024 * 1024) // KB → GB
+}
+
+// ── Route-handler gate for /api/admin/* writes ──────────────────────────────
+// Uses auth.getUser(), which validates the JWT against Supabase Auth, rather
+// than getSession() (cookie contents, unverified). Admin routes can change any
+// tenant's billing, so the caller's identity must be verified, not trusted.
+export async function requirePlatformAdmin(): Promise<string | null> {
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerSupabaseClient({
+      get: (name) => cookieStore.get(name)?.value,
+      set: () => {},
+      remove: () => {},
+    })
+    const { data: { user } } = await supabase.auth.getUser()
+    return user?.email && isPlatformAdmin(user.email) ? user.email.toLowerCase() : null
+  } catch {
+    return null
+  }
 }

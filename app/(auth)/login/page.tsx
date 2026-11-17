@@ -146,6 +146,12 @@ function LoginPageContent() {
               Regístrate gratis
             </Link>
           </p>
+          <p className="text-xs text-muted-foreground text-center">
+            ¿Solo quieres mirar?{' '}
+            <Link href="/demo" className="text-primary hover:underline">
+              Explora la demo
+            </Link>
+          </p>
         </CardFooter>
       </form>
     </Card>

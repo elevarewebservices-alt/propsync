@@ -3,28 +3,20 @@ import { getSessionUser } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 import { isPlatformAdmin, EST_COST_PER_REQUEST, estStorageGB, R2_STORAGE_PER_GB } from '@/lib/platform-admin'
 import { ASSISTANT_LIMITS } from '@/lib/plans'
+import { AdminPanel } from './AdminPanel'
+import { ADDONS } from '@/lib/addons'
+import type { CompanyRow, PaymentRow, PromoRow } from './types'
 
 export const dynamic = 'force-dynamic'
-
-interface CompanyRow {
-  id: string
-  nombre: string
-  email: string | null
-  plan_id: string
-  created_at: string
-  propiedades: number
-  contactos: number
-  agentes: number
-  iaMes: number
-  imagenes: number
-}
 
 async function loadData() {
   const db = createAdminClient()
   const month = new Date().toISOString().slice(0, 7) // YYYY-MM
 
-  const [companiesRes, propsRes, contactsRes, agentsRes, usageRes, imgRes] = await Promise.all([
-    (db.from('companies') as any).select('id, nombre, email, plan_id, created_at').order('created_at', { ascending: true }),
+  const [companiesRes, propsRes, contactsRes, agentsRes, usageRes, imgRes, addonsRes, paymentsRes, promosRes] = await Promise.all([
+    (db.from('companies') as any)
+      .select('id, nombre, email, plan_id, created_at, subscription_status, subscription_provider, trial_ends_at, current_period_end')
+      .order('created_at', { ascending: true }),
     (db.from('properties') as any).select('company_id'),
     (db.from('contacts') as any).select('company_id').eq('is_active', true),
     (db.from('agents') as any).select('company_id').eq('is_active', true),
@@ -32,6 +24,14 @@ async function loadData() {
     // Image counts computed in the DB (scales to 100k+ properties).
     // Falls back to empty if the migration hasn't been run yet.
     (db as any).rpc('company_image_stats').then((r: any) => r, () => ({ data: null })),
+    (db.from('company_addons') as any).select('company_id, addon_id').eq('activo', true),
+    // manual_payments needs migration 030 — degrade to empty if not run yet.
+    (db.from('manual_payments') as any)
+      .select('id, company_id, amount, method, reference, period_start, period_end, notes, created_by_email, created_at')
+      .order('created_at', { ascending: false })
+      .limit(500)
+      .then((r: any) => r, () => ({ data: null })),
+    (db.from('promo_codes') as any).select('*').order('created_at', { ascending: false }),
   ])
 
   const tally = (rows: { company_id: string }[] | null) => {
@@ -51,12 +51,22 @@ async function loadData() {
     imgMap[s.company_id] = Number(s.image_count)
   }
 
+  const addonMap: Record<string, string[]> = {}
+  for (const a of (addonsRes.data ?? []) as { company_id: string; addon_id: string }[]) {
+    ;(addonMap[a.company_id] ??= []).push(a.addon_id)
+  }
+
   const companies: CompanyRow[] = ((companiesRes.data ?? []) as any[]).map((c) => ({
     id: c.id,
     nombre: c.nombre,
     email: c.email,
     plan_id: c.plan_id,
     created_at: c.created_at,
+    subscription_status: c.subscription_status ?? null,
+    subscription_provider: c.subscription_provider ?? null,
+    trial_ends_at: c.trial_ends_at ?? null,
+    current_period_end: c.current_period_end ?? null,
+    addons: addonMap[c.id] ?? [],
     propiedades: propMap[c.id] ?? 0,
     contactos: contactMap[c.id] ?? 0,
     agentes: agentMap[c.id] ?? 0,
@@ -72,7 +82,10 @@ async function loadData() {
     iaMes: companies.reduce((s, c) => s + c.iaMes, 0),
     imagenes: companies.reduce((s, c) => s + c.imagenes, 0),
   }
-  return { companies, totals, month }
+  const payments = ((paymentsRes?.data ?? []) as PaymentRow[])
+  const promoCodes = ((promosRes.data ?? []) as PromoRow[])
+  const paymentsTableReady = paymentsRes?.data !== null && !paymentsRes?.error
+  return { companies, totals, month, payments, promoCodes, paymentsTableReady }
 }
 
 export default async function PanelElevarePage() {
@@ -80,16 +93,11 @@ export default async function PanelElevarePage() {
   const user = await getSessionUser()
   if (!isPlatformAdmin(user?.email)) notFound()
 
-  const { companies, totals, month } = await loadData()
+  const { companies, totals, month, payments, promoCodes, paymentsTableReady } = await loadData()
   const costMes = totals.iaMes * EST_COST_PER_REQUEST
   const totalStorageGB = estStorageGB(totals.imagenes)
   const storageCost = totalStorageGB * R2_STORAGE_PER_GB
   const fmtGB = (gb: number) => gb >= 1 ? `${gb.toFixed(2)} GB` : `${(gb * 1024).toFixed(0)} MB`
-
-  const planBadge = (p: string) =>
-    p === 'agency' ? 'bg-violet-100 text-violet-700' :
-    p === 'pro'    ? 'bg-blue-100 text-blue-700' :
-                     'bg-gray-100 text-gray-700'
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -137,56 +145,14 @@ export default async function PanelElevarePage() {
           </div>
         </div>
 
-        {/* Companies table */}
-        <div className="rounded-xl border bg-white overflow-hidden">
-          <div className="px-4 py-3 border-b"><h2 className="text-sm font-semibold">Empresas</h2></div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-                <tr>
-                  <th className="text-left px-4 py-2.5">Empresa</th>
-                  <th className="text-left px-4 py-2.5">Plan</th>
-                  <th className="text-right px-4 py-2.5">Propiedades</th>
-                  <th className="text-right px-4 py-2.5">Contactos</th>
-                  <th className="text-right px-4 py-2.5">Agentes</th>
-                  <th className="text-right px-4 py-2.5">IA mes</th>
-                  <th className="text-right px-4 py-2.5">Imágenes</th>
-                  <th className="text-right px-4 py-2.5">R2 (est.)</th>
-                  <th className="text-left px-4 py-2.5">Registrada</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {companies.map((c) => {
-                  const limit = ASSISTANT_LIMITS[c.plan_id] ?? ASSISTANT_LIMITS.starter
-                  const near = c.iaMes / limit >= 0.8
-                  return (
-                    <tr key={c.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2.5">
-                        <div className="font-medium">{c.nombre}</div>
-                        <div className="text-xs text-gray-400">{c.email ?? '—'}</div>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${planBadge(c.plan_id)}`}>{c.plan_id}</span>
-                      </td>
-                      <td className="px-4 py-2.5 text-right">{c.propiedades}</td>
-                      <td className="px-4 py-2.5 text-right">{c.contactos}</td>
-                      <td className="px-4 py-2.5 text-right">{c.agentes}</td>
-                      <td className={`px-4 py-2.5 text-right font-medium ${near ? 'text-amber-600' : ''}`}>{c.iaMes}<span className="text-gray-300 text-xs"> / {limit.toLocaleString()}</span></td>
-                      <td className="px-4 py-2.5 text-right">{c.imagenes.toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-right text-gray-500">{fmtGB(estStorageGB(c.imagenes))}</td>
-                      <td className="px-4 py-2.5 text-xs text-gray-500">
-                        {new Date(c.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </td>
-                    </tr>
-                  )
-                })}
-                {companies.length === 0 && (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Sin empresas todavía.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <AdminPanel
+          companies={companies}
+          payments={payments}
+          promoCodes={promoCodes}
+          paymentsTableReady={paymentsTableReady}
+          assistantLimits={ASSISTANT_LIMITS}
+          addons={ADDONS.map((a) => ({ id: a.id, nombre: a.nombre, requiresPlan: a.requiresPlan }))}
+        />
 
         <p className="text-xs text-gray-400">
           Acceso restringido a Elevare. El costo de IA es estimado; el gasto real exacto está en console.anthropic.com.

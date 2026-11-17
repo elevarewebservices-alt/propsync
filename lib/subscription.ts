@@ -2,6 +2,7 @@ import { cache } from 'react'
 import { createAdminClient } from './supabase'
 
 export const TRIAL_DAYS = 15
+export const PAYMENT_GRACE_DAYS = 3
 
 export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | null
 
@@ -30,7 +31,7 @@ export interface CompanyAccess {
 export const getCompanyAccess = cache(async function getCompanyAccess(companyId: string): Promise<CompanyAccess> {
   const db = createAdminClient()
   const { data } = await (db.from('companies') as any)
-    .select('subscription_status, trial_ends_at')
+    .select('subscription_status, trial_ends_at, current_period_end, subscription_provider')
     .eq('id', companyId)
     .single()
 
@@ -47,7 +48,15 @@ export const getCompanyAccess = cache(async function getCompanyAccess(companyId:
   }
 
   if (status === 'active') {
-    return { blocked: false, status, trialEndsAt, daysLeft, reason: 'paid' }
+    // Manually-billed (ACH) accounts and promo free months carry a paid-through
+    // date. Once it passes (plus a short grace for late transfers) the account
+    // locks until a new payment is registered in the admin panel. PayPal is
+    // excluded: its webhooks flip the status itself, and renewals don't always
+    // refresh current_period_end. No date = open-ended.
+    const periodEnd = (data?.current_period_end ?? null) as string | null
+    const lapsed = data?.subscription_provider !== 'paypal' && periodEnd !== null &&
+      new Date(periodEnd).getTime() + PAYMENT_GRACE_DAYS * 86_400_000 <= Date.now()
+    return { blocked: lapsed, status, trialEndsAt, daysLeft, reason: lapsed ? 'unpaid' : 'paid' }
   }
 
   if (status === 'trialing') {

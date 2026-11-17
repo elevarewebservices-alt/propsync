@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { isDemoEmail, isDemoBlockedApi, DEMO_BLOCKED_PAGES, DEMO_BLOCKED_MESSAGE } from '@/lib/demo'
 
 const PROTECTED = [
   '/dashboard', '/propiedades', '/virtual-tours', '/crm', '/asistente',
@@ -35,6 +36,17 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { session } } = await supabase.auth.getSession()
+
+  // Public demo account: read/write sample data freely, but nothing that leaves
+  // the platform, touches account control, or costs per call (see lib/demo.ts).
+  if (session && isDemoEmail(session.user.email)) {
+    if (isDemoBlockedApi(pathname, request.method)) {
+      return NextResponse.json({ error: DEMO_BLOCKED_MESSAGE, code: 'DEMO_READONLY' }, { status: 403 })
+    }
+    if (DEMO_BLOCKED_PAGES.some((p) => pathname.startsWith(p))) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
 
   const isProtected = PROTECTED.some((p) => pathname.startsWith(p))
   const isAuthPage = AUTH_PAGES.some((p) => pathname.startsWith(p))

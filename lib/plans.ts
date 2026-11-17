@@ -50,7 +50,7 @@ export const PLANS: Plan[] = [
     },
     features: [
       'Propiedades ilimitadas',
-      '2 usuarios (+$7.99/usuario adicional)',
+      '2 usuarios incluidos (usuarios adicionales disponibles)',
       'Conexión a portales (Compre o Alquile, Encuentra24, Página web)',
       '3 fuentes de datos',
       'Módulo Mantener completo',

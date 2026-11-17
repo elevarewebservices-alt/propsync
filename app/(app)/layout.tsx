@@ -3,7 +3,9 @@ import { Header } from '@/components/layout/Header'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { ChatWidget } from '@/components/assistant/ChatWidget'
-import { resolveCompanyId, CompanyBlockedError } from '@/lib/auth'
+import Link from 'next/link'
+import { resolveCompanyId, CompanyBlockedError, getSessionUser } from '@/lib/auth'
+import { isDemoEmail } from '@/lib/demo'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Trial / subscription gate — server-side, can't be bypassed from the client.
@@ -25,6 +27,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
   if (blocked) redirect('/suscripcion')
 
+  const isDemo = isDemoEmail((await getSessionUser())?.email)
+
   // App shell: the outer container fills the viewport and never scrolls, so the
   // header + bottom nav stay pinned. Only <main> scrolls. This kills the iOS
   // rubber-band that made the header drift on slide-down.
@@ -34,6 +38,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* min-w-0 stops a wide child (e.g. action buttons) from stretching this
           flex column past the viewport and dragging content off to the right. */}
       <div className="flex flex-col flex-1 min-w-0 md:ml-64">
+        {isDemo && (
+          <div className="flex items-center justify-center gap-3 bg-primary px-4 py-1.5 text-xs text-primary-foreground">
+            <span>Estás en una demo · los datos se reinician cada día</span>
+            <Link href="/contacto" className="font-semibold underline underline-offset-2 whitespace-nowrap">
+              Quiero mi cuenta
+            </Link>
+          </div>
+        )}
         <Header />
         {/* overflow-x-hidden: the page itself must never drift sideways. Any
             deliberately-scrollable strip (pipeline tabs, kanban lanes) owns its

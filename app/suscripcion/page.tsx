@@ -34,7 +34,6 @@ export default async function SuscripcionPage() {
       blocked={access.blocked}
       daysLeft={access.daysLeft}
       planNombre={plan.nombre}
-      planPrecio={plan.precio}
       paypalClientId={process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ?? null}
       paypalPlanId={paypalPlanIdFor(planId)}
     />

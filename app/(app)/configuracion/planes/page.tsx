@@ -4,6 +4,7 @@ import { RestrictedAccess } from '@/components/shared/RestrictedAccess'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2 } from 'lucide-react'
+import Link from 'next/link'
 
 const planStyle: Record<string, { ring: string; bg: string; highlight: boolean }> = {
   starter: { ring: 'border-border', bg: 'bg-card', highlight: false },
@@ -18,7 +19,7 @@ export default async function PlanesPage() {
   return (
     <div className="p-4 md:p-6 space-y-8">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-foreground">Planes y precios</h1>
+        <h1 className="text-3xl font-bold text-foreground">Planes</h1>
         <p className="text-muted-foreground max-w-md mx-auto">
           Elige el plan que mejor se adapte a tu agencia inmobiliaria
         </p>
@@ -48,10 +49,6 @@ export default async function PlanesPage() {
 
               <div className="mb-6">
                 <h2 className="text-lg font-bold text-foreground">{plan.nombre}</h2>
-                <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-3xl font-extrabold text-foreground">${plan.precio}</span>
-                  <span className="text-sm text-muted-foreground">/mes</span>
-                </div>
               </div>
 
               <ul className="space-y-2.5 flex-1">
@@ -69,14 +66,14 @@ export default async function PlanesPage() {
                     Plan actual
                   </Button>
                 ) : (
-                  <Button
-                    className={`w-full ${style.highlight ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
-                    variant={style.highlight ? 'default' : 'outline'}
-                  >
-                    {plan.precio > (PLANS.find((p) => p.id === currentPlanId)?.precio ?? 0)
-                      ? 'Actualizar'
-                      : 'Cambiar plan'}
-                  </Button>
+                  <Link href="/contacto" className="block">
+                    <Button
+                      className={`w-full ${style.highlight ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
+                      variant={style.highlight ? 'default' : 'outline'}
+                    >
+                      Solicitar cambio de plan
+                    </Button>
+                  </Link>
                 )}
               </div>
             </div>

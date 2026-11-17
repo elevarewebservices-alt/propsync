@@ -674,10 +674,10 @@ export default function LandingPage() {
           <Link href="/registro" className="pill-cta px-8 py-3.5 text-sm">{t.cta}
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 11.5L11.5 1.5M11.5 1.5H3.5M11.5 1.5V9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
           </Link>
-          <a href="#features" className="ghost-cta text-sm py-3.5">
+          <Link href="/demo" className="ghost-cta text-sm py-3.5">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="rgba(255,255,255,.22)" strokeWidth="1"/><path d="M8 7l6 3-6 3V7z" fill="rgba(255,255,255,.45)"/></svg>
             {t.demo}
-          </a>
+          </Link>
         </div>
 
         {/* Antes aquí vivía el orbe iridiscente flotante. En monoline no hay
