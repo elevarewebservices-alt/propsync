@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { resolveCompanyId, getSessionPermissions } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 import { randomUUID } from 'crypto'
+import { FEED_PORTALS } from '@/lib/portal-feed'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,13 +14,26 @@ export async function GET() {
     }
     const db = createAdminClient()
 
-    const { data } = await db
-      .from('companies')
-      .select('wasi_token, wasi_company_id, last_wasi_sync_at, meta_webhook_token, tiktok_webhook_token')
-      .eq('id', companyId)
-      .single()
+    const [{ data }, { data: publishable }] = await Promise.all([
+      (db.from('companies') as any)
+        .select('wasi_token, wasi_company_id, last_wasi_sync_at, meta_webhook_token, tiktok_webhook_token, feed_token, feed_last_access')
+        .eq('id', companyId)
+        .single(),
+      // Same filter as the feed route — so the card can say how many listings
+      // each portal will actually receive.
+      (db.from('properties') as any)
+        .select('canales_publicados')
+        .eq('company_id', companyId)
+        .in('estado_publicacion', ['activo', 'destacado'])
+        .eq('disponibilidad', 'disponible'),
+    ])
 
     const row = data as any
+    const rows = (publishable ?? []) as { canales_publicados: string[] | null }[]
+    const feed_counts = Object.fromEntries(FEED_PORTALS.map((p) => [
+      p.id,
+      p.id === 'todos' ? rows.length : rows.filter((r) => (r.canales_publicados ?? []).includes(p.id)).length,
+    ]))
 
     return NextResponse.json({
       wasi_company_id: row?.wasi_company_id ?? '',
@@ -27,6 +41,9 @@ export async function GET() {
       last_wasi_sync_at: row?.last_wasi_sync_at ?? null,
       meta_webhook_token: row?.meta_webhook_token ?? null,
       tiktok_webhook_token: row?.tiktok_webhook_token ?? null,
+      feed_token: row?.feed_token ?? null,
+      feed_last_access: row?.feed_last_access ?? {},
+      feed_counts,
     })
   } catch {
     return NextResponse.json({ error: 'No se pudieron cargar las credenciales' }, { status: 500 })
@@ -45,6 +62,7 @@ export async function PATCH(req: Request) {
       wasi_token?: string
       generate_meta_token?: boolean
       generate_tiktok_token?: boolean
+      generate_feed_token?: boolean
     }
 
     const updates: Record<string, string | null> = {}
@@ -60,6 +78,11 @@ export async function PATCH(req: Request) {
     if (body.generate_tiktok_token) {
       updates.tiktok_webhook_token = randomUUID()
     }
+    // Regenerating invalidates the old feed URLs — portals must be sent the new
+    // ones. The UI confirms before doing this.
+    if (body.generate_feed_token) {
+      updates.feed_token = randomUUID()
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ ok: true })
@@ -68,12 +91,12 @@ export async function PATCH(req: Request) {
     const { data, error } = await (db.from('companies') as any)
       .update(updates)
       .eq('id', companyId)
-      .select('meta_webhook_token, tiktok_webhook_token')
+      .select('meta_webhook_token, tiktok_webhook_token, feed_token')
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    return NextResponse.json({ ok: true, meta_webhook_token: data?.meta_webhook_token, tiktok_webhook_token: data?.tiktok_webhook_token })
+    return NextResponse.json({ ok: true, meta_webhook_token: data?.meta_webhook_token, tiktok_webhook_token: data?.tiktok_webhook_token, feed_token: data?.feed_token })
   } catch {
     return NextResponse.json({ error: 'No se pudieron guardar las credenciales' }, { status: 500 })
   }

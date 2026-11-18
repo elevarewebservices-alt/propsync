@@ -218,6 +218,15 @@ requiresPlan(userPlanId, required)    // boolean
 - `encuentra24` — Encuentra24
 - `pagina_web` — Página web (the property's own public PropSync page, not the Pro-exclusive developer API/embed widget — that's a separate `limites.api` gate)
 
+### Outbound portal XML feeds (how listings reach Encuentra24 / Compre o Alquile)
+
+Pull model, no worker/server: each company has a secret `companies.feed_token` (migration `031_portal_feeds.sql`) and portals fetch `GET /feeds/<feed_token>/<portal>.xml` (`app/feeds/[token]/[file]/route.ts`) on their own schedule (~24h). Portals: `encuentra24`, `comprealquile`, plus `todos` (every publishable listing). `pagina_web` has no feed.
+
+- Included = `estado_publicacion` activo/destacado AND `disponibilidad='disponible'` AND (except `todos`) `canales_publicados` contains the portal. Unmarking a portal or setting inactivo/vendido drops the listing on the portal's next read.
+- Serializer is pure: `lib/portal-feed.ts` (`buildPortalFeed`, portal-neutral Spanish schema — `<propsync_feed><propiedades><propiedad>`, all photos, coords, features, tour + public page URL, agent contact). Never selects CRM/commission/owner fields. Tests: `node --test scripts/test-portal-feed.mjs`. If a portal sends its own strict spec, add a dedicated serializer and route that `<portal>.xml` to it.
+- Lapsed subscription → `402` (not an empty feed): portals keep the last good import on a failed fetch, whereas an empty feed would delete every listing.
+- Each fetch stamps `companies.feed_last_access[portal]`, shown as "Leído por el portal" in Configuración → Fuentes (URLs + per-portal listing counts + regenerate) and in the `/panel-elevare` company drawer (Elevare can generate/copy URLs for manually-managed clients).
+
 UI: a "Lugares de publicación" section (pill toggles) at the end of both `propiedades/nueva` and `propiedades/[id]/editar`, writing to `properties.canales_publicados` (`TEXT[]`). `canAccessChannel()` exists but isn't called anywhere yet — channel selection isn't currently plan-gated, only marketing copy reflects what's "included."
 
 ---
@@ -345,6 +354,8 @@ Wraps Meta's Message Templates Management API (`lib/whatsapp-templates.ts` — `
 - [x] Brevo as the platform-level ("cuenta madre") email transport (see below)
 
 ### Pending
+- [x] Outbound portal XML feeds — `/feeds/<token>/<portal>.xml` (see "Outbound portal XML feeds")
+- [ ] Inbound portal leads (Encuentra24 / Compre o Alquile contacts → CRM)
 - [ ] Stripe payments — plan upgrade/downgrade, webhook updates `companies.plan_id`
 
 ---

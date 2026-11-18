@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { AddonOption, CompanyRow, PaymentRow, PromoRow } from './types'
+import { FEED_PORTALS } from '@/lib/portal-feed'
 
 // Elevare back office: manual (ACH) billing, plans, trials, add-ons, promo
 // codes and hand-made accounts. Every action goes through /api/admin/*, which
@@ -430,6 +431,43 @@ function CompanyDrawer({ company: c, payments, addons, onClose }: {
                 </label>
               )
             })}
+          </section>
+
+          <section className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase text-gray-500">Feeds para portales</h4>
+            {c.feed_token ? (
+              <>
+                {FEED_PORTALS.map((p) => {
+                  const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/feeds/${c.feed_token}/${p.id}.xml`
+                  const seen = c.feed_last_access[p.id]
+                  return (
+                    <div key={p.id} className="rounded-md border px-3 py-2 text-sm space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{p.nombre}</span>
+                        <button className="text-xs text-blue-600 hover:underline" onClick={() => { void navigator.clipboard.writeText(url); setMsg({ ok: true, text: `URL de ${p.nombre} copiada` }) }}>
+                          Copiar URL
+                        </button>
+                      </div>
+                      <p className="font-mono text-[11px] text-gray-500 break-all">{url}</p>
+                      {p.id !== 'todos' && (
+                        <p className="text-[11px] text-gray-400">{seen ? `Última lectura del portal: ${fmtDate(seen)}` : 'El portal aún no lo ha leído'}</p>
+                      )}
+                    </div>
+                  )
+                })}
+                <button
+                  disabled={busy}
+                  onClick={() => { if (window.confirm('Las URLs actuales dejarán de funcionar. ¿Regenerar?')) patch({ generate_feed_token: true }, 'URLs regeneradas') }}
+                  className={`${btnGhost} w-full text-xs`}
+                >
+                  Regenerar URLs
+                </button>
+              </>
+            ) : (
+              <button disabled={busy} onClick={() => patch({ generate_feed_token: true }, 'URLs de feed generadas')} className={`${btnGhost} w-full`}>
+                Generar URLs de feed
+              </button>
+            )}
           </section>
 
           <section className="space-y-2">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { createAdminClient } from '@/lib/supabase'
 import { adminOr403, isIsoDate, PLAN_IDS, SUBSCRIPTION_STATUSES, UUID_RE } from '@/lib/admin'
 
@@ -7,7 +8,8 @@ export const dynamic = 'force-dynamic'
 /**
  * PATCH /api/admin/companies/[id] — Elevare-only edit of a tenant's plan and
  * subscription state (change plan, extend trial, suspend, reactivate).
- * Body: any of { plan_id, subscription_status, trial_ends_at, current_period_end }.
+ * Body: any of { plan_id, subscription_status, trial_ends_at, current_period_end,
+ * generate_feed_token: true } (the last one issues new portal-feed URLs).
  * subscription_status / dates accept null (null status = grandfathered/open).
  */
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
@@ -39,6 +41,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       update[key] = body[key]
     }
   }
+  if (body.generate_feed_token === true) update.feed_token = randomUUID()
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'Nada que actualizar' }, { status: 400 })
   }

@@ -38,6 +38,8 @@ export interface CompanyRow {
   trial_ends_at: string | null
   current_period_end: string | null
   addons: string[]
+  feed_token: string | null
+  feed_last_access: Record<string, string>
   propiedades: number
   contactos: number
   agentes: number

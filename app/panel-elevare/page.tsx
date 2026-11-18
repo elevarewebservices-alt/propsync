@@ -13,7 +13,7 @@ async function loadData() {
   const db = createAdminClient()
   const month = new Date().toISOString().slice(0, 7) // YYYY-MM
 
-  const [companiesRes, propsRes, contactsRes, agentsRes, usageRes, imgRes, addonsRes, paymentsRes, promosRes] = await Promise.all([
+  const [companiesRes, propsRes, contactsRes, agentsRes, usageRes, imgRes, addonsRes, paymentsRes, promosRes, feedsRes] = await Promise.all([
     (db.from('companies') as any)
       .select('id, nombre, email, plan_id, created_at, subscription_status, subscription_provider, trial_ends_at, current_period_end')
       .order('created_at', { ascending: true }),
@@ -32,6 +32,9 @@ async function loadData() {
       .limit(500)
       .then((r: any) => r, () => ({ data: null })),
     (db.from('promo_codes') as any).select('*').order('created_at', { ascending: false }),
+    // feed_token needs migration 031 — queried separately so a missing column
+    // only hides the feed section instead of breaking the whole panel.
+    (db.from('companies') as any).select('id, feed_token, feed_last_access').then((r: any) => r, () => ({ data: null })),
   ])
 
   const tally = (rows: { company_id: string }[] | null) => {
@@ -56,6 +59,11 @@ async function loadData() {
     ;(addonMap[a.company_id] ??= []).push(a.addon_id)
   }
 
+  const feedMap: Record<string, { feed_token: string | null; feed_last_access: Record<string, string> }> = {}
+  for (const f of (feedsRes?.data ?? []) as { id: string; feed_token: string | null; feed_last_access: Record<string, string> | null }[]) {
+    feedMap[f.id] = { feed_token: f.feed_token, feed_last_access: f.feed_last_access ?? {} }
+  }
+
   const companies: CompanyRow[] = ((companiesRes.data ?? []) as any[]).map((c) => ({
     id: c.id,
     nombre: c.nombre,
@@ -67,6 +75,8 @@ async function loadData() {
     trial_ends_at: c.trial_ends_at ?? null,
     current_period_end: c.current_period_end ?? null,
     addons: addonMap[c.id] ?? [],
+    feed_token: feedMap[c.id]?.feed_token ?? null,
+    feed_last_access: feedMap[c.id]?.feed_last_access ?? {},
     propiedades: propMap[c.id] ?? 0,
     contactos: contactMap[c.id] ?? 0,
     agentes: agentMap[c.id] ?? 0,

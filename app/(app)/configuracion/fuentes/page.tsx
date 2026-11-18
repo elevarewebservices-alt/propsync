@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator'
 import { RestrictedAccess } from '@/components/shared/RestrictedAccess'
 import { useSessionPermissions } from '@/hooks/useSessionPermissions'
 import { Eye, EyeOff, RefreshCw, CheckCircle2, AlertCircle, Loader2, Save, Copy, RefreshCcw } from 'lucide-react'
+import { FEED_PORTALS } from '@/lib/portal-feed'
 
 interface FuentesState {
   wasi_company_id: string
@@ -16,6 +17,9 @@ interface FuentesState {
   last_wasi_sync_at: string | null
   meta_webhook_token: string | null
   tiktok_webhook_token: string | null
+  feed_token: string | null
+  feed_last_access: Record<string, string>
+  feed_counts: Record<string, number>
 }
 
 export default function FuentesPage() {
@@ -27,6 +31,7 @@ export default function FuentesPage() {
   const [data, setData] = useState<FuentesState>({
     wasi_company_id: '', wasi_token_set: false, last_wasi_sync_at: null,
     meta_webhook_token: null, tiktok_webhook_token: null,
+    feed_token: null, feed_last_access: {}, feed_counts: {},
   })
   const [companyIdInput, setCompanyIdInput] = useState('')
   const [tokenInput, setTokenInput] = useState('')
@@ -96,6 +101,18 @@ export default function FuentesPage() {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(type === 'meta' ? { generate_meta_token: true } : { generate_tiktok_token: true }),
+    })
+    if (r.ok) await loadData()
+  }
+
+  async function generateFeedToken() {
+    if (data.feed_token && !window.confirm(
+      'Al regenerar, las URLs actuales dejan de funcionar y los portales dejarán de recibir tus propiedades hasta que les envíes las nuevas. ¿Continuar?'
+    )) return
+    const r = await fetch('/api/configuracion/fuentes', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ generate_feed_token: true }),
     })
     if (r.ok) await loadData()
   }
@@ -200,6 +217,18 @@ export default function FuentesPage() {
         </div>
       </div>
 
+      {/* Portal XML feeds */}
+      <PortalFeedCard
+        origin={origin}
+        token={data.feed_token}
+        lastAccess={data.feed_last_access ?? {}}
+        counts={data.feed_counts ?? {}}
+        onGenerate={generateFeedToken}
+        copied={copiedKey}
+        onCopy={(text, key) => copyToClipboard(text, key)}
+        loading={loading}
+      />
+
       {/* Meta Leads */}
       <WebhookTokenCard
         title="Meta Lead Ads"
@@ -294,6 +323,88 @@ function WebhookTokenCard({
       ) : (
         <Button size="sm" onClick={onGenerate} disabled={loading} className="gap-2">
           Generar URL de webhook
+        </Button>
+      )}
+    </div>
+  )
+}
+
+function formatAccess(iso: string | undefined): string {
+  if (!iso) return 'El portal aún no lo ha leído'
+  return 'Leído por el portal: ' + new Date(iso).toLocaleString('es-PA', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  })
+}
+
+function PortalFeedCard({
+  origin, token, lastAccess, counts, onGenerate, copied, onCopy, loading,
+}: {
+  origin: string
+  token: string | null
+  lastAccess: Record<string, string>
+  counts: Record<string, number>
+  onGenerate: () => void
+  copied: string | null
+  onCopy: (text: string, key: string) => void
+  loading: boolean
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-foreground">Portales inmobiliarios (feed XML)</h2>
+        {token ? (
+          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+            <CheckCircle2 className="h-3 w-3 mr-1" /> Activo
+          </Badge>
+        ) : (
+          <Badge variant="secondary">No configurado</Badge>
+        )}
+      </div>
+      <Separator />
+      <p className="text-sm text-muted-foreground">
+        Cada portal lee automáticamente su URL (normalmente una vez al día) y publica las propiedades
+        <strong className="text-foreground font-medium"> activas o destacadas, disponibles</strong> y marcadas para ese portal en
+        &ldquo;Lugares de publicación&rdquo;. Los cambios que hagas aquí aparecen en el portal en su siguiente lectura (hasta 24 h).
+      </p>
+
+      {token ? (
+        <div className="space-y-4">
+          {FEED_PORTALS.map((p) => {
+            const url = `${origin}/feeds/${token}/${p.id}.xml`
+            const key = `feed-${p.id}`
+            return (
+              <div key={p.id} className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs">{p.nombre}</Label>
+                  <span className="text-xs text-muted-foreground">
+                    {counts[p.id] ?? 0} {(counts[p.id] ?? 0) === 1 ? 'propiedad' : 'propiedades'}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Input value={url} readOnly className="font-mono text-xs h-8" />
+                  <Button variant="outline" size="sm" className="h-8 shrink-0 gap-1.5" onClick={() => onCopy(url, key)}>
+                    {copied === key ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+                {p.id !== 'todos' && (
+                  <p className="text-[11px] text-muted-foreground">{formatAccess(lastAccess[p.id])}</p>
+                )}
+              </div>
+            )
+          })}
+          <p className="text-xs text-muted-foreground">
+            Envía la URL de cada portal a su equipo de integraciones (o pídele a Elevare que lo haga por ti).
+            No la publiques: cualquiera con la URL puede ver las propiedades que incluye.
+          </p>
+          <div className="flex justify-end">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground" onClick={onGenerate}>
+              <RefreshCcw className="h-3 w-3" /> Regenerar URLs
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button size="sm" onClick={onGenerate} disabled={loading} className="gap-2">
+          Generar URLs de feed
         </Button>
       )}
     </div>
