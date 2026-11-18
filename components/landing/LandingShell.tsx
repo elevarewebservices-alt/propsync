@@ -74,7 +74,7 @@ export function LandingShell({ children, lang: initialLang = 'es' }: { children:
         .amber-grad { background:none; -webkit-text-fill-color:currentColor; color:var(--ml-fg); }
         .pill-cta { background:var(--ml-fg); color:var(--ml-bg); border-radius:.375rem; font-weight:500; font-family:${F}; transition:opacity .2s ease; display:inline-flex; align-items:center; gap:7px; }
         .pill-cta:hover { opacity:.86; }
-        .nav-pill { background:transparent; border:1px solid var(--ml-border); border-radius:.375rem; display:flex; align-items:center; padding:4px 6px; gap:2px; }
+        .nav-pill { background:transparent; border:1px solid var(--ml-border); border-radius:.375rem; align-items:center; padding:4px 6px; gap:2px; } /* display comes from Tailwind "hidden md:flex" — setting it here showed the pill on phones over the logo */
         .nav-link { padding:6px 12px; border-radius:.25rem; font-size:.8rem; font-weight:400; color:var(--ml-muted); transition:all .2s; white-space:nowrap; text-decoration:none; }
         .nav-link:hover { color:var(--ml-fg); background:oklch(1 0 0 / 6%); }
         .nav-link-active { color:var(--ml-fg); background:oklch(1 0 0 / 8%); }

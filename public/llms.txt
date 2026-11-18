@@ -20,8 +20,11 @@ modalidad White Label para empresas que quieren operarla bajo su propia marca.
   inmuebles que encajan con lo que busca cada cliente.
 - **Tours virtuales 360°**: se suben fotos normales y panorámicas, se genera
   una página pública compartible y un iframe embebible en sitios externos.
-- **Publicación en portales**: Encuentra24, Compre o Alquile y página web
-  propia de la agencia.
+- **Publicación en portales**: cada agencia obtiene un feed XML privado por
+  portal (Encuentra24, Compre o Alquile). Se marca en qué portales sale cada
+  propiedad y el portal la publica y actualiza en su siguiente lectura
+  (normalmente menos de 24 h); lo vendido, alquilado o desactivado sale solo.
+  Cada propiedad tiene además su página web pública y su ficha PDF.
 - **WhatsApp y marketing**: plantillas de mensajes, campañas y automatización
   de seguimiento (add-on).
 
@@ -36,12 +39,26 @@ modalidad White Label para empresas que quieren operarla bajo su propia marca.
   solo redacta descripciones.
 - Disponible en **White Label** para operar bajo marca propia.
 
+## Preguntas frecuentes
+
+- **¿Sirve para un agente independiente?** Sí: el plan Individual es para un
+  usuario (hasta 50 propiedades, CRM, IA y portales). El plan Pro es para
+  equipos (propiedades ilimitadas, varios usuarios, API).
+- **¿Cuánto cuesta?** Cotización según plan y tamaño del equipo. Todas las
+  cuentas empiezan con 15 días de prueba gratis sin tarjeta de crédito.
+- **¿Se puede probar sin registrarse?** Sí, en la demo pública
+  (https://www.propsyncia.com/demo), con datos de ejemplo que se reinician a diario.
+- **¿Hay que instalar algo?** No, funciona en el navegador (computadora y
+  celular). App para iPhone y Android en camino.
+
 ## Enlaces
 
 - Sitio: https://www.propsyncia.com
 - Plataforma: https://www.propsyncia.com/plataforma
 - Inteligencia artificial: https://www.propsyncia.com/ia
 - Marketing y leads: https://www.propsyncia.com/marketing
+- Demo pública: https://www.propsyncia.com/demo
+- Tour virtual de ejemplo: https://www.propsyncia.com/tour/demo
 - Planes y cotización: https://www.propsyncia.com/precios
 - Contacto: https://www.propsyncia.com/contacto
 

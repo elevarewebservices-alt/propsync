@@ -90,7 +90,7 @@ export default function DemoPage() {
             Pruébalo <span className="amber-grad" style={{ fontWeight: 700 }}>sin registrarte.</span>
           </h1>
           <p style={{ marginTop: '1.25rem', fontSize: '1.05rem', lineHeight: 1.75, color: 'rgba(255,255,255,.45)', fontFamily: F, fontWeight: 300 }}>
-            Entra a una inmobiliaria de ejemplo con propiedades y clientes reales de muestra.
+            Entra a una inmobiliaria de ejemplo con propiedades y clientes de muestra.
             Crea, edita y mueve leads por el embudo — los datos se reinician cada día.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4" style={{ marginTop: '2rem' }}>

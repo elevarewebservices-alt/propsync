@@ -9,17 +9,17 @@ import { isNativeApp } from '@/lib/native'
 // ── Translations ─────────────────────────────────────────────────────────────
 const T = {
   es: {
-    badge: 'Base de datos · CRM · IA — todo en uno',
+    badge: 'CRM inmobiliario con IA · Hecho en Panamá',
     h1: 'Tu agencia,',
     cycle: ['Centralizada.', 'Con CRM nativo.', 'Potenciada con IA.'],
-    sub: 'PropSync es la plataforma integral de marketing, ventas y comunicación diseñada para inmobiliarias. Un solo lugar para gestionar todo tu negocio.',
+    sub: 'PropSync es el CRM inmobiliario con IA para Panamá: tu inventario, tus clientes y la publicación en Encuentra24 y Compre o Alquile, en una sola plataforma.',
     cta: 'Comenzar gratis',
-    demo: 'Ver demo',
-    nav: { platform: 'Plataforma', marketing: 'Marketing', ai: 'IA', pricing: 'Precios', contact: 'Contacto' },
+    demo: 'Probar la demo',
+    nav: { platform: 'Plataforma', marketing: 'Funciones', ai: 'IA', portals: 'Portales', faq: 'Preguntas', pricing: 'Planes', contact: 'Contacto' },
     stats: [
-      { val: '10×', label: 'Más rápido', sub: 'que gestión manual' },
-      { val: '100%', label: 'Centralizado', sub: 'en una sola plataforma' },
-      { val: '24/7', label: 'Activo', sub: 'con automatización IA' },
+      { val: 'Encuentra24', label: 'y Compre o Alquile', sub: 'publicación automática por feed' },
+      { val: '15 días', label: 'Prueba gratis', sub: 'sin tarjeta de crédito' },
+      { val: '360°', label: 'Tours virtuales', sub: 'incluidos en cada propiedad' },
     ],
 
     // Platform statement
@@ -123,7 +123,7 @@ const T = {
       { n: '02', t: 'Construye tu inventario', b: 'Cada propiedad tiene ficha completa: fotos, precio, área, tour 360°, notas y historial. Sin duplicados, siempre actualizado.' },
       { n: '03', t: 'Captura y gestiona leads', b: 'Los leads llegan desde tu web, Meta Ads o manualmente. El CRM Kanban los organiza: Nuevo → Contactado → Visita → Oferta → Cerrado.' },
       { n: '04', t: 'Automatiza el seguimiento', b: 'Notificaciones por email, recordatorios automáticos y alertas de seguimiento. Tu equipo siempre sabe qué hacer y cuándo.' },
-      { n: '05', t: 'Publica y cierra', b: 'Publica en portales con un clic, comparte tours 360° y accede a reportes de conversión en tiempo real para optimizar tu pipeline.' },
+      { n: '05', t: 'Publica y cierra', b: 'Marca en qué portales sale cada propiedad y Encuentra24 y Compre o Alquile la toman de tu feed automáticamente. Comparte tours 360° y mide qué fuente te trae más cierres.' },
     ],
 
     // Contact
@@ -170,20 +170,45 @@ const T = {
       },
     ] as { icon: string; tag: string; name: string; description: string; includes: string[]; cta: string }[],
     addonsNote: 'Gestionado por Elevare · Alcance definido según configuración',
+
+    // Portal publishing
+    portalsBadge: 'Publicación en portales',
+    portalsTitle: 'Publica en Encuentra24 y Compre o Alquile sin copiar y pegar.',
+    portalsSub: 'PropSync genera un feed XML privado para cada portal. Marcas en qué portales sale cada propiedad y el portal la toma automáticamente en su siguiente lectura, normalmente una vez al día. Si la vendes, la alquilas o la desactivas, sale de los portales sola. Fotos, precio, ubicación, características y tour 360° viajan con cada anuncio.',
+    portalsSteps: [
+      { t: 'Marca los portales', b: 'En cada propiedad eliges Encuentra24, Compre o Alquile o ambos.' },
+      { t: 'El portal lee tu feed', b: 'Cada portal consulta tu URL privada y publica o actualiza tus anuncios.' },
+      { t: 'Todo se mantiene al día', b: 'Precio, fotos y disponibilidad se actualizan solos; lo vendido desaparece.' },
+    ],
+    portalsNote: 'La conexión se activa una vez por portal con tu cuenta de agencia. El equipo de Elevare te acompaña en el proceso.',
+    portalsMock: { title: 'Lugares de publicación', live: 'En el feed', sold: 'Vendida · fuera del feed' },
+
+    // FAQ
+    faqBadge: 'Preguntas frecuentes',
+    faqTitle: 'Lo que las inmobiliarias nos preguntan',
+    faq: [
+      { q: '¿Qué es PropSync?', a: 'PropSync es un CRM inmobiliario con inteligencia artificial hecho para agencias y agentes independientes en Panamá. Reúne en una sola plataforma la base de datos de propiedades, el CRM de clientes con embudo Kanban, tours virtuales 360°, un asistente con IA y la publicación en Encuentra24 y Compre o Alquile. Lo desarrolla Elevare, una empresa panameña.' },
+      { q: '¿PropSync publica en Encuentra24 y Compre o Alquile?', a: 'Sí. Cada agencia obtiene un feed XML privado por portal. Marcas los portales en cada propiedad y el portal la publica y actualiza en su siguiente lectura, normalmente en menos de 24 horas. Las propiedades vendidas, alquiladas o desactivadas salen del feed automáticamente.' },
+      { q: '¿Sirve para un agente independiente?', a: 'Sí. El plan Individual está pensado para un solo usuario: hasta 50 propiedades, CRM, asistente con IA y conexión a portales. Los equipos usan el plan Pro, con propiedades ilimitadas, varios usuarios y API de integración.' },
+      { q: '¿Cuánto cuesta PropSync?', a: 'El precio se cotiza según el plan (Individual o Pro) y el tamaño de tu equipo. Todas las cuentas empiezan con 15 días de prueba gratis, sin tarjeta de crédito. Escríbenos y te enviamos una propuesta para tu agencia.' },
+      { q: '¿Puedo migrar mis propiedades desde Wasi u otro sistema?', a: 'Sí. PropSync importa tu inventario desde Wasi con sincronización diaria automática, desde cualquier archivo XML de propiedades y tus contactos desde CSV. No tienes que volver a cargar tu cartera a mano.' },
+      { q: '¿Necesito instalar algo?', a: 'No. PropSync funciona en el navegador, en computadora y en celular, sin instalaciones. La app para iPhone y Android está en camino.' },
+      { q: '¿Puedo verlo antes de registrarme?', a: 'Sí. La demo pública te deja entrar a una inmobiliaria de ejemplo con propiedades y clientes de muestra, sin registrarte. Los datos se reinician cada día, así que puedes crear, editar y mover leads con libertad.' },
+    ],
   },
 
   en: {
-    badge: 'Database · CRM · AI — all in one',
+    badge: 'AI real-estate CRM · Built in Panama',
     h1: 'Your agency,',
     cycle: ['Centralized.', 'With native CRM.', 'AI-powered.'],
-    sub: 'PropSync is the all-in-one marketing, sales, and client communication platform designed for real estate agencies. One place to run your entire business.',
+    sub: 'PropSync is the AI-powered real-estate CRM for Panama: your inventory, your clients and publishing to Encuentra24 and Compre o Alquile, in a single platform.',
     cta: 'Start for free',
-    demo: 'Watch demo',
-    nav: { platform: 'Platform', marketing: 'Marketing', ai: 'AI', pricing: 'Pricing', contact: 'Contact' },
+    demo: 'Try the live demo',
+    nav: { platform: 'Platform', marketing: 'Features', ai: 'AI', portals: 'Portals', faq: 'FAQ', pricing: 'Plans', contact: 'Contact' },
     stats: [
-      { val: '10×', label: 'Faster', sub: 'than manual management' },
-      { val: '100%', label: 'Centralized', sub: 'in a single platform' },
-      { val: '24/7', label: 'Active', sub: 'with AI automation' },
+      { val: 'Encuentra24', label: '& Compre o Alquile', sub: 'automatic feed publishing' },
+      { val: '15 days', label: 'Free trial', sub: 'no credit card' },
+      { val: '360°', label: 'Virtual tours', sub: 'included with every listing' },
     ],
 
     platformBadge: 'Integral platform',
@@ -281,7 +306,7 @@ const T = {
       { n: '02', t: 'Build your inventory', b: 'Every property has a complete profile: photos, price, area, 360° tour, notes, and history. No duplicates, always up to date.' },
       { n: '03', t: 'Capture and manage leads', b: 'Leads arrive from your website, Meta Ads, or manually. The Kanban CRM organizes them: New → Contacted → Visit → Offer → Closed.' },
       { n: '04', t: 'Automate follow-ups', b: 'Email notifications, automatic reminders, and follow-up alerts. Your team always knows what to do and when.' },
-      { n: '05', t: 'Publish and close', b: 'Publish to portals in one click, share 360° tours with clients, and access real-time conversion reports to optimize your pipeline.' },
+      { n: '05', t: 'Publish and close', b: 'Choose which portals each listing goes to and Encuentra24 and Compre o Alquile pick it up from your feed automatically. Share 360° tours and see which source closes the most deals.' },
     ],
 
     // Contact
@@ -328,6 +353,31 @@ const T = {
       },
     ] as { icon: string; tag: string; name: string; description: string; includes: string[]; cta: string }[],
     addonsNote: 'Managed by Elevare · Scope defined per configuration',
+
+    // Portal publishing
+    portalsBadge: 'Portal publishing',
+    portalsTitle: 'Publish to Encuentra24 and Compre o Alquile without copy-pasting.',
+    portalsSub: 'PropSync generates a private XML feed for each portal. You choose which portals each listing goes to and the portal picks it up automatically on its next read, usually once a day. Sell it, rent it or deactivate it and it leaves the portals on its own. Photos, price, location, features and the 360° tour travel with every listing.',
+    portalsSteps: [
+      { t: 'Pick the portals', b: 'On each listing choose Encuentra24, Compre o Alquile or both.' },
+      { t: 'The portal reads your feed', b: 'Each portal fetches your private URL and publishes or updates your listings.' },
+      { t: 'Everything stays current', b: 'Price, photos and availability update themselves; sold listings disappear.' },
+    ],
+    portalsNote: 'The connection is activated once per portal with your agency account. The Elevare team walks you through it.',
+    portalsMock: { title: 'Publishing channels', live: 'In feed', sold: 'Sold · out of feed' },
+
+    // FAQ
+    faqBadge: 'FAQ',
+    faqTitle: 'What agencies ask us',
+    faq: [
+      { q: 'What is PropSync?', a: 'PropSync is an AI-powered real-estate CRM built for agencies and independent agents in Panama. It brings together the property database, a client CRM with a Kanban pipeline, 360° virtual tours, an AI assistant and publishing to Encuentra24 and Compre o Alquile. It is built by Elevare, a Panamanian company.' },
+      { q: 'Does PropSync publish to Encuentra24 and Compre o Alquile?', a: 'Yes. Every agency gets a private XML feed per portal. Mark the portals on each listing and the portal publishes and updates it on its next read, usually within 24 hours. Sold, rented or deactivated listings leave the feed automatically.' },
+      { q: 'Does it work for an independent agent?', a: 'Yes. The Individual plan is built for a single user: up to 50 listings, CRM, AI assistant and portal connection. Teams use the Pro plan, with unlimited listings, multiple users and an integration API.' },
+      { q: 'How much does PropSync cost?', a: 'Pricing is quoted by plan (Individual or Pro) and team size. Every account starts with a 15-day free trial, no credit card required. Write to us and we will send a proposal for your agency.' },
+      { q: 'Can I migrate my listings from Wasi or another system?', a: 'Yes. PropSync imports your inventory from Wasi with automatic daily sync, from any property XML file, and your contacts from CSV. No need to re-enter your portfolio by hand.' },
+      { q: 'Do I need to install anything?', a: 'No. PropSync runs in the browser, on desktop and mobile, with nothing to install. The iPhone and Android app is on the way.' },
+      { q: 'Can I see it before signing up?', a: 'Yes. The public demo lets you into a sample agency with example listings and clients, no sign-up needed. Data resets every day, so you can create, edit and move leads freely.' },
+    ],
   },
 }
 type Lang = 'es' | 'en'
@@ -490,6 +540,14 @@ export default function LandingPage() {
                 parentOrganization: { '@type': 'Organization', name: 'Elevare Tech & Marketing', url: 'https://elevarewebservices.com' },
               },
               {
+                '@type': 'WebSite',
+                '@id': 'https://www.propsyncia.com/#website',
+                url: 'https://www.propsyncia.com',
+                name: 'PropSync',
+                inLanguage: 'es-PA',
+                publisher: { '@id': 'https://www.propsyncia.com/#org' },
+              },
+              {
                 '@type': 'SoftwareApplication',
                 name: 'PropSync',
                 url: 'https://www.propsyncia.com',
@@ -518,7 +576,7 @@ export default function LandingPage() {
                   'CRM inmobiliario con pipeline Kanban configurable',
                   'Asistente con inteligencia artificial sobre el inventario y el CRM',
                   'Tours virtuales 360° embebibles',
-                  'Publicación en Encuentra24 y Compre o Alquile',
+                  'Publicación automática en Encuentra24 y Compre o Alquile mediante feed XML',
                   'Importación desde Wasi y desde feeds XML',
                   'Automatización de seguimiento por WhatsApp',
                   'API REST de integración',
@@ -536,6 +594,8 @@ export default function LandingPage() {
         }}
       />
       <style suppressHydrationWarning>{`
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-item[open] .faq-plus { transform: rotate(45deg); }
         /* ── Monoline: cero croma ──────────────────────────────────────────
            Todos los tokens son oklch con C=0. No hay color en toda la página;
            la única excepción viva es el logo, que es un PNG y conserva el
@@ -581,7 +641,7 @@ export default function LandingPage() {
         .ghost-cta { color:var(--ml-muted); transition:color .2s; display:inline-flex; align-items:center; gap:8px; }
         .ghost-cta:hover { color:var(--ml-fg); }
 
-        .nav-pill { background:transparent; border:1px solid var(--ml-border); border-radius:.375rem; display:flex; align-items:center; padding:4px 6px; gap:2px; }
+        .nav-pill { background:transparent; border:1px solid var(--ml-border); border-radius:.375rem; align-items:center; padding:4px 6px; gap:2px; } /* display comes from Tailwind "hidden md:flex" — setting it here showed the pill on phones over the logo */
         .nav-link { padding:6px 12px; border-radius:.25rem; font-size:.8rem; font-weight:400; color:var(--ml-muted); transition:all .2s; white-space:nowrap; }
         .nav-link:hover { color:var(--ml-fg); background:oklch(1 0 0 / 6%); }
 
@@ -624,9 +684,10 @@ export default function LandingPage() {
             <div className="nav-pill hidden md:flex">
               <a href="#platform" className="nav-link">{t.nav.platform}</a>
               <a href="#features" className="nav-link">{t.nav.marketing}</a>
-              <a href="#features" className="nav-link">{t.nav.ai}</a>
+              <a href="#portales" className="nav-link">{t.nav.portals}</a>
               <a href="#pricing" className="nav-link">{t.nav.pricing}</a>
-              <a href="#contact" className="nav-link">{t.nav.contact}</a>
+              <a href="#faq" className="nav-link">{t.nav.faq}</a>
+              <Link href="/demo" className="nav-link">Demo</Link>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={toggleLang} className="text-xs px-3 py-1.5 rounded-md transition-colors"
@@ -661,12 +722,12 @@ export default function LandingPage() {
         </div>
         <h1 style={{ marginTop: '1.75rem', fontSize: 'clamp(3.2rem,9vw,6.5rem)', fontWeight: 200, letterSpacing: '-.04em', lineHeight: 1.05, animation: 'fadeUp .65s .15s ease both', opacity: 0, fontFamily: F }}>
           {t.h1}
-        </h1>
-        <div style={{ marginTop: '.12em' }}>
-          <h2 className="amber-grad" style={{ fontSize: 'clamp(3.2rem,9vw,6.5rem)', fontWeight: 700, letterSpacing: '-.04em', lineHeight: 1.05, fontFamily: F, opacity: cycleFade ? 1 : 0, transition: 'opacity .38s ease' }}>
+          {/* One H1 for crawlers: the cycling word is part of the heading, not
+              a separate H2. aria-live off so screen readers aren't spammed. */}
+          <span className="amber-grad" aria-live="off" style={{ display: 'block', marginTop: '.12em', fontWeight: 700, opacity: cycleFade ? 1 : 0, transition: 'opacity .38s ease' }}>
             {t.cycle[cycleIdx]}
-          </h2>
-        </div>
+          </span>
+        </h1>
         <p style={{ marginTop: '1.5rem', maxWidth: '520px', fontSize: '1rem', lineHeight: 1.78, color: 'rgba(255,255,255,.38)', animation: 'fadeUp .65s .35s ease both', opacity: 0, fontFamily: F, fontWeight: 300 }}>
           {t.sub}
         </p>
@@ -688,11 +749,11 @@ export default function LandingPage() {
             {t.stats.map((stat, i) => (
               <div
                 key={i}
-                className="text-left"
+                className={`text-left ${i < 2 ? 'sm:border-r' : ''}`}
                 style={{
                   padding: '1.25rem 1.25rem 1.5rem',
                   borderBottom: '1px solid var(--ml-border)',
-                  borderRight: i < 2 ? '1px solid var(--ml-border)' : undefined,
+                  borderColor: 'var(--ml-border)',
                 }}
               >
                 <div style={{ fontSize: '1.6rem', fontWeight: 600, letterSpacing: '-.03em', fontFamily: F }}>{stat.val}</div>
@@ -729,7 +790,7 @@ export default function LandingPage() {
       <section id="features" className="ml-section px-6" style={{ zIndex: 10, position: 'relative' }}>
         <div className="max-w-5xl mx-auto">
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' as const }}>
+          <div role="tablist" style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' as const }}>
             {([
               lang === 'es' ? 'Marketing & Leads' : 'Marketing & Leads',
               lang === 'es' ? 'Asistente IA' : 'AI Assistant',
@@ -737,7 +798,7 @@ export default function LandingPage() {
               'Web + API',
               'Add-ons',
             ] as string[]).map((label, i) => (
-              <button key={i}
+              <button key={i} role="tab" aria-selected={featureTab === i}
                 onClick={() => { switchTab(i); pausedUntilRef.current = Date.now() + 12000 }}
                 style={{ whiteSpace: 'nowrap', padding: '7px 18px', borderRadius: 9999, fontSize: '.78rem', fontFamily: F, border: 'none', cursor: 'pointer', background: featureTab === i ? 'oklch(1 0 0 / 6%)' : 'transparent', color: featureTab === i ? 'oklch(0.985 0 0)' : 'rgba(255,255,255,.35)', transition: 'all .2s', outline: 'none' }}>
                 {label}
@@ -753,7 +814,7 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-2 gap-10 items-center">
               {/* Left: text */}
               <div>
-                {featureTab === 0 && (<>
+                <div hidden={featureTab !== 0}>
                   <span className="section-label">{lang === 'es' ? 'Marketing & Leads' : 'Marketing & Leads'}</span>
                   <h2 className="h2" style={{ marginBottom: '1rem' }}>{t.mktTitle}</h2>
                   <p className="body-text" style={{ marginBottom: '1.5rem' }}>{t.mktSub}</p>
@@ -764,8 +825,8 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                </>)}
-                {featureTab === 1 && (<>
+                </div>
+                <div hidden={featureTab !== 1}>
                   <span className="section-label">{lang === 'es' ? 'Asistente IA' : 'AI Assistant'}</span>
                   <h2 className="h2" style={{ marginBottom: '1rem' }}>{t.agentTitle}</h2>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: '1rem', padding: '4px 12px', borderRadius: 9999, background: 'transparent', border: '1px solid oklch(1 0 0 / 20%)' }}>
@@ -780,8 +841,8 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                </>)}
-                {featureTab === 2 && (<>
+                </div>
+                <div hidden={featureTab !== 2}>
                   <span className="section-label">{t.tourBadge}</span>
                   <h2 className="h2" style={{ marginBottom: '1rem' }}>{t.tourTitle}</h2>
                   <p className="body-text" style={{ marginBottom: '1.5rem' }}>{t.tourSub}</p>
@@ -792,8 +853,8 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                </>)}
-                {featureTab === 3 && (<>
+                </div>
+                <div hidden={featureTab !== 3}>
                   <span className="section-label">{lang === 'es' ? 'Integraciones' : 'Integrations'}</span>
                   <h2 className="h2" style={{ marginBottom: '1rem' }}>{t.webApiTitle}</h2>
                   <p className="body-text" style={{ marginBottom: '1.5rem' }}>{t.webApiSub}</p>
@@ -804,17 +865,17 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                </>)}
-                {featureTab === 4 && (<>
+                </div>
+                <div hidden={featureTab !== 4}>
                   <span className="section-label">{t.addonsBadge}</span>
                   <h2 className="h2" style={{ marginBottom: '1rem' }}>{t.addonsTitle}</h2>
                   <p className="body-text" style={{ marginBottom: '1.5rem' }}>{t.addonsSub}</p>
                   <p style={{ fontSize: '.73rem', color: 'rgba(255,255,255,.2)', fontFamily: F, marginTop: '.5rem' }}>{t.addonsNote}</p>
-                </>)}
+                </div>
               </div>
               {/* Right: visual */}
               <div>
-                {featureTab === 0 && (
+                <div hidden={featureTab !== 0}>
                   <div style={{ position: 'relative' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem', position: 'relative' }}>
                       {t.mktNoti.map((n, i) => (
@@ -833,8 +894,8 @@ export default function LandingPage() {
                       </div>
                     </div>
                   </div>
-                )}
-                {featureTab === 1 && (
+                </div>
+                <div hidden={featureTab !== 1}>
                   <div style={{ maxWidth: 310, margin: '0 auto', position: 'relative' }}>
                     <div className="rounded-3xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,.12)', background: 'oklch(0.17 0 0)', position: 'relative' }}>
                       <div style={{ background: 'oklch(0.21 0 0)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid rgba(255,255,255,.07)' }}>
@@ -863,8 +924,8 @@ export default function LandingPage() {
                       </div>
                     </div>
                   </div>
-                )}
-                {featureTab === 2 && (
+                </div>
+                <div hidden={featureTab !== 2}>
                   <div style={{ position: 'relative' }}>
                     <div style={{ borderRadius: '1.5rem', overflow: 'hidden', border: '1px solid rgba(255,255,255,.12)', background: 'oklch(0.16 0 0)' }}>
                       <div style={{ height: 260, position: 'relative', overflow: 'hidden', background: 'oklch(0.19 0 0)' }}>
@@ -899,8 +960,8 @@ export default function LandingPage() {
                       </div>
                     </div>
                   </div>
-                )}
-                {featureTab === 3 && (
+                </div>
+                <div hidden={featureTab !== 3}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div className="code-block">
                       <div className="terminal-bar"><span className="dot-r"/><span className="dot-y"/><span className="dot-g"/>
@@ -915,8 +976,8 @@ export default function LandingPage() {
                       <pre>{`<span class="val">curl</span> https://propsyncia.com/api/v1/properties \\\n  -H <span class="str">"Authorization: Bearer {api_key}"</span> \\\n  -G -d <span class="str">"limit=50"</span> -d <span class="str">"offset=0"</span>`}</pre>
                     </div>
                   </div>
-                )}
-                {featureTab === 4 && (
+                </div>
+                <div hidden={featureTab !== 4}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {t.addons.map((addon, i) => (
                       <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', paddingTop: '1.25rem', borderTop: '1px solid var(--ml-border)' }}>
@@ -932,10 +993,86 @@ export default function LandingPage() {
                       </div>
                     ))}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── Portal publishing ───────────────────────────────────────────── */}
+      <section id="portales" className="ml-section px-6" style={{ zIndex: 10, position: 'relative' }}>
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <Reveal>
+            <span className="section-label">{t.portalsBadge}</span>
+            <h2 className="h2" style={{ marginBottom: '1rem' }}>{t.portalsTitle}</h2>
+            <p className="body-text" style={{ marginBottom: '1.75rem' }}>{t.portalsSub}</p>
+            <ol style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+              {t.portalsSteps.map((step, i) => (
+                <li key={i} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '.7rem', fontFamily: F, color: 'var(--ml-muted)', border: '1px solid var(--ml-border)', borderRadius: 9999, width: 26, height: 26, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
+                  <div>
+                    <h3 style={{ fontSize: '.95rem', fontWeight: 500, fontFamily: F, marginBottom: 2 }}>{step.t}</h3>
+                    <p style={{ fontSize: '.85rem', color: 'rgba(255,255,255,.45)', fontFamily: F, fontWeight: 300, lineHeight: 1.6 }}>{step.b}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <p style={{ fontSize: '.75rem', color: 'rgba(255,255,255,.3)', fontFamily: F }}>{t.portalsNote}</p>
+          </Reveal>
+          <Reveal delay={120}>
+            {/* Mock of the property form's "Lugares de publicación" + feed status. */}
+            <div className="rounded-3xl overflow-hidden" style={{ border: '1px solid var(--ml-border)', background: 'oklch(0.17 0 0)' }}>
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--ml-border)', fontSize: '.8rem', fontFamily: F, color: 'rgba(255,255,255,.75)' }}>{t.portalsMock.title}</div>
+              {[
+                { name: 'Apto · Costa del Este · 3 hab', portals: ['Encuentra24', 'Compre o Alquile'], live: true },
+                { name: 'Casa · Clayton · 4 hab', portals: ['Encuentra24'], live: true },
+                { name: 'PH · Punta Pacífica · 2 hab', portals: [] as string[], live: false },
+              ].map((row, i) => (
+                <div key={i} style={{ padding: '14px 18px', borderBottom: i < 2 ? '1px solid var(--ml-border)' : undefined, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: '.8rem', fontFamily: F, color: 'rgba(255,255,255,.85)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.name}</p>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                      {row.portals.length ? row.portals.map((p) => (
+                        <span key={p} style={{ fontSize: '.65rem', fontFamily: F, padding: '2px 9px', borderRadius: 9999, border: '1px solid oklch(1 0 0 / 22%)', color: 'oklch(1 0 0 / 75%)' }}>{p}</span>
+                      )) : <span style={{ fontSize: '.65rem', fontFamily: F, color: 'rgba(255,255,255,.3)' }}>—</span>}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '.65rem', fontFamily: F, flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6, color: row.live ? 'oklch(0.9 0 0)' : 'rgba(255,255,255,.35)' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: row.live ? 'oklch(0.9 0 0)' : 'rgba(255,255,255,.2)' }} />
+                    {row.live ? t.portalsMock.live : t.portalsMock.sold}
+                  </span>
+                </div>
+              ))}
+              <pre style={{ margin: 0, padding: '14px 18px', borderTop: '1px solid var(--ml-border)', fontSize: '.66rem', lineHeight: 1.6, color: 'rgba(255,255,255,.4)', fontFamily: 'ui-monospace, monospace', overflowX: 'auto', background: 'oklch(0.15 0 0)' }}>{`<propiedad>
+  <operacion>venta</operacion>
+  <precio moneda="USD">425000</precio>
+  <imagenes>… 18 fotos …</imagenes>
+  <tour_virtual>propsyncia.com/tour/…</tour_virtual>
+</propiedad>`}</pre>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── How it works ─────────────────────────────────────────────────── */}
+      <section id="como-funciona" className="ml-section px-6" style={{ zIndex: 10, position: 'relative' }}>
+        <div className="max-w-5xl mx-auto">
+          <Reveal>
+            <span className="section-label">{t.howWorksTitle}</span>
+            <h2 className="h2" style={{ marginBottom: '2.5rem', maxWidth: 560 }}>{t.howWorksSub}</h2>
+          </Reveal>
+          <ol className="grid sm:grid-cols-2 lg:grid-cols-5" style={{ borderTop: '1px solid var(--ml-border)' }}>
+            {t.howWorksSteps.map((step, i) => (
+              <li key={step.n} style={{ padding: '1.5rem 1.25rem 1.75rem 0', borderBottom: '1px solid var(--ml-border)' }}>
+                <Reveal delay={i * 60}>
+                  <span style={{ fontSize: '.7rem', color: 'var(--ml-muted)', fontFamily: F, letterSpacing: '.1em' }}>{step.n}</span>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 500, fontFamily: F, margin: '.5rem 0 .4rem', letterSpacing: '-.01em' }}>{step.t}</h3>
+                  <p style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.42)', fontFamily: F, fontWeight: 300, lineHeight: 1.65 }}>{step.b}</p>
+                </Reveal>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
@@ -990,6 +1127,29 @@ export default function LandingPage() {
                   )}
                 </div>
               </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ──────────────────────────────────────────────────────────── */}
+      {/* Native <details>: every answer is in the server HTML (crawlers and AI
+          search read it without JS), and it opens without any client state. */}
+      <section id="faq" className="ml-section px-6" style={{ zIndex: 10, position: 'relative' }}>
+        <div className="max-w-3xl mx-auto">
+          <Reveal>
+            <span className="section-label">{t.faqBadge}</span>
+            <h2 className="h2" style={{ marginBottom: '2rem' }}>{t.faqTitle}</h2>
+          </Reveal>
+          <div style={{ borderTop: '1px solid var(--ml-border)' }}>
+            {t.faq.map((item, i) => (
+              <details key={i} className="faq-item" open={i === 0} style={{ borderBottom: '1px solid var(--ml-border)' }}>
+                <summary style={{ cursor: 'pointer', listStyle: 'none', padding: '1.15rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 500, fontFamily: F, letterSpacing: '-.01em' }}>{item.q}</h3>
+                  <span aria-hidden className="faq-plus" style={{ fontSize: '1.1rem', color: 'var(--ml-muted)', flexShrink: 0, transition: 'transform .2s' }}>+</span>
+                </summary>
+                <p style={{ fontSize: '.9rem', color: 'rgba(255,255,255,.5)', fontFamily: F, fontWeight: 300, lineHeight: 1.75, paddingBottom: '1.25rem', maxWidth: 680 }}>{item.a}</p>
+              </details>
             ))}
           </div>
         </div>
@@ -1203,7 +1363,9 @@ export default function LandingPage() {
               <ul style={{ display: 'flex', flexDirection: 'column', gap: '.55rem' }}>
                 <li><a href="#platform" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.nav.platform}</a></li>
                 <li><a href="#features" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.nav.marketing}</a></li>
-                <li><a href="#features" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.nav.ai}</a></li>
+                <li><a href="#portales" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.nav.portals}</a></li>
+                <li><Link href="/demo" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>Demo</Link></li>
+                <li><a href="#faq" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.nav.faq}</a></li>
                 <li><a href="#pricing" style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.55)', fontFamily: F, fontWeight: 300, textDecoration: 'none' }}>{t.nav.pricing}</a></li>
               </ul>
             </div>

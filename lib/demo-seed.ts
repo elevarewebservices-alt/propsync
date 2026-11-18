@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import { createAdminClient } from './supabase'
 import { seedDefaultCrm } from './provision'
@@ -138,6 +139,18 @@ export async function resetDemoData(): Promise<DemoSeedResult> {
   await (db.from('companies') as any)
     .update({ nombre: DEMO_COMPANY_NAME, plan_id: 'pro', subscription_status: 'active', subscription_provider: null, current_period_end: null })
     .eq('id', companyId)
+
+  // Give the demo agency portal feed URLs (Configuración → Fuentes) so a live
+  // Encuentra24 / Compre o Alquile XML feed can be shown in sales calls. Kept
+  // stable across resets; separate update so a missing migration 031 column
+  // only skips this instead of failing the whole reset.
+  const { data: feedRow } = await (db.from('companies') as any)
+    .select('feed_token').eq('id', companyId).maybeSingle()
+    .then((r: any) => r, () => ({ data: null }))
+  if (feedRow && !feedRow.feed_token) {
+    await (db.from('companies') as any).update({ feed_token: randomUUID() }).eq('id', companyId)
+      .then(() => null, () => null)
+  }
 
   // Visitors might have invited/deactivated teammates via PostgREST; keep only the owner.
   await (db.from('agents') as any).delete().eq('company_id', companyId).neq('id', agentId)

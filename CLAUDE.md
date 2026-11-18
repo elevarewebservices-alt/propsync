@@ -155,33 +155,19 @@ Read operations (`.select()`) do NOT need the cast — types resolve correctly.
 
 ## Landing Page (`app/page.tsx`)
 
-Public-facing marketing page. **Does NOT use the app shell layout.**
-
-### Design
-- Font: `Outfit` (`var(--font-outfit)`) — ultra-thin weights (200) for display text
-- Background: `#06060d` (void black) with iridescent CSS sphere hero
-- Color accent: amber `#fbbf24` → coral `#fb923c` → fuchsia `#e879f9` → indigo `#818cf8`
-- Glassmorphism cards: `rgba(255,255,255,.042)` + `backdrop-filter: blur(24px)`
+Public marketing page, **monoline** style (zero-chroma oklch grayscale, border-only structure, diagonal line pattern in the hero — the old iridescent orb/amber palette is gone). Does NOT use the app shell. Other public pages (`/demo`, `/precios`, `/plataforma`, …) share the nav/footer via `components/landing/LandingShell.tsx`.
 
 ### Sections (in order)
-1. **Hero** — cycling animated headline, iridescent CSS orb, 3 glassmorphism stat cards
-2. **Plataforma integral** — capability pills card (12 pills)
-3. **Tres pilares** — DB / CRM / IA (numbered steps)
-4. **Marketing & Leads** — text + live notification feed mockup
-5. **Asistente IA** — WhatsApp conversation mockup (bot → owner → auto-update)
-6. **Tour virtual 3D** — 3D viewer mockup (compatible with Matterport / 360°)
-7. **Web + API** — embed widget code snippet + REST API curl example
-8. **Pricing** — 3 plans (prices TBD — pending business discussion)
-9. **CTA band**
-10. **Footer** — "Creado por [Elevare](https://elevarewebservices.com)"
+Hero (single H1 with the cycling word inside it, definitional "PropSync es el CRM inmobiliario con IA para Panamá…" sub, factual stats — no invented metrics) → Plataforma integral → Feature carousel (Marketing, IA, Tours, Web+API, Add-ons) → **Portales** (`#portales`, XML feed publishing) → **Cómo funciona** (`#como-funciona`) → Planes (no prices — "Cotización a medida", White Label) → **FAQ** (`#faq`, native `<details>`) → CTA → Contacto → Footer.
+
+### SEO / AI-search rules
+- **Everything must be in the server HTML.** The carousel renders all 5 panels and hides inactive ones with `hidden` — never go back to `{tab === n && …}` conditional rendering (crawlers/AI bots don't run JS, so those panels were invisible).
+- JSON-LD (`Organization`, `WebSite`, `SoftwareApplication` with `areaServed: PA`) lives inline in the page; keep `featureList` truthful. `public/llms.txt`, `app/robots.ts` (AI crawlers explicitly allowed), `app/sitemap.ts`.
+- Only claim shipped features. No public prices anywhere.
+- `.nav-pill` CSS must not set `display` — Tailwind `hidden md:flex` controls it (setting it showed the pill over the logo on phones).
 
 ### Language toggle
-Full ES/EN via a `T` translations object. `useState<'es'|'en'>('es')`. No i18n library needed.
-
-### Animations
-All defined in an inline `<style>` tag: `twinkle`, `floatOrb`, `fadeUp`, `pulse`, `slideUp`.
-Scroll reveals use `IntersectionObserver` via the `useReveal()` hook + `<Reveal>` wrapper component.
-**No height containers around cycling text** — use opacity-only fade to avoid clipping.
+Full ES/EN via a `T` translations object (both objects must have the same keys). `useState<'es'|'en'>('es')`. No i18n library.
 
 ---
 
