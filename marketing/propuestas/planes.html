@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>PropSync — Planes</title>
+<style>
+  @page { size: Letter; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0f172a; --muted: #64748b; --line: #e2e8f0; --soft: #f8fafc;
+    --blue: #1a73e8; --blue-soft: #eaf2fe; --dark: #0f0f1a;
+  }
+  body { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--ink); font-size: 10.5pt; line-height: 1.5; }
+  .page { width: 8.5in; height: 11in; padding: 0.6in 0.65in; position: relative; page-break-after: always; overflow: hidden; }
+  .page:last-child { page-break-after: auto; }
+  .foot { position: absolute; left: 0.65in; right: 0.65in; bottom: 0.4in; display: flex; justify-content: space-between; font-size: 8pt; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; }
+  h1 { font-size: 30pt; line-height: 1.1; letter-spacing: -0.02em; font-weight: 700; }
+  h2 { font-size: 17pt; letter-spacing: -0.01em; margin-bottom: 4px; }
+  h3 { font-size: 11pt; margin-bottom: 6px; }
+  .eyebrow { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .14em; color: var(--blue); font-weight: 700; }
+  .lead { font-size: 12pt; color: #334155; max-width: 6.2in; }
+  .muted { color: var(--muted); }
+
+  /* Cover */
+  .cover { background: var(--dark); color: #fff; display: flex; flex-direction: column; justify-content: space-between; padding-bottom: 0.95in; }
+  .cover .logo { height: 46px; }
+  .cover h1 { font-size: 40pt; margin: 18px 0 14px; }
+  .cover h1 span { color: #8ab4f8; }
+  .cover .lead { color: #cbd5e1; font-size: 13pt; }
+  .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 34px; }
+  .pillar { border: 1px solid rgba(255,255,255,.14); border-radius: 12px; padding: 14px 16px; }
+  .pillar b { display: block; font-size: 12pt; margin-bottom: 3px; }
+  .pillar span { color: #94a3b8; font-size: 9.5pt; }
+  .cover .foot { color: #94a3b8; border-top-color: rgba(255,255,255,.14); }
+
+  /* Plan cards */
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+  .card { border: 1px solid var(--line); border-radius: 14px; padding: 16px 15px; display: flex; flex-direction: column; }
+  .card.hl { border: 2px solid var(--blue); background: #fbfdff; }
+  .tag { align-self: flex-start; font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; padding: 3px 8px; border-radius: 99px; background: var(--soft); color: var(--muted); margin-bottom: 8px; }
+  .card.hl .tag { background: var(--blue); color: #fff; }
+  .card h2 { font-size: 15pt; }
+  .for { font-size: 9pt; color: var(--muted); min-height: 30px; }
+  .price { margin: 10px 0 2px; font-size: 22pt; font-weight: 700; letter-spacing: -0.02em; }
+  .price small { font-size: 9.5pt; font-weight: 500; color: var(--muted); }
+  .price-note { font-size: 8.5pt; color: var(--muted); min-height: 26px; }
+  ul.f { list-style: none; margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+  ul.f li { position: relative; padding-left: 15px; font-size: 9pt; margin-bottom: 5px; }
+  ul.f li::before { content: ""; position: absolute; left: 0; top: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
+  ul.f li.plus { font-weight: 600; }
+  ul.f li.plus::before { background: none; border: 1.5px solid var(--blue); width: 6px; height: 6px; }
+
+  /* Detail sections */
+  .sec { margin-top: 16px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 22px; }
+  .feat { border-left: 3px solid var(--blue); padding: 2px 0 2px 10px; }
+  .feat b { font-size: 10pt; display: block; }
+  .feat span { font-size: 9pt; color: #475569; }
+  .box { background: var(--soft); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: 10px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: top; }
+  th { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--soft); }
+  td.c, th.c { text-align: center; }
+  .yes { color: var(--blue); font-weight: 700; }
+  .no { color: #cbd5e1; }
+  tr.group td { background: #f1f5f9; font-weight: 700; font-size: 8.5pt; text-transform: uppercase; letter-spacing: .06em; color: #475569; }
+
+  .ptable td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .save { color: #15803d; font-weight: 600; }
+  .cta { background: var(--dark); color: #fff; border-radius: 14px; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+  .cta b { font-size: 13pt; display: block; }
+  .cta span { color: #cbd5e1; font-size: 9.5pt; }
+  .cta .contact { text-align: right; font-size: 9.5pt; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<!-- ───────────── 1. Portada ───────────── -->
+<section class="page cover">
+  <div>
+    <img class="logo" src="../../public/logo-lockup.png" alt="PropSync">
+    <p class="eyebrow" style="margin-top:56px;color:#8ab4f8">Propuesta comercial · Panamá</p>
+    <h1>El CRM inmobiliario con IA,<br><span>hecho en Panamá.</span></h1>
+    <p class="lead">Tu inventario, tus clientes y tus portales en una sola plataforma. Publica en Encuentra24, Compre o Alquile e Inmotech, recibe a tus clientes directo en el CRM y deja que la inteligencia artificial haga el trabajo repetitivo.</p>
+    <div class="pillars">
+      <div class="pillar"><b>Inventario</b><span>Todas tus propiedades, fichas y fotos en un solo lugar.</span></div>
+      <div class="pillar"><b>CRM</b><span>Cada cliente en su etapa, con seguimiento y recordatorios.</span></div>
+      <div class="pillar"><b>Portales + IA</b><span>Publicación automática y un asistente que trabaja por ti.</span></div>
+    </div>
+  </div>
+  <div>
+    <div class="pillars" style="margin-top:0">
+      <div class="pillar"><b>Individual</b><span>Agentes independientes · desde US$25.50/mes</span></div>
+      <div class="pillar"><b>Premium</b><span>Equipos e inmobiliarias · US$60/mes</span></div>
+      <div class="pillar"><b>A medida</b><span>Tu marca, tu web y todo personalizado</span></div>
+    </div>
+  </div>
+  <div class="foot"><span>PropSync · propsyncia.com</span><span>Creado por Elevare</span></div>
+</section>
+
+<!-- ───────────── 2. Los 3 planes ───────────── -->
+<section class="page">
+  <p class="eyebrow">Planes</p>
+  <h2 style="font-size:22pt">Elige cómo quieres trabajar</h2>
+  <p class="lead">Sin contratos de permanencia. Configuración y migración de tu inventario incluidas en todos los planes.</p>
+
+  <div class="cards">
+    <div class="card">
+      <span class="tag">Individual</span>
+      <h2>Individual</h2>
+      <p class="for">Para agentes y corredores independientes.</p>
+      <p class="price">US$30 <small>/ mes</small></p>
+      <p class="price-note">Sin contrato. Descuento pagando por adelantado (hasta 15%).</p>
+      <ul class="f">
+        <li>1 usuario</li>
+        <li>Hasta 100 propiedades</li>
+        <li>Publicación automática en Encuentra24, Compre o Alquile e Inmotech</li>
+        <li>Contactos de los portales directo al CRM</li>
+        <li>Leads de campañas de Facebook, Instagram y TikTok</li>
+        <li>CRM con embudo, seguimientos y recordatorios</li>
+        <li>Asistente IA · 200 consultas al mes</li>
+        <li>Página web propia con tu inventario</li>
+        <li>Ficha PDF por propiedad</li>
+        <li>App instalable en el celular</li>
+      </ul>
+    </div>
+
+    <div class="card hl">
+      <span class="tag">Más completo</span>
+      <h2>Premium</h2>
+      <p class="for">Para equipos e inmobiliarias en crecimiento.</p>
+      <p class="price">US$60 <small>/ mes</small></p>
+      <p class="price-note">Incluye 2 usuarios · usuario adicional US$7.99/mes.</p>
+      <ul class="f">
+        <li class="plus">Todo lo del plan Individual, y además:</li>
+        <li>Propiedades ilimitadas</li>
+        <li>2 usuarios incluidos, roles y permisos por agente</li>
+        <li>Tours virtuales 360° compartibles e incrustables</li>
+        <li>Asistente IA · 1,000 consultas al mes</li>
+        <li>Campañas de WhatsApp a propietarios para verificar disponibilidad</li>
+        <li>Limpieza y mantenimiento de la base de datos</li>
+        <li>API REST para conectar tu sitio web y otras herramientas</li>
+        <li>Hasta 3 fuentes de datos</li>
+        <li>Soporte prioritario por correo</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="tag">Personalizado</span>
+      <h2>A medida</h2>
+      <p class="for">Para inmobiliarias que quieren su propia marca y web.</p>
+      <p class="price" style="font-size:17pt">Cotización</p>
+      <p class="price-note">Según alcance, usuarios e integraciones.</p>
+      <ul class="f">
+        <li class="plus">Todo lo del plan Premium, y además:</li>
+        <li>Sitio web inmobiliario a medida, con tu dominio</li>
+        <li>Inventario sincronizado con tu web en tiempo real</li>
+        <li>Plataforma con tu marca (White Label): logo, colores y dominio</li>
+        <li>Integraciones personalizadas con otros sistemas</li>
+        <li>Automatizaciones y flujos de WhatsApp a tu medida</li>
+        <li>Usuarios y propiedades según tu equipo</li>
+        <li>Migración completa y capacitación del equipo</li>
+        <li>Soporte dedicado</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="box" style="margin-top:16px">
+    <h3>Add-on Marketing WhatsApp · +US$40/mes (sobre Premium)</h3>
+    <p style="font-size:9.5pt;color:#475569">Gestión de plantillas de WhatsApp Business, calificación automática de leads, bandeja compartida de WhatsApp y campañas de email marketing. Los costos de mensajes de WhatsApp los cobra Meta directamente.</p>
+  </div>
+  <div class="foot"><span>PropSync · Planes</span><span>2</span></div>
+</section>
+
+<!-- ───────────── 3. Precios y pagos por adelantado ───────────── -->
+<section class="page">
+  <p class="eyebrow">Precios</p>
+  <h2 style="font-size:22pt">Plan Individual: paga por adelantado y ahorra</h2>
+  <p class="lead">Mensual sin contrato, o con descuento si pagas varios meses de una vez. Pago por ACH.</p>
+
+  <table class="ptable" style="margin-top:16px">
+    <thead><tr><th>Modalidad</th><th class="c">Descuento</th><th style="text-align:right">Pago</th><th style="text-align:right">Equivale a</th><th style="text-align:right">Ahorras</th></tr></thead>
+    <tbody>
+      <tr><td><b>Mensual</b></td><td class="c">—</td><td class="num">US$30.00 / mes</td><td class="num">US$30.00 / mes</td><td class="num">—</td></tr>
+      <tr><td><b>3 meses</b> por adelantado</td><td class="c">5%</td><td class="num">US$85.50</td><td class="num">US$28.50 / mes</td><td class="num save">US$4.50</td></tr>
+      <tr><td><b>6 meses</b> por adelantado</td><td class="c">10%</td><td class="num">US$162.00</td><td class="num">US$27.00 / mes</td><td class="num save">US$18.00</td></tr>
+      <tr><td><b>1 año</b> por adelantado</td><td class="c">15%</td><td class="num">US$306.00</td><td class="num">US$25.50 / mes</td><td class="num save">US$54.00</td></tr>
+    </tbody>
+  </table>
+
+  <div class="sec grid2" style="margin-top:22px">
+    <div class="box">
+      <h3>Premium</h3>
+      <p style="font-size:9.5pt;color:#475569">US$60 al mes con 2 usuarios incluidos. Cada usuario adicional: US$7.99 al mes. Sin límite de propiedades.</p>
+    </div>
+    <div class="box">
+      <h3>A medida</h3>
+      <p style="font-size:9.5pt;color:#475569">Cotización según el alcance: diseño del sitio web, número de usuarios, integraciones y automatizaciones.</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>Incluido en todos los planes</h3>
+    <div class="grid2">
+      <div class="feat"><b>Sin costos de integración</b><span>La conexión con los portales no tiene cargos extra.</span></div>
+      <div class="feat"><b>Migración incluida</b><span>Importamos tu inventario actual; no lo cargas a mano.</span></div>
+      <div class="feat"><b>Sin contrato de permanencia</b><span>Te sales cuando quieras.</span></div>
+      <div class="feat"><b>Tus datos son tuyos</b><span>Exporta tus contactos e inventario cuando lo necesites.</span></div>
+      <div class="feat"><b>Actualizaciones continuas</b><span>Las nuevas funciones llegan sin costo adicional.</span></div>
+      <div class="feat"><b>Acceso desde cualquier lugar</b><span>Computadora y celular, sin instalar nada.</span></div>
+    </div>
+  </div>
+  <div class="foot"><span>PropSync · Precios</span><span>3</span></div>
+</section>
+
+<!-- ───────────── 4. Funciones en detalle ───────────── -->
+<section class="page">
+  <p class="eyebrow">Funciones</p>
+  <h2 style="font-size:22pt">Qué hace PropSync por ti</h2>
+
+  <div class="sec">
+    <h3>Inventario de propiedades</h3>
+    <div class="grid2">
+      <div class="feat"><b>Ficha completa</b><span>Fotos, precio, ubicación, características, áreas, comisiones y propietario.</span></div>
+      <div class="feat"><b>Estados claros</b><span>Publicación (activa, destacada, inactiva) y disponibilidad (disponible, vendida, alquilada) por separado.</span></div>
+      <div class="feat"><b>Ficha PDF y página web</b><span>Cada propiedad lista para enviar por WhatsApp; tu página propia con todo tu inventario.</span></div>
+      <div class="feat"><b>Importación</b><span>Desde Wasi o desde archivos XML de otros sistemas.</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>Publicación en portales</h3>
+    <div class="grid2">
+      <div class="feat"><b>Encuentra24, Compre o Alquile e Inmotech</b><span>Marcas en qué portal sale cada propiedad y se publica sola.</span></div>
+      <div class="feat"><b>Siempre al día</b><span>Precio, fotos y disponibilidad se actualizan solos; lo vendido sale de los portales.</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>CRM y captación de clientes</h3>
+    <div class="grid2">
+      <div class="feat"><b>Embudo visual</b><span>Nuevo → Contactado → Visita → Oferta → Cerrado, arrastrando cada cliente.</span></div>
+      <div class="feat"><b>Seguimientos</b><span>Recordatorios por correo y avisos de seguimientos vencidos.</span></div>
+      <div class="feat"><b>Leads automáticos</b><span>Contactos de los portales y de campañas de Facebook, Instagram y TikTok directo al CRM.</span></div>
+      <div class="feat"><b>Coincidencias</b><span>Sugerencias de qué propiedades ofrecerle a cada cliente.</span></div>
+      <div class="feat"><b>Notas permanentes</b><span>Historial completo de cada cliente y propiedad, que no se puede borrar.</span></div>
+      <div class="feat"><b>Reportes</b><span>Qué fuente te trae más clientes y más cierres.</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>Inteligencia artificial</h3>
+    <div class="grid2">
+      <div class="feat"><b>Pregúntale a tu inventario</b><span>“¿Qué apartamentos tengo en Costa del Este bajo $300 mil?”</span></div>
+      <div class="feat"><b>Descripciones</b><span>Redacta descripciones atractivas para tus anuncios.</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>Solo en Premium y A medida</h3>
+    <div class="grid2">
+      <div class="feat"><b>Tours virtuales 360°</b><span>Recorridos navegables para compartir por WhatsApp o incrustar en tu web.</span></div>
+      <div class="feat"><b>WhatsApp a propietarios</b><span>Campañas para confirmar disponibilidad y mantener el inventario vivo.</span></div>
+      <div class="feat"><b>Equipo</b><span>Varios usuarios con roles y permisos; cada agente ve lo suyo.</span></div>
+      <div class="feat"><b>API REST</b><span>Conecta tu inventario con tu sitio web y otras herramientas.</span></div>
+    </div>
+  </div>
+  <div class="foot"><span>PropSync · Funciones</span><span>4</span></div>
+</section>
+
+<!-- ───────────── 5. Comparativa + contacto ───────────── -->
+<section class="page">
+  <p class="eyebrow">Comparativa</p>
+  <h2 style="font-size:22pt">Los tres planes, lado a lado</h2>
+
+  <table>
+    <thead><tr><th style="width:46%">Función</th><th class="c">Individual</th><th class="c">Premium</th><th class="c">A medida</th></tr></thead>
+    <tbody>
+      <tr class="group"><td colspan="4">Base</td></tr>
+      <tr><td>Precio</td><td class="c">US$30/mes</td><td class="c">US$60/mes</td><td class="c">Cotización</td></tr>
+      <tr><td>Usuarios</td><td class="c">1</td><td class="c">2 + US$7.99 c/u</td><td class="c">Según equipo</td></tr>
+      <tr><td>Propiedades</td><td class="c">100</td><td class="c">Ilimitadas</td><td class="c">Ilimitadas</td></tr>
+      <tr><td>Consultas al asistente IA por mes</td><td class="c">200</td><td class="c">1,000</td><td class="c">A medida</td></tr>
+      <tr class="group"><td colspan="4">Inventario y portales</td></tr>
+      <tr><td>Encuentra24, Compre o Alquile e Inmotech</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+      <tr><td>Ficha PDF y página web propia</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+      <tr><td>Importación desde Wasi / XML</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+      <tr><td>Tours virtuales 360°</td><td class="c no">—</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+      <tr class="group"><td colspan="4">CRM y clientes</td></tr>
+      <tr><td>Embudo, seguimientos y recordatorios</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+      <tr><td>Leads de portales y campañas (Meta, TikTok)</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+      <tr><td>Roles y permisos por agente</td><td class="c no">—</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+      <tr><td>WhatsApp a propietarios y limpieza de base</td><td class="c no">—</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+      <tr class="group"><td colspan="4">Integración y marca</td></tr>
+      <tr><td>API REST</td><td class="c no">—</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+      <tr><td>Sitio web inmobiliario a medida con tu dominio</td><td class="c no">—</td><td class="c no">—</td><td class="c yes">✓</td></tr>
+      <tr><td>Plataforma con tu marca (White Label)</td><td class="c no">—</td><td class="c no">—</td><td class="c yes">✓</td></tr>
+      <tr><td>Integraciones y automatizaciones personalizadas</td><td class="c no">—</td><td class="c no">—</td><td class="c yes">✓</td></tr>
+      <tr><td>Soporte</td><td class="c">Correo</td><td class="c">Prioritario</td><td class="c">Dedicado</td></tr>
+    </tbody>
+  </table>
+
+  <div class="cta" style="margin-top:26px">
+    <div>
+      <b>Pruébalo hoy, sin registrarte</b>
+      <span>Entra a una inmobiliaria de ejemplo en propsyncia.com/demo</span>
+    </div>
+    <div class="contact">
+      +507 6513-9139<br>
+      gerencia@elevarewebservices.com<br>
+      propsyncia.com
+    </div>
+  </div>
+  <div class="foot"><span>PropSync · Creado por Elevare</span><span>5</span></div>
+</section>
+
+</body>
+</html>
