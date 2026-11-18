@@ -144,7 +144,7 @@ export function ContactInteresTab({ contact, onUpdate }: Props) {
             <FieldRow label="Presupuesto"     value={budgetText} />
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label className="text-xs mb-1.5 block">Operación</Label>
               <Select value={op} onValueChange={(v) => setOp(v as TipoOperacion)}>
@@ -176,7 +176,7 @@ export function ContactInteresTab({ contact, onUpdate }: Props) {
               <Label className="text-xs mb-1.5 block">Presupuesto máximo (USD)</Label>
               <Input value={pMax} onChange={(e) => setPMax(e.target.value)} type="number" className="h-9" placeholder="0" />
             </div>
-            {prefErr && <p className="col-span-2 text-xs text-red-500">{prefErr}</p>}
+            {prefErr && <p className="sm:col-span-2 text-xs text-red-500">{prefErr}</p>}
           </div>
         )}
       </SectionCard>

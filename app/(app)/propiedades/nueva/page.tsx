@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ArrowLeft, Upload, X, ImagePlus, Loader2, Sparkles, Camera, Images, Eraser } from 'lucide-react'
+import { ChevronDown, ArrowLeft, Upload, X, ImagePlus, Loader2, Sparkles, Camera, Images, Eraser } from 'lucide-react'
 import Link from 'next/link'
 import { resizeImageFile } from '@/lib/image-resize'
 import { isNativeApp } from '@/lib/native'
@@ -23,6 +23,7 @@ import { captureFromCamera, pickFromGallery } from '@/lib/native-camera'
 import { CANALES_PUBLICACION } from '@/lib/canales'
 import { ImageCleanupEditor } from '@/components/propiedades/ImageCleanupEditor'
 import { cn } from '@/lib/utils'
+import { FormAside, MobileActionBar, PriceInput, type ChecklistItem } from '@/components/propiedades/PropertyFormLayout'
 
 const DRAFT_KEY = 'propsync:draft:nueva'
 
@@ -58,6 +59,8 @@ const FEATURES_EXTERNAL = [
 export default function NuevaPropiedadPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Phone browsers: capture="environment" opens the rear camera directly.
+  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   // Form state
   const [titulo, setTitulo] = useState('')
@@ -420,6 +423,10 @@ export default function NuevaPropiedadPage() {
 
     if (miss.size > 0) {
       setMissing(miss)
+      // Propietario is collapsible now — open it if that's where the gaps are.
+      if (Array.from(miss).some((m) => m.startsWith('owner'))) {
+        document.getElementById('prop-propietario')?.setAttribute('open', '')
+      }
       setError(
         publish
           ? 'Campos incompletos: completa los campos resaltados en rojo para publicar.'
@@ -547,8 +554,22 @@ export default function NuevaPropiedadPage() {
     router.refresh()
   }
 
+  const checklist: ChecklistItem[] = [
+    { id: 'prop-basico', label: 'Título', done: !!titulo.trim(), required: true },
+    { id: 'prop-precio', label: 'Precio', done: !!precio, required: true },
+    { id: 'prop-basico', label: 'Tipo de inmueble', done: !!propertyType },
+    { id: 'prop-ubicacion', label: 'Ubicación (zona o ciudad)', done: !!(zona.trim() || ciudad.trim()) },
+    { id: 'prop-detalles', label: 'Habitaciones y área', done: !!(bedrooms && area) },
+    { id: 'prop-fotos', label: 'Fotos (al menos 3)', done: images.length >= 3 },
+    { id: 'prop-descripcion', label: 'Descripción', done: descripcion.trim().length >= 80 },
+    { id: 'aside-canales', label: 'Lugares de publicación', done: canalesPublicados.length > 0 },
+  ]
+
   return (
-    <div className="p-4 md:p-6 max-w-3xl space-y-6">
+    // xl+: form on the left, sticky FormAside (preview, checklist, channels,
+    // save buttons) on the right — instead of a 768px column and an empty half.
+    <div className="p-4 md:p-6 max-w-6xl xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-8 xl:items-start">
+    <div className="space-y-6 min-w-0 max-w-3xl">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link
@@ -584,7 +605,7 @@ export default function NuevaPropiedadPage() {
       <form onSubmit={(e) => { e.preventDefault(); saveProperty(true) }} className="space-y-6">
 
         {/* Básico */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-basico" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Información básica</h2>
           <Separator />
 
@@ -599,7 +620,7 @@ export default function NuevaPropiedadPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Operación *</Label>
               <Select value={tipo} onValueChange={(v) => setTipo((v ?? 'venta') as 'venta' | 'arriendo')}>
@@ -635,7 +656,7 @@ export default function NuevaPropiedadPage() {
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Estado de publicación</Label>
               <Select value={estadoPublicacion} onValueChange={(v) => setEstadoPublicacion(v as 'activo' | 'destacado' | 'inactivo')}>
@@ -662,21 +683,18 @@ export default function NuevaPropiedadPage() {
         </section>
 
         {/* Precio */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-precio" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Precio</h2>
           <Separator />
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="precio">Precio *</Label>
-              <Input
+              <PriceInput
                 id="precio"
-                type="number"
-                min="0"
-                step="0.01"
                 value={precio}
-                onChange={(e) => setPrecio(e.target.value)}
-                placeholder="250000"
+                onChange={setPrecio}
+                placeholder="250,000"
                 className={cn(missing.has('precio') && 'border-red-500 focus-visible:ring-red-500')}
               />
             </div>
@@ -694,24 +712,21 @@ export default function NuevaPropiedadPage() {
 
           <div className="space-y-1.5">
             <Label htmlFor="maintenance">Cuota de mantenimiento (opcional)</Label>
-            <Input
+            <PriceInput
               id="maintenance"
-              type="number"
-              min="0"
-              step="0.01"
               value={maintenanceFee}
-              onChange={(e) => setMaintenanceFee(e.target.value)}
+              onChange={setMaintenanceFee}
               placeholder="150"
             />
           </div>
         </section>
 
         {/* Ubicación */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-ubicacion" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Ubicación</h2>
           <Separator />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="pais">País</Label>
               <Input id="pais" list="paises-list" value={pais} onChange={(e) => setPais(e.target.value)} placeholder="Panamá" />
@@ -752,46 +767,46 @@ export default function NuevaPropiedadPage() {
         </section>
 
         {/* Detalles */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-detalles" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Detalles</h2>
           <Separator />
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="bedrooms">Habitaciones</Label>
-              <Input id="bedrooms" type="number" min="0" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} placeholder="3" />
+              <Input id="bedrooms" type="number" inputMode="decimal" min="0" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} placeholder="3" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="bathrooms">Baños</Label>
-              <Input id="bathrooms" type="number" min="0" step="0.5" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} placeholder="2" />
+              <Input id="bathrooms" type="number" inputMode="decimal" min="0" step="0.5" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} placeholder="2" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="garages">Garajes</Label>
-              <Input id="garages" type="number" min="0" value={garages} onChange={(e) => setGarages(e.target.value)} placeholder="1" />
+              <Input id="garages" type="number" inputMode="decimal" min="0" value={garages} onChange={(e) => setGarages(e.target.value)} placeholder="1" />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="area">Área total (m²)</Label>
-              <Input id="area" value={area} onChange={(e) => setArea(e.target.value)} placeholder="120" />
+              <Input id="area" inputMode="decimal" value={area} onChange={(e) => setArea(e.target.value)} placeholder="120" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="built-area">Área construida (m²)</Label>
-              <Input id="built-area" value={builtArea} onChange={(e) => setBuiltArea(e.target.value)} placeholder="100" />
+              <Input id="built-area" inputMode="decimal" value={builtArea} onChange={(e) => setBuiltArea(e.target.value)} placeholder="100" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="private-area">Área privada (m²)</Label>
-              <Input id="private-area" value={privateArea} onChange={(e) => setPrivateArea(e.target.value)} placeholder="85" />
+              <Input id="private-area" inputMode="decimal" value={privateArea} onChange={(e) => setPrivateArea(e.target.value)} placeholder="85" />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="year">Año de construcción</Label>
               <Input
                 id="year"
-                type="number"
+                type="number" inputMode="decimal"
                 min="1900"
                 max={new Date().getFullYear()}
                 value={year}
@@ -803,7 +818,7 @@ export default function NuevaPropiedadPage() {
         </section>
 
         {/* Características */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-caracteristicas" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Características</h2>
           <Separator />
 
@@ -919,7 +934,7 @@ export default function NuevaPropiedadPage() {
         </section>
 
         {/* Descripción */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-descripcion" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-foreground">Descripción</h2>
             <Button
@@ -953,11 +968,14 @@ export default function NuevaPropiedadPage() {
         </section>
 
         {/* Observaciones */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
+        <details id="prop-observaciones" className="group scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 [&>summary::-webkit-details-marker]:hidden">
+          {/* Optional — collapsed by default so the form feels shorter (one tap to open). */}
+          <summary className="flex cursor-pointer list-none items-center gap-2">
             <h2 className="text-sm font-semibold text-foreground">Observaciones</h2>
             <Badge variant="secondary" className="text-xs">Opcional</Badge>
-          </div>
+            <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-4 space-y-4">
           <Separator />
           <textarea
             value={notas}
@@ -966,21 +984,25 @@ export default function NuevaPropiedadPage() {
             placeholder="Notas internas sobre la propiedad: condiciones especiales, acuerdos con el propietario, historial, etc."
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
           />
-        </section>
+          </div>
+        </details>
 
         {/* Comisiones */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
+        <details id="prop-comisiones" className="group scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 [&>summary::-webkit-details-marker]:hidden">
+          {/* Optional — collapsed by default so the form feels shorter (one tap to open). */}
+          <summary className="flex cursor-pointer list-none items-center gap-2">
             <h2 className="text-sm font-semibold text-foreground">Comisiones</h2>
             <Badge variant="secondary" className="text-xs">Opcional</Badge>
-          </div>
+            <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-4 space-y-4">
           <Separator />
 
           <div className="space-y-5">
             {/* Comisión empresa */}
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Comisión empresa</p>
-              <div className="grid grid-cols-3 gap-4 mb-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-3">
                 <Select value={commType} onValueChange={(v) => setCommType((v ?? 'percentage') as 'percentage' | 'fixed')}>
                   <SelectTrigger className="h-9">
                     <SelectValue />
@@ -991,7 +1013,7 @@ export default function NuevaPropiedadPage() {
                   </SelectContent>
                 </Select>
                 <Input
-                  type="number"
+                  type="number" inputMode="decimal"
                   min="0"
                   step={commType === 'percentage' ? '0.1' : '1'}
                   value={commValue}
@@ -1016,7 +1038,7 @@ export default function NuevaPropiedadPage() {
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Comisión externa</p>
               <p className="text-xs text-muted-foreground mb-3">Broker externo, referidos, etc.</p>
-              <div className="grid grid-cols-3 gap-4 mb-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-3">
                 <Select value={extCommType} onValueChange={(v) => setExtCommType((v ?? 'percentage') as 'percentage' | 'fixed')}>
                   <SelectTrigger className="h-9">
                     <SelectValue />
@@ -1027,7 +1049,7 @@ export default function NuevaPropiedadPage() {
                   </SelectContent>
                 </Select>
                 <Input
-                  type="number"
+                  type="number" inputMode="decimal"
                   min="0"
                   step={extCommType === 'percentage' ? '0.1' : '1'}
                   value={extCommValue}
@@ -1046,14 +1068,18 @@ export default function NuevaPropiedadPage() {
               />
             </div>
           </div>
-        </section>
+          </div>
+        </details>
 
         {/* Propietario */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
+        <details id="prop-propietario" className="group scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 [&>summary::-webkit-details-marker]:hidden">
+          {/* Optional — collapsed by default so the form feels shorter (one tap to open). */}
+          <summary className="flex cursor-pointer list-none items-center gap-2">
             <h2 className="text-sm font-semibold text-foreground">Propietario</h2>
             <Badge variant="secondary" className="text-xs">Opcional</Badge>
-          </div>
+            <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-4 space-y-4">
           <Separator />
 
           {ownerContactId && (
@@ -1072,7 +1098,7 @@ export default function NuevaPropiedadPage() {
           )}
 
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 relative" ref={ownerDropdownRef}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative" ref={ownerDropdownRef}>
               <div className="space-y-1.5">
                 <Label htmlFor="owner-nombre">Nombre *</Label>
                 <Input
@@ -1136,7 +1162,7 @@ export default function NuevaPropiedadPage() {
 
             <Separator />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="owner-tel1">Teléfono 1 *</Label>
                 <Input
@@ -1198,10 +1224,11 @@ export default function NuevaPropiedadPage() {
               />
             </div>
           </div>
-        </section>
+          </div>
+        </details>
 
         {/* Imágenes */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-fotos" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Fotos</h2>
           <Separator />
 
@@ -1210,6 +1237,14 @@ export default function NuevaPropiedadPage() {
             type="file"
             accept="image/*"
             multiple
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
             className="hidden"
             onChange={handleFileChange}
           />
@@ -1235,17 +1270,27 @@ export default function NuevaPropiedadPage() {
                 </button>
               </div>
             ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-1 gap-3">
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="sm:hidden flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-8 text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
+              >
+                <Camera className="h-7 w-7" />
+                <p className="text-sm font-medium">Tomar foto</p>
+              </button>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border py-10 text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
+                className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border py-8 sm:py-10 text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
               >
                 <ImagePlus className="h-8 w-8" />
                 <div className="text-center">
                   <p className="text-sm font-medium">Agregar fotos</p>
-                  <p className="text-xs">PNG, JPG hasta 10 MB — máximo 20 fotos</p>
+                  <p className="text-xs hidden sm:block">PNG, JPG hasta 10 MB — máximo 20 fotos</p>
                 </div>
               </button>
+              </div>
             )
           ) : (
             <div className="space-y-3">
@@ -1301,7 +1346,7 @@ export default function NuevaPropiedadPage() {
         )}
 
         {/* Lugares de publicación */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-canales" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4 xl:hidden">
           <h2 className="text-sm font-semibold text-foreground">Lugares de publicación</h2>
           <p className="text-xs text-muted-foreground">Elige dónde se publicará esta propiedad</p>
           <Separator />
@@ -1325,14 +1370,12 @@ export default function NuevaPropiedadPage() {
         </section>
 
         {/* Actions */}
-        <div className="flex items-center justify-between gap-3 pb-8">
-          <div className="flex-1">
-            {error && (
-              <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950 dark:text-red-400 px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950 dark:text-red-400 px-4 py-3 rounded-lg">
+            {error}
           </div>
+        )}
+        <div className="hidden md:flex items-center justify-end gap-3 pb-8">
           <div className="flex items-center gap-2 shrink-0">
             <Button
               type="button"
@@ -1367,7 +1410,31 @@ export default function NuevaPropiedadPage() {
             </Button>
           </div>
         </div>
+
+        <MobileActionBar>
+          <Button type="button" variant="outline" className="flex-1 h-11" onClick={() => saveProperty(false)} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Borrador'}
+          </Button>
+          <Button type="button" className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => saveProperty(true)} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Publicar'}
+          </Button>
+        </MobileActionBar>
       </form>
+    </div>
+
+    <FormAside
+      preview={{ titulo, precio, currency, tipo, zona, ciudad, imageUrl: images[0]?.preview ?? null, bedrooms, bathrooms, area }}
+      checklist={checklist}
+      canales={canalesPublicados}
+      onToggleCanal={(id) => toggleFeature(canalesPublicados, setCanalesPublicados, id)}
+      error={error}
+      actions={<>
+        <Button type="button" onClick={() => saveProperty(true)} className="bg-blue-600 hover:bg-blue-700 text-white" disabled={saving}>
+          {saving ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{uploading ? 'Subiendo...' : 'Guardando...'}</span> : 'Publicar'}
+        </Button>
+        <Button type="button" variant="outline" onClick={() => saveProperty(false)} disabled={saving}>Guardar borrador</Button>
+      </>}
+    />
     </div>
   )
 }

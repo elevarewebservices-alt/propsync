@@ -112,5 +112,5 @@ test('helpers', () => {
   assert.equal(escapeXml('a&b<c'), 'a&amp;b&lt;c')
   assert.ok(isFeedPortal('encuentra24') && isFeedPortal('comprealquile') && isFeedPortal('todos'))
   assert.ok(!isFeedPortal('pagina_web') && !isFeedPortal('../etc'))
-  assert.deepEqual(FEED_PORTALS.map((p) => p.id), ['comprealquile', 'encuentra24', 'todos'])
+  assert.deepEqual(FEED_PORTALS.map((p) => p.id), ['comprealquile', 'encuentra24', 'inmotech', 'todos'])
 })

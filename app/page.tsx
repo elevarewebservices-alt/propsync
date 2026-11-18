@@ -90,7 +90,7 @@ const T = {
     trialBadge: '15 días de prueba gratis',
     trialSub: 'Sin tarjeta de crédito · Cancela cuando quieras',
     plans: [
-      { n: 'Individual', d: 'Para agentes independientes', f: ['50 propiedades', 'Base de datos centralizada', 'CRM básico', 'Asistente IA limitado', 'Conexión a portales (Compre o Alquile, Encuentra24, Página web)', '1 usuario'], cta: 'Probar 15 días gratis' },
+      { n: 'Individual', d: 'Para agentes independientes', f: ['100 propiedades', 'Base de datos centralizada', 'CRM básico', 'Asistente IA limitado', 'Conexión a portales (Compre o Alquile, Encuentra24, Página web)', '1 usuario'], cta: 'Probar 15 días gratis' },
       { n: 'Pro', d: 'Para equipos en crecimiento', popular: true, f: ['Propiedades ilimitadas', 'CRM completo + pipeline', 'Asistente IA completo', 'Conexión a portales (Compre o Alquile, Encuentra24, Página web)', '2 usuarios (usuarios adicionales disponibles)', 'API de integración'], cta: 'Probar 15 días gratis' },
     ],
 
@@ -189,7 +189,7 @@ const T = {
     faq: [
       { q: '¿Qué es PropSync?', a: 'PropSync es un CRM inmobiliario con inteligencia artificial hecho para agencias y agentes independientes en Panamá. Reúne en una sola plataforma la base de datos de propiedades, el CRM de clientes con embudo Kanban, tours virtuales 360°, un asistente con IA y la publicación en Encuentra24 y Compre o Alquile. Lo desarrolla Elevare, una empresa panameña.' },
       { q: '¿PropSync publica en Encuentra24 y Compre o Alquile?', a: 'Sí. Cada agencia obtiene un feed XML privado por portal. Marcas los portales en cada propiedad y el portal la publica y actualiza en su siguiente lectura, normalmente en menos de 24 horas. Las propiedades vendidas, alquiladas o desactivadas salen del feed automáticamente.' },
-      { q: '¿Sirve para un agente independiente?', a: 'Sí. El plan Individual está pensado para un solo usuario: hasta 50 propiedades, CRM, asistente con IA y conexión a portales. Los equipos usan el plan Pro, con propiedades ilimitadas, varios usuarios y API de integración.' },
+      { q: '¿Sirve para un agente independiente?', a: 'Sí. El plan Individual está pensado para un solo usuario: hasta 100 propiedades, CRM, asistente con IA y conexión a portales. Los equipos usan el plan Pro, con propiedades ilimitadas, varios usuarios y API de integración.' },
       { q: '¿Cuánto cuesta PropSync?', a: 'El precio se cotiza según el plan (Individual o Pro) y el tamaño de tu equipo. Todas las cuentas empiezan con 15 días de prueba gratis, sin tarjeta de crédito. Escríbenos y te enviamos una propuesta para tu agencia.' },
       { q: '¿Puedo migrar mis propiedades desde Wasi u otro sistema?', a: 'Sí. PropSync importa tu inventario desde Wasi con sincronización diaria automática, desde cualquier archivo XML de propiedades y tus contactos desde CSV. No tienes que volver a cargar tu cartera a mano.' },
       { q: '¿Necesito instalar algo?', a: 'No. PropSync funciona en el navegador, en computadora y en celular, sin instalaciones. La app para iPhone y Android está en camino.' },
@@ -372,7 +372,7 @@ const T = {
     faq: [
       { q: 'What is PropSync?', a: 'PropSync is an AI-powered real-estate CRM built for agencies and independent agents in Panama. It brings together the property database, a client CRM with a Kanban pipeline, 360° virtual tours, an AI assistant and publishing to Encuentra24 and Compre o Alquile. It is built by Elevare, a Panamanian company.' },
       { q: 'Does PropSync publish to Encuentra24 and Compre o Alquile?', a: 'Yes. Every agency gets a private XML feed per portal. Mark the portals on each listing and the portal publishes and updates it on its next read, usually within 24 hours. Sold, rented or deactivated listings leave the feed automatically.' },
-      { q: 'Does it work for an independent agent?', a: 'Yes. The Individual plan is built for a single user: up to 50 listings, CRM, AI assistant and portal connection. Teams use the Pro plan, with unlimited listings, multiple users and an integration API.' },
+      { q: 'Does it work for an independent agent?', a: 'Yes. The Individual plan is built for a single user: up to 100 listings, CRM, AI assistant and portal connection. Teams use the Pro plan, with unlimited listings, multiple users and an integration API.' },
       { q: 'How much does PropSync cost?', a: 'Pricing is quoted by plan (Individual or Pro) and team size. Every account starts with a 15-day free trial, no credit card required. Write to us and we will send a proposal for your agency.' },
       { q: 'Can I migrate my listings from Wasi or another system?', a: 'Yes. PropSync imports your inventory from Wasi with automatic daily sync, from any property XML file, and your contacts from CSV. No need to re-enter your portfolio by hand.' },
       { q: 'Do I need to install anything?', a: 'No. PropSync runs in the browser, on desktop and mobile, with nothing to install. The iPhone and Android app is on the way.' },

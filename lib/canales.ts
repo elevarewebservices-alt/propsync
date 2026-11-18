@@ -9,5 +9,6 @@ export interface CanalPublicacion {
 export const CANALES_PUBLICACION: CanalPublicacion[] = [
   { id: 'comprealquile', nombre: 'Compre o Alquile' },
   { id: 'encuentra24',   nombre: 'Encuentra24' },
+  { id: 'inmotech',      nombre: 'Inmotech' },
   { id: 'pagina_web',    nombre: 'Página web' },
 ]

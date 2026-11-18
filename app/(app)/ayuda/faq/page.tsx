@@ -125,7 +125,7 @@ const FAQ_CATEGORIES: FAQCategory[] = [
     questions: [
       {
         question: '¿Qué incluye cada plan?',
-        answer: 'Individual: 50 propiedades, conexión a portales (Compre o Alquile, Encuentra24, Página web), 1 usuario. Pro: propiedades ilimitadas, los mismos portales, WhatsApp, marketing automation, API y 2 usuarios, con usuarios adicionales disponibles. La cotización se define según el tamaño de tu equipo.',
+        answer: 'Individual: 100 propiedades, conexión a portales (Compre o Alquile, Encuentra24, Inmotech, Página web), 1 usuario. Pro: propiedades ilimitadas, los mismos portales, WhatsApp, marketing automation, API y 2 usuarios, con usuarios adicionales disponibles. La cotización se define según el tamaño de tu equipo.',
       },
       {
         question: '¿Cómo cambio de plan?',

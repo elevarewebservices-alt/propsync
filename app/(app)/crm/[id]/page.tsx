@@ -9,7 +9,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import {
+import { UserX,
   ArrowLeft, Mail, Phone, MessageCircle, Calendar, MapPin, Tag, Zap, AlertTriangle, Sparkles,
 } from 'lucide-react'
 import { Contact, CrmStage } from '@/lib/types'
@@ -125,7 +125,7 @@ export default function ContactDetailPage() {
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-8 w-24" />)}
           </div>
         </div>
-        <div className="border-b border-border px-6 py-5 bg-muted/20">
+        <div className="border-b border-border px-4 sm:px-6 py-4 sm:py-5 bg-muted/20">
           <div className="flex items-start gap-4">
             <Skeleton className="h-14 w-14 rounded-full shrink-0" />
             <div className="flex-1 space-y-2">
@@ -175,34 +175,37 @@ export default function ContactDetailPage() {
     // itself becomes the scroll container the moment content runs a hair tall,
     // dragging the top bar and identity card along with it instead of just the
     // tab content below.
-    <div className="flex flex-col h-full overflow-hidden">
+    // Phones: the whole page scrolls (the identity card + funnel are tall, and
+    // pinning them left the tabs a sliver of screen). md+: header stays put and
+    // only the tab content scrolls.
+    <div className="flex flex-col md:h-full md:overflow-hidden">
       {/* ── Top bar with back + actions ───────────────────────────────── */}
-      <div className="border-b border-border px-6 py-3 flex items-center justify-between flex-wrap gap-3">
+      <div className="border-b border-border px-4 sm:px-6 py-3 flex items-center justify-between gap-2">
         <Link href="/crm">
           <Button variant="ghost" size="sm" className="gap-2 -ml-2">
             <ArrowLeft className="h-4 w-4" />
             Contactos
           </Button>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {contact.telefono && (
             <a href={`tel:${contact.telefono}`}>
-              <Button variant="outline" size="sm" className="gap-1.5 h-11 md:h-8 text-xs">
-                <Phone className="h-3.5 w-3.5" /> Llamar
+              <Button variant="outline" size="sm" className="gap-1.5 h-10 w-10 p-0 sm:w-auto sm:px-3 md:h-8 text-xs" aria-label="Llamar" title="Llamar">
+                <Phone className="h-3.5 w-3.5" /><span className="hidden sm:inline">Llamar</span>
               </Button>
             </a>
           )}
           {contact.whatsapp && (
             <a href={`https://wa.me/${contact.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm" className="gap-1.5 h-11 md:h-8 text-xs">
-                <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+              <Button variant="outline" size="sm" className="gap-1.5 h-10 w-10 p-0 sm:w-auto sm:px-3 md:h-8 text-xs" aria-label="WhatsApp" title="WhatsApp">
+                <MessageCircle className="h-3.5 w-3.5" /><span className="hidden sm:inline">WhatsApp</span>
               </Button>
             </a>
           )}
           {contact.email && (
             <a href={`mailto:${contact.email}`}>
-              <Button variant="outline" size="sm" className="gap-1.5 h-11 md:h-8 text-xs">
-                <Mail className="h-3.5 w-3.5" /> Email
+              <Button variant="outline" size="sm" className="gap-1.5 h-10 w-10 p-0 sm:w-auto sm:px-3 md:h-8 text-xs" aria-label="Email" title="Email">
+                <Mail className="h-3.5 w-3.5" /><span className="hidden sm:inline">Email</span>
               </Button>
             </a>
           )}
@@ -211,8 +214,8 @@ export default function ContactDetailPage() {
             const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Seguimiento: ${contact.nombre}`)}&dates=${d}/${d}&details=${encodeURIComponent(`Seguimiento CRM PropSync\nContacto: ${contact.nombre}${contact.telefono ? `\nTeléfono: ${contact.telefono}` : ''}`)}`
             return (
               <a href={gcal} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" className="gap-1.5 h-11 md:h-8 text-xs">
-                  <Calendar className="h-3.5 w-3.5" /> Agendar
+                <Button variant="outline" size="sm" className="gap-1.5 h-10 w-10 p-0 sm:w-auto sm:px-3 md:h-8 text-xs" aria-label="Agendar" title="Agendar">
+                  <Calendar className="h-3.5 w-3.5" /><span className="hidden sm:inline">Agendar</span>
                 </Button>
               </a>
             )
@@ -220,11 +223,13 @@ export default function ContactDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            className="gap-1.5 h-11 md:h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
+            className="gap-1.5 h-10 w-10 p-0 sm:w-auto sm:px-3 md:h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
             onClick={() => setConfirmOpen(true)}
             disabled={deactivating}
+            aria-label="Desactivar contacto"
+            title="Desactivar contacto"
           >
-            Desactivar
+            <UserX className="h-3.5 w-3.5" /><span className="hidden sm:inline">Desactivar</span>
           </Button>
         </div>
       </div>
@@ -266,7 +271,7 @@ export default function ContactDetailPage() {
       </Dialog>
 
       {/* ── Identity card ─────────────────────────────────────────────── */}
-      <div className="border-b border-border px-6 py-5 bg-muted/20">
+      <div className="border-b border-border px-4 sm:px-6 py-4 sm:py-5 bg-muted/20">
         <div className="flex items-start gap-4 flex-wrap">
           <div className={`h-14 w-14 rounded-full flex items-center justify-center text-lg font-semibold ${avatarBg(contact.nombre)}`}>
             {initials(contact.nombre)}
@@ -329,8 +334,8 @@ export default function ContactDetailPage() {
       </div>
 
       {/* ── Tabbed content ────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto">
-        <Tabs defaultValue="info" className="p-6">
+      <div className="md:flex-1 md:overflow-y-auto">
+        <Tabs defaultValue="info" className="p-4 sm:p-6">
           <TabsList className="mb-6 w-full justify-start overflow-x-auto flex-nowrap gap-1">
             <TabsTrigger value="info" className="shrink-0 flex-none">Información</TabsTrigger>
             <TabsTrigger value="interes" className="shrink-0 flex-none">Interés</TabsTrigger>

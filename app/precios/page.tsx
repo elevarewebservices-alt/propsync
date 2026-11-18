@@ -11,7 +11,7 @@ const PLANS = [
     name: 'Individual',
     desc: 'Para agentes independientes que arrancan',
     features: [
-      '50 propiedades',
+      '100 propiedades',
       'Base de datos centralizada',
       'CRM básico (Kanban)',
       'Asistente IA limitado',

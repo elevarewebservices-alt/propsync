@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 const config: Config = {
   darkMode: "class",
@@ -73,7 +74,18 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // components/ui (shadcn on Base UI) is written with Tailwind v4 variant
+    // shorthands. On Tailwind 3.4 these didn't exist, so e.g. Tabs never got
+    // `flex-col` (the tab list sat beside the content and squeezed it into a
+    // narrow column) and the active tab was never highlighted. Defining them
+    // here fixes every shadcn component without editing components/ui.
+    plugin(({ addVariant }) => {
+      addVariant("data-horizontal", '&[data-orientation="horizontal"]');
+      addVariant("data-vertical", '&[data-orientation="vertical"]');
+      addVariant("data-active", "&[data-active]");
+    }),
+  ],
 };
 
 export default config;

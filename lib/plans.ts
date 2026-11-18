@@ -17,7 +17,7 @@ export const PLANS: Plan[] = [
     nombre: 'Individual',
     precio: 30,
     limites: {
-      propiedades: 50,
+      propiedades: 100,
       agentes: 1,
       fuentes: 1,
       canales: TODOS_LOS_CANALES,
@@ -26,9 +26,9 @@ export const PLANS: Plan[] = [
       api: false,
     },
     features: [
-      'Hasta 50 propiedades',
+      'Hasta 100 propiedades',
       '1 usuario',
-      'Conexión a portales (Compre o Alquile, Encuentra24, Página web)',
+      'Conexión a portales (Compre o Alquile, Encuentra24, Inmotech, Página web)',
       '1 fuente de datos (Wasi)',
       'Dashboard básico',
       'Cola de publicación',

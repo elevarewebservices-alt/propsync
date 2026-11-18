@@ -10,13 +10,14 @@ import { Badge } from '@/components/ui/badge'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { ArrowLeft, Upload, X, ImagePlus, Loader2, Sparkles, Lock, Camera, Images } from 'lucide-react'
+import { ChevronDown, ArrowLeft, Upload, X, ImagePlus, Loader2, Sparkles, Lock, Camera, Images } from 'lucide-react'
 import Link from 'next/link'
 import type { PropertyNote } from '@/lib/types'
 import { resizeImageFile } from '@/lib/image-resize'
 import { isNativeApp } from '@/lib/native'
 import { captureFromCamera, pickFromGallery } from '@/lib/native-camera'
 import { CANALES_PUBLICACION } from '@/lib/canales'
+import { FormAside, MobileActionBar, PriceInput, type ChecklistItem } from '@/components/propiedades/PropertyFormLayout'
 
 const PROPERTY_TYPES = [
   'Apartamento', 'Casa', 'Local Comercial', 'Oficina', 'Bodega',
@@ -40,6 +41,8 @@ export default function EditarPropiedadPage() {
   const router = useRouter()
   const { id } = useParams<{ id: string }>()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Phone browsers: capture="environment" opens the rear camera directly.
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const [companyId, setCompanyId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -333,8 +336,22 @@ export default function EditarPropiedadPage() {
 
   const totalImages = existingImages.length + newImages.length
 
+  const checklist: ChecklistItem[] = [
+    { id: 'prop-basico', label: 'Título', done: !!titulo.trim(), required: true },
+    { id: 'prop-precio', label: 'Precio', done: !!precio, required: true },
+    { id: 'prop-basico', label: 'Tipo de inmueble', done: !!propertyType },
+    { id: 'prop-ubicacion', label: 'Ubicación (zona o ciudad)', done: !!(zona.trim() || ciudad.trim()) },
+    { id: 'prop-detalles', label: 'Habitaciones y área', done: !!(bedrooms && area) },
+    { id: 'prop-fotos', label: 'Fotos (al menos 3)', done: totalImages >= 3 },
+    { id: 'prop-descripcion', label: 'Descripción', done: descripcion.trim().length >= 80 },
+    { id: 'aside-canales', label: 'Lugares de publicación', done: canalesPublicados.length > 0 },
+    { id: 'prop-notas', label: 'Nota de los cambios', done: !!newNote.trim(), required: true },
+  ]
+
   return (
-    <div className="p-4 md:p-6 max-w-3xl space-y-6">
+    // xl+: form on the left, sticky FormAside on the right (same as /nueva).
+    <div className="p-4 md:p-6 max-w-6xl xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-8 xl:items-start">
+    <div className="space-y-6 min-w-0 max-w-3xl">
       <div className="flex items-center gap-3">
         <Link href="/propiedades" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="h-4 w-4" /> Propiedades
@@ -354,17 +371,17 @@ export default function EditarPropiedadPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form id="prop-edit-form" onSubmit={handleSubmit} className="space-y-6">
 
         {/* Básico */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-basico" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Información básica</h2>
           <Separator />
           <div className="space-y-1.5">
             <Label htmlFor="titulo">Título *</Label>
             <Input id="titulo" value={titulo} onChange={(e) => setTitulo(e.target.value)} required />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Operación *</Label>
               <Select value={tipo} onValueChange={(v) => setTipo((v ?? 'venta') as 'venta' | 'arriendo')}>
@@ -397,13 +414,13 @@ export default function EditarPropiedadPage() {
         </section>
 
         {/* Precio */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-precio" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Precio</h2>
           <Separator />
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="precio">Precio *</Label>
-              <Input id="precio" type="number" min="0" step="0.01" value={precio} onChange={(e) => setPrecio(e.target.value)} required />
+              <PriceInput id="precio" value={precio} onChange={setPrecio} required />
             </div>
             <div className="space-y-1.5">
               <Label>Moneda</Label>
@@ -418,15 +435,15 @@ export default function EditarPropiedadPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="maintenance">Cuota de mantenimiento</Label>
-            <Input id="maintenance" type="number" min="0" step="0.01" value={maintenanceFee} onChange={(e) => setMaintenanceFee(e.target.value)} placeholder="150" />
+            <PriceInput id="maintenance" value={maintenanceFee} onChange={setMaintenanceFee} placeholder="150" />
           </div>
         </section>
 
         {/* Ubicación */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-ubicacion" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Ubicación</h2>
           <Separator />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="pais">País</Label>
               <Input id="pais" value={pais} onChange={(e) => setPais(e.target.value)} placeholder="Panamá" />
@@ -451,24 +468,24 @@ export default function EditarPropiedadPage() {
         </section>
 
         {/* Detalles */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-detalles" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Detalles</h2>
           <Separator />
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>Habitaciones</Label>
-              <Input type="number" min="0" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} placeholder="3" />
+              <Input type="number" inputMode="decimal" min="0" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} placeholder="3" />
             </div>
             <div className="space-y-1.5">
               <Label>Baños</Label>
-              <Input type="number" min="0" step="0.5" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} placeholder="2" />
+              <Input type="number" inputMode="decimal" min="0" step="0.5" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} placeholder="2" />
             </div>
             <div className="space-y-1.5">
               <Label>Garajes</Label>
-              <Input type="number" min="0" value={garages} onChange={(e) => setGarages(e.target.value)} placeholder="1" />
+              <Input type="number" inputMode="decimal" min="0" value={garages} onChange={(e) => setGarages(e.target.value)} placeholder="1" />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>Área total (m²)</Label>
               <Input value={area} onChange={(e) => setArea(e.target.value)} placeholder="120" />
@@ -484,12 +501,12 @@ export default function EditarPropiedadPage() {
           </div>
           <div className="space-y-1.5">
             <Label>Año de construcción</Label>
-            <Input type="number" min="1900" max={new Date().getFullYear()} value={year} onChange={(e) => setYear(e.target.value)} className="w-32" />
+            <Input type="number" inputMode="decimal" min="1900" max={new Date().getFullYear()} value={year} onChange={(e) => setYear(e.target.value)} className="w-32" />
           </div>
         </section>
 
         {/* Características */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-caracteristicas" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Características</h2>
           <Separator />
           <div>
@@ -542,7 +559,7 @@ export default function EditarPropiedadPage() {
         </section>
 
         {/* Descripción */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-descripcion" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-foreground">Descripción</h2>
             <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={handleGenerateDescription} disabled={generating}>
@@ -557,7 +574,7 @@ export default function EditarPropiedadPage() {
         </section>
 
         {/* Comisiones */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-comisiones" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-foreground">Comisiones</h2>
             <Badge variant="secondary" className="text-xs">Opcional</Badge>
@@ -566,7 +583,7 @@ export default function EditarPropiedadPage() {
           <div className="space-y-5">
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Comisión empresa</p>
-              <div className="grid grid-cols-3 gap-4 mb-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-3">
                 <Select value={commType} onValueChange={(v) => setCommType((v ?? 'percentage') as 'percentage' | 'fixed')}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -574,7 +591,7 @@ export default function EditarPropiedadPage() {
                     <SelectItem value="fixed">Monto fijo</SelectItem>
                   </SelectContent>
                 </Select>
-                <Input type="number" min="0" step={commType === 'percentage' ? '0.1' : '1'} value={commValue} onChange={(e) => setCommValue(e.target.value)} placeholder={commType === 'percentage' ? 'Ej: 3' : 'Ej: 5000'} className="h-9" />
+                <Input type="number" inputMode="decimal" min="0" step={commType === 'percentage' ? '0.1' : '1'} value={commValue} onChange={(e) => setCommValue(e.target.value)} placeholder={commType === 'percentage' ? 'Ej: 3' : 'Ej: 5000'} className="h-9" />
                 <div />
               </div>
               <textarea value={commNotes} onChange={(e) => setCommNotes(e.target.value)} rows={2} placeholder="Observaciones (opcional)"
@@ -583,7 +600,7 @@ export default function EditarPropiedadPage() {
             <Separator />
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Comisión externa</p>
-              <div className="grid grid-cols-3 gap-4 mb-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-3">
                 <Select value={extCommType} onValueChange={(v) => setExtCommType((v ?? 'percentage') as 'percentage' | 'fixed')}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -591,7 +608,7 @@ export default function EditarPropiedadPage() {
                     <SelectItem value="fixed">Monto fijo</SelectItem>
                   </SelectContent>
                 </Select>
-                <Input type="number" min="0" step={extCommType === 'percentage' ? '0.1' : '1'} value={extCommValue} onChange={(e) => setExtCommValue(e.target.value)} placeholder={extCommType === 'percentage' ? 'Ej: 2' : 'Ej: 3000'} className="h-9" />
+                <Input type="number" inputMode="decimal" min="0" step={extCommType === 'percentage' ? '0.1' : '1'} value={extCommValue} onChange={(e) => setExtCommValue(e.target.value)} placeholder={extCommType === 'percentage' ? 'Ej: 2' : 'Ej: 3000'} className="h-9" />
                 <div />
               </div>
               <textarea value={extCommNotes} onChange={(e) => setExtCommNotes(e.target.value)} rows={2} placeholder="Observaciones (opcional)"
@@ -601,10 +618,11 @@ export default function EditarPropiedadPage() {
         </section>
 
         {/* Fotos */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-fotos" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Fotos</h2>
           <Separator />
           <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
+          <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
 
           {totalImages === 0 ? (
             isNative ? (
@@ -621,14 +639,21 @@ export default function EditarPropiedadPage() {
                 </button>
               </div>
             ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-1 gap-3">
+              <button type="button" onClick={() => cameraInputRef.current?.click()}
+                className="sm:hidden flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-8 text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors">
+                <Camera className="h-7 w-7" />
+                <p className="text-sm font-medium">Tomar foto</p>
+              </button>
               <button type="button" onClick={() => fileInputRef.current?.click()}
-                className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border py-10 text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors">
+                className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border py-8 sm:py-10 text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors">
                 <ImagePlus className="h-8 w-8" />
                 <div className="text-center">
                   <p className="text-sm font-medium">Agregar fotos</p>
-                  <p className="text-xs">PNG, JPG hasta 10 MB — máximo 20 fotos</p>
+                  <p className="text-xs hidden sm:block">PNG, JPG hasta 10 MB — máximo 20 fotos</p>
                 </div>
               </button>
+              </div>
             )
           ) : (
             <div className="space-y-3">
@@ -671,7 +696,7 @@ export default function EditarPropiedadPage() {
         </section>
 
         {/* Lugares de publicación */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-canales" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4 xl:hidden">
           <h2 className="text-sm font-semibold text-foreground">Lugares de publicación</h2>
           <p className="text-xs text-muted-foreground">Elige dónde se publicará esta propiedad</p>
           <Separator />
@@ -695,7 +720,7 @@ export default function EditarPropiedadPage() {
         </section>
 
         {/* Notas internas */}
-        <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <section id="prop-notas" className="scroll-mt-6 rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-foreground">Notas internas</h2>
             <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
@@ -747,7 +772,7 @@ export default function EditarPropiedadPage() {
           </div>
         </section>
 
-        <div className="flex items-center justify-end gap-3 pb-8">
+        <div className="hidden md:flex items-center justify-end gap-3 pb-8">
           <Link href="/propiedades">
             <Button type="button" variant="outline">Cancelar</Button>
           </Link>
@@ -760,7 +785,31 @@ export default function EditarPropiedadPage() {
             ) : 'Guardar cambios'}
           </Button>
         </div>
+
+        <MobileActionBar>
+          <Link href="/propiedades" className="flex-1">
+            <Button type="button" variant="outline" className="w-full h-11">Cancelar</Button>
+          </Link>
+          <Button type="submit" className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white" disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
+          </Button>
+        </MobileActionBar>
       </form>
+    </div>
+
+    <FormAside
+      preview={{ titulo, precio, currency, tipo, zona, ciudad, imageUrl: existingImages[0] ?? newImages[0]?.preview ?? null, bedrooms, bathrooms, area }}
+      checklist={checklist}
+      canales={canalesPublicados}
+      onToggleCanal={(id) => toggleFeature(canalesPublicados, setCanalesPublicados, id)}
+      error={error}
+      actions={<>
+        <Button type="submit" form="prop-edit-form" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={saving}>
+          {saving ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{uploading ? 'Subiendo fotos...' : 'Guardando...'}</span> : 'Guardar cambios'}
+        </Button>
+        <Link href="/propiedades"><Button type="button" variant="outline" className="w-full">Cancelar</Button></Link>
+      </>}
+    />
     </div>
   )
 }

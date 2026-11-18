@@ -42,7 +42,7 @@ modalidad White Label para empresas que quieren operarla bajo su propia marca.
 ## Preguntas frecuentes
 
 - **¿Sirve para un agente independiente?** Sí: el plan Individual es para un
-  usuario (hasta 50 propiedades, CRM, IA y portales). El plan Pro es para
+  usuario (hasta 100 propiedades, CRM, IA y portales). El plan Pro es para
   equipos (propiedades ilimitadas, varios usuarios, API).
 - **¿Cuánto cuesta?** Cotización según plan y tamaño del equipo. Todas las
   cuentas empiezan con 15 días de prueba gratis sin tarjeta de crédito.
