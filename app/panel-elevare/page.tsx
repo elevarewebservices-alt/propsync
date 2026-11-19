@@ -13,7 +13,7 @@ async function loadData() {
   const db = createAdminClient()
   const month = new Date().toISOString().slice(0, 7) // YYYY-MM
 
-  const [companiesRes, propsRes, contactsRes, agentsRes, usageRes, imgRes, addonsRes, paymentsRes, promosRes, feedsRes] = await Promise.all([
+  const [companiesRes, propsRes, contactsRes, agentsRes, usageRes, imgRes, addonsRes, paymentsRes, promosRes, feedsRes, e24Res] = await Promise.all([
     (db.from('companies') as any)
       .select('id, nombre, email, plan_id, created_at, subscription_status, subscription_provider, trial_ends_at, current_period_end')
       .order('created_at', { ascending: true }),
@@ -35,6 +35,10 @@ async function loadData() {
     // feed_token needs migration 031 — queried separately so a missing column
     // only hides the feed section instead of breaking the whole panel.
     (db.from('companies') as any).select('id, feed_token, feed_last_access').then((r: any) => r, () => ({ data: null })),
+    // Encuentra24 lead sync needs migration 032 — same degrade-safe pattern.
+    (db.from('companies') as any)
+      .select('id, encuentra24_slug, encuentra24_api_key, encuentra24_last_sync_at, encuentra24_last_error, encuentra24_leads_imported')
+      .then((r: any) => r, () => ({ data: null })),
   ])
 
   const tally = (rows: { company_id: string }[] | null) => {
@@ -64,6 +68,18 @@ async function loadData() {
     feedMap[f.id] = { feed_token: f.feed_token, feed_last_access: f.feed_last_access ?? {} }
   }
 
+  // Only "is a key set" leaves the server — the key itself never reaches the browser.
+  const e24Map: Record<string, CompanyRow['e24']> = {}
+  for (const r of (e24Res?.data ?? []) as any[]) {
+    e24Map[r.id] = {
+      slug: r.encuentra24_slug ?? null,
+      key_set: Boolean(r.encuentra24_api_key),
+      last_sync_at: r.encuentra24_last_sync_at ?? null,
+      last_error: r.encuentra24_last_error ?? null,
+      leads_imported: r.encuentra24_leads_imported ?? 0,
+    }
+  }
+
   const companies: CompanyRow[] = ((companiesRes.data ?? []) as any[]).map((c) => ({
     id: c.id,
     nombre: c.nombre,
@@ -77,6 +93,7 @@ async function loadData() {
     addons: addonMap[c.id] ?? [],
     feed_token: feedMap[c.id]?.feed_token ?? null,
     feed_last_access: feedMap[c.id]?.feed_last_access ?? {},
+    e24: e24Res?.data ? (e24Map[c.id] ?? null) : null,
     propiedades: propMap[c.id] ?? 0,
     contactos: contactMap[c.id] ?? 0,
     agentes: agentMap[c.id] ?? 0,

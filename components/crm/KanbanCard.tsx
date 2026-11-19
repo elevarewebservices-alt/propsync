@@ -92,6 +92,11 @@ export function KanbanCard({ contact, stages, onMove, onOpen, overlay = false }:
         )}
       </div>
 
+      {contact.fuente === 'encuentra24' && (
+        <div className="mb-2">
+          <span className="text-[10px] text-orange-600 dark:text-orange-400 font-medium">Encuentra24</span>
+        </div>
+      )}
       {contact.fuente === 'meta_leads' && (
         <div className="flex items-center gap-1 mb-2">
           <Zap className="h-3 w-3 text-blue-500" aria-hidden="true" />

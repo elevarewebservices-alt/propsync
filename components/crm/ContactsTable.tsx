@@ -251,6 +251,8 @@ export function ContactsTable({ contacts, stages, filtered = false, onClearFilte
                         <Badge className="bg-blue-100 text-blue-700 border-0 text-[11px] gap-1 dark:bg-blue-900/40 dark:text-blue-300">
                           <Zap className="h-3 w-3" aria-hidden="true" /> Meta
                         </Badge>
+                      ) : c.fuente === 'encuentra24' ? (
+                        <Badge className="bg-orange-100 text-orange-700 border-0 dark:bg-orange-900/40 dark:text-orange-300 text-[11px]">Encuentra24</Badge>
                       ) : (
                         <span className="text-xs capitalize text-muted-foreground">{c.fuente.replace('_', ' ')}</span>
                       )}

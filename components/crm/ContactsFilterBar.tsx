@@ -141,6 +141,9 @@ export function ContactsFilterBar({ filters, onChange, stages, allTags }: Props)
                   <SelectItem value="referido">Referido</SelectItem>
                   <SelectItem value="web_form">Formulario web</SelectItem>
                   <SelectItem value="meta_leads">Meta / Facebook</SelectItem>
+                  <SelectItem value="encuentra24">Encuentra24</SelectItem>
+                  <SelectItem value="comprealquile">Compre o Alquile</SelectItem>
+                  <SelectItem value="inmotech">Inmotech</SelectItem>
                   <SelectItem value="wasi">Wasi</SelectItem>
                 </SelectContent>
               </Select>

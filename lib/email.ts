@@ -170,6 +170,9 @@ const FUENTE_CONFIG: Record<string, { label: string; bg: string; color: string }
   referido:   { label: 'Referido',   bg: '#ede9fe', color: '#6d28d9' },
   manual:     { label: 'Manual',     bg: '#f1f5f9', color: '#475569' },
   wasi:       { label: 'Wasi',       bg: '#e0f2fe', color: '#0369a1' },
+  encuentra24:   { label: 'Encuentra24',      bg: '#ffedd5', color: '#c2410c' },
+  comprealquile: { label: 'Compre o Alquile', bg: '#fef9c3', color: '#a16207' },
+  inmotech:      { label: 'Inmotech',         bg: '#e0e7ff', color: '#4338ca' },
 }
 
 const TIPO_LABEL: Record<string, string> = {

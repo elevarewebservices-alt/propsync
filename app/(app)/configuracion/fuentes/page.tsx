@@ -217,6 +217,9 @@ export default function FuentesPage() {
         </div>
       </div>
 
+      {/* Encuentra24 leads → CRM */}
+      <Encuentra24Card />
+
       {/* Portal XML feeds */}
       <PortalFeedCard
         origin={origin}
@@ -406,6 +409,150 @@ function PortalFeedCard({
         <Button size="sm" onClick={onGenerate} disabled={loading} className="gap-2">
           Generar URLs de feed
         </Button>
+      )}
+    </div>
+  )
+}
+
+interface E24State {
+  slug: string
+  key_set: boolean
+  connected: boolean
+  last_sync_at: string | null
+  last_error: string | null
+  leads_imported: number
+}
+
+/**
+ * Encuentra24 → CRM. Self-contained: loads/saves via /api/configuracion/encuentra24.
+ * New leads are imported automatically every few minutes; the buttons are for
+ * testing the credentials and pulling immediately.
+ */
+function Encuentra24Card() {
+  const [state, setState] = useState<E24State | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [slug, setSlug] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const [busy, setBusy] = useState<'save' | 'test' | 'sync' | null>(null)
+  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  async function load() {
+    const r = await fetch('/api/configuracion/encuentra24')
+    const d = await r.json().catch(() => ({}))
+    if (!r.ok) { setLoadError(d.error ?? 'No se pudo cargar'); return }
+    setLoadError(null)
+    setState(d)
+    setSlug(d.slug ?? '')
+  }
+  useEffect(() => { load() }, [])
+
+  async function save() {
+    setBusy('save'); setMsg(null)
+    try {
+      const body: Record<string, string> = { slug: slug.trim() }
+      if (apiKey.trim()) body.api_key = apiKey.trim()
+      const r = await fetch('/api/configuracion/encuentra24', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok) throw new Error(d.error ?? 'No se pudo guardar')
+      setApiKey('')
+      setMsg({ type: 'success', text: 'Credenciales guardadas.' })
+      await load()
+    } catch (e) {
+      setMsg({ type: 'error', text: e instanceof Error ? e.message : 'Error' })
+    } finally { setBusy(null) }
+  }
+
+  async function action(kind: 'test' | 'sync') {
+    setBusy(kind); setMsg(null)
+    try {
+      const r = await fetch(`/api/configuracion/encuentra24?action=${kind}`, { method: 'POST' })
+      const d = await r.json().catch(() => ({}))
+      if (kind === 'test') {
+        if (!r.ok || !d.ok) throw new Error(d.error ?? 'No se pudo conectar')
+        setMsg({ type: 'success', text: 'Conexión correcta con Encuentra24.' })
+      } else {
+        if (!r.ok) throw new Error(d.reason ?? d.error ?? 'No se pudo sincronizar')
+        const parts = [`${d.created} nuevos`]
+        if (d.merged) parts.push(`${d.merged} ya existían (se agregó nota)`)
+        setMsg({ type: 'success', text: d.fetched === 0 ? 'Sin leads nuevos.' : `Importados: ${parts.join(', ')}.` })
+      }
+      await load()
+    } catch (e) {
+      setMsg({ type: 'error', text: e instanceof Error ? e.message : 'Error' })
+    } finally { setBusy(null) }
+  }
+
+  const connected = state?.connected
+  const dirty = slug.trim() !== (state?.slug ?? '') || apiKey.trim().length > 0
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-foreground">Encuentra24 — contactos al CRM</h2>
+        {!state && !loadError ? (
+          <Badge variant="secondary"><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Cargando</Badge>
+        ) : connected ? (
+          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"><CheckCircle2 className="h-3 w-3 mr-1" /> Conectado</Badge>
+        ) : (
+          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><AlertCircle className="h-3 w-3 mr-1" /> No configurado</Badge>
+        )}
+      </div>
+      <Separator />
+      <p className="text-sm text-muted-foreground">
+        Cada persona que te escribe por un anuncio de Encuentra24 entra automáticamente al CRM como lead nuevo,
+        vinculado a la propiedad que consultó. Se revisa cada pocos minutos.
+      </p>
+      {loadError ? (
+        <p className="text-xs text-red-600 dark:text-red-400">{loadError}</p>
+      ) : (
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="e24-slug">Slug de la cuenta</Label>
+            <Input id="e24-slug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="mi-inmobiliaria" className="font-mono text-sm" disabled={!state || !!busy} />
+            <p className="text-xs text-muted-foreground">El identificador de tu cuenta de agencia en Encuentra24.</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="e24-key">
+              API key
+              {state?.key_set && !apiKey && <span className="ml-2 text-xs text-muted-foreground font-normal">(guardada)</span>}
+            </Label>
+            <Input id="e24-key" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={state?.key_set ? '••••••••••••••••' : 'Pega la API key de Encuentra24'} className="font-mono text-sm" autoComplete="off" disabled={!state || !!busy} />
+          </div>
+          {msg && (
+            <div className={`text-xs flex items-center gap-1.5 ${msg.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+              {msg.type === 'success' ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
+              {msg.text}
+            </div>
+          )}
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => action('test')} disabled={!connected || !!busy || dirty} className="gap-2">
+              {busy === 'test' && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Probar conexión
+            </Button>
+            <Button size="sm" onClick={save} disabled={!state || !!busy || !dirty} className="gap-2">
+              {busy === 'save' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Guardar
+            </Button>
+          </div>
+          {connected && (
+            <>
+              <Separator />
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 border border-border px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-foreground font-medium">{state?.leads_imported ?? 0} leads importados</p>
+                  <p className="text-xs text-muted-foreground">
+                    Última revisión: {state?.last_sync_at
+                      ? new Date(state.last_sync_at).toLocaleString('es-PA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+                      : 'todavía no'}
+                  </p>
+                  {state?.last_error && <p className="text-xs text-red-600 dark:text-red-400 mt-0.5 break-words">{state.last_error}</p>}
+                </div>
+                <Button variant="outline" size="sm" onClick={() => action('sync')} disabled={!!busy} className="gap-2 shrink-0">
+                  <RefreshCw className={`h-3.5 w-3.5 ${busy === 'sync' ? 'animate-spin' : ''}`} />
+                  {busy === 'sync' ? 'Sincronizando…' : 'Sincronizar ahora'}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       )}
     </div>
   )

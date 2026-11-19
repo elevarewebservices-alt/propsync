@@ -43,3 +43,6 @@ graphify-out/
 
 .env*
 /supabase/.temp/
+
+# Standalone Encuentra24→Zoho script for another client (has its own .env); reference only
+encuentra-wasi/

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
+import { syncCompanyEncuentra24 } from '@/lib/encuentra24-sync'
 import { createAdminClient } from '@/lib/supabase'
 import { adminOr403, isIsoDate, PLAN_IDS, SUBSCRIPTION_STATUSES, UUID_RE } from '@/lib/admin'
 
@@ -9,7 +10,9 @@ export const dynamic = 'force-dynamic'
  * PATCH /api/admin/companies/[id] — Elevare-only edit of a tenant's plan and
  * subscription state (change plan, extend trial, suspend, reactivate).
  * Body: any of { plan_id, subscription_status, trial_ends_at, current_period_end,
- * generate_feed_token: true } (the last one issues new portal-feed URLs).
+ * generate_feed_token: true, encuentra24_slug, encuentra24_api_key,
+ * sync_encuentra24: true } — feed URLs, Encuentra24 lead credentials, and an
+ * immediate Encuentra24 import for manually-managed clients.
  * subscription_status / dates accept null (null status = grandfathered/open).
  */
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
@@ -42,6 +45,25 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
   }
   if (body.generate_feed_token === true) update.feed_token = randomUUID()
+  if (typeof body.encuentra24_slug === 'string') {
+    const slug = body.encuentra24_slug.trim()
+    if (slug && !/^[a-z0-9][a-z0-9-]{1,80}$/i.test(slug)) {
+      return NextResponse.json({ error: 'Slug de Encuentra24 inválido' }, { status: 400 })
+    }
+    update.encuentra24_slug = slug || null
+    if (!slug) update.encuentra24_api_key = null
+  }
+  if (typeof body.encuentra24_api_key === 'string' && body.encuentra24_api_key.trim()) {
+    update.encuentra24_api_key = body.encuentra24_api_key.trim()
+    update.encuentra24_last_error = null
+  }
+
+  if (body.sync_encuentra24 === true && Object.keys(update).length === 0) {
+    const result = await syncCompanyEncuentra24(params.id)
+    console.info('[admin] encuentra24 sync', { by: admin, company: params.id, result })
+    if (result.status === 'error') return NextResponse.json({ error: result.reason ?? 'Error de sincronización' }, { status: 502 })
+    return NextResponse.json({ sync: result })
+  }
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'Nada que actualizar' }, { status: 400 })
   }

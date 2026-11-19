@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 const VALID_TIPOS = ['cliente', 'propietario', 'broker']
 const VALID_OPERACIONES = ['compra', 'alquiler', 'ambas']
-const VALID_FUENTES = ['manual', 'meta_leads', 'web_form', 'referido', 'wasi']
+const VALID_FUENTES = ['manual', 'meta_leads', 'web_form', 'referido', 'wasi', 'encuentra24', 'comprealquile', 'inmotech']
 
 function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)

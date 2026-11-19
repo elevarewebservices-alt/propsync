@@ -38,7 +38,7 @@ export interface CompanyAddon {
 export type EtapaCRM = string // dynamic — values come from crm_stages table
 
 export type ContactTipo = 'cliente' | 'propietario' | 'broker'
-export type ContactFuente = 'manual' | 'meta_leads' | 'web_form' | 'referido' | 'wasi'
+export type ContactFuente = 'manual' | 'meta_leads' | 'web_form' | 'referido' | 'wasi' | 'encuentra24' | 'comprealquile' | 'inmotech'
 export type TipoOperacion = 'compra' | 'alquiler' | 'ambas'
 export type ContactInteres = 'interesado' | 'propietario' | 'visitó' | 'ofertó' | 'descartado'
 

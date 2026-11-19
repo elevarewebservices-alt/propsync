@@ -282,6 +282,8 @@ function CompanyDrawer({ company: c, payments, addons, onClose }: {
   const [notes, setNotes] = useState('')
   const [trialDays, setTrialDays] = useState('7')
   const [periodEnd, setPeriodEnd] = useState(c.current_period_end?.slice(0, 10) ?? '')
+  const [e24Slug, setE24Slug] = useState(c.e24?.slug ?? '')
+  const [e24Key, setE24Key] = useState('')
 
   async function run(fn: () => Promise<string | null>, okText: string) {
     setBusy(true)
@@ -431,6 +433,38 @@ function CompanyDrawer({ company: c, payments, addons, onClose }: {
                 </label>
               )
             })}
+          </section>
+
+          <section className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase text-gray-500">Encuentra24 · leads al CRM</h4>
+            {c.e24 === null ? (
+              <p className="text-xs text-amber-700">Aplica la migración 032 para conectar Encuentra24.</p>
+            ) : (
+              <>
+                <input className={input} placeholder="Slug de la cuenta (ej. mi-inmobiliaria)" value={e24Slug} onChange={(e) => setE24Slug(e.target.value)} />
+                <input className={input} type="password" autoComplete="off" placeholder={c.e24.key_set ? 'API key guardada — escribe para reemplazar' : 'API key de Encuentra24'} value={e24Key} onChange={(e) => setE24Key(e.target.value)} />
+                <div className="flex gap-2">
+                  <button
+                    disabled={busy || (!e24Key.trim() && e24Slug.trim() === (c.e24.slug ?? ''))}
+                    onClick={() => { patch({ encuentra24_slug: e24Slug, ...(e24Key.trim() ? { encuentra24_api_key: e24Key } : {}) }, 'Encuentra24 guardado'); setE24Key('') }}
+                    className={`${btnPrimary} flex-1`}
+                  >
+                    Guardar
+                  </button>
+                  <button
+                    disabled={busy || !c.e24.slug || !c.e24.key_set}
+                    onClick={() => patch({ sync_encuentra24: true }, 'Sincronización de Encuentra24 completada')}
+                    className={`${btnGhost} flex-1`}
+                  >
+                    Sincronizar ahora
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-500">
+                  {c.e24.leads_imported} leads importados · última revisión {c.e24.last_sync_at ? fmtDate(c.e24.last_sync_at) : 'nunca'}
+                </p>
+                {c.e24.last_error && <p className="text-[11px] text-red-600 break-words">{c.e24.last_error}</p>}
+              </>
+            )}
           </section>
 
           <section className="space-y-2">

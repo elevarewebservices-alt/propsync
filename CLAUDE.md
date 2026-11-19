@@ -213,6 +213,16 @@ Pull model, no worker/server: each company has a secret `companies.feed_token` (
 - Lapsed subscription → `402` (not an empty feed): portals keep the last good import on a failed fetch, whereas an empty feed would delete every listing.
 - Each fetch stamps `companies.feed_last_access[portal]`, shown as "Leído por el portal" in Configuración → Fuentes (URLs + per-portal listing counts + regenerate) and in the `/panel-elevare` company drawer (Elevare can generate/copy URLs for manually-managed clients).
 
+### Encuentra24 leads → CRM (inbound)
+
+Pull model ported from the user's standalone `encuentra-wasi/` script (an Encuentra24→Zoho sync for another client; git-ignored, reference only). Encuentra24 CRM API: `GET https://www.encuentra24.com/api.php/v1/crm/index?slug=<cuenta>&limit=50`, header `x-api-key` → `{ data: [{ id, title, status, created_at (unix s), contact: { name, email, phone } }] }`.
+
+- Per-company credentials on `companies.encuentra24_slug` / `encuentra24_api_key` (migration `032_encuentra24_leads.sql`; not in the PostgREST column GRANT). Set in Configuración → Fuentes (`app/api/configuracion/encuentra24`) or by Elevare in the `/panel-elevare` drawer.
+- `lib/encuentra24-sync.ts` `syncCompanyEncuentra24()`: leads newer than `encuentra24_last_lead_at` → contact `fuente='encuentra24'`, `external_ref=<lead id>` (unique per company+fuente → re-runs never duplicate). Same email/phone as an existing contact → adds a note instead of a duplicate. Lead title matched to a listing (`matchPropertyByTitle`) → `contact_property_links` + the listing's agent is assigned. Watermark only advances if at least one lead succeeded. Push + owner email per batch.
+- Pure helpers in `lib/portal-leads.ts` (phone `00507…`→`+507…`, country, property type, title match); tests `node --test scripts/test-portal-leads.mjs`.
+- Schedule: `/api/cron/encuentra24-leads` (Bearer `CRON_SECRET`) is pinged every 5 min from the Elevare DigitalOcean droplet (`deploy/encuentra24-cron.example`) because Vercel Hobby only allows daily crons; `vercel.json` runs it daily as a fallback.
+- Compre o Alquile / Inmotech: no public import spec found; they get the generic XML feed above. Their leads aren't imported yet (no lead API known).
+
 UI: a "Lugares de publicación" section (pill toggles) at the end of both `propiedades/nueva` and `propiedades/[id]/editar`, writing to `properties.canales_publicados` (`TEXT[]`). `canAccessChannel()` exists but isn't called anywhere yet — channel selection isn't currently plan-gated, only marketing copy reflects what's "included."
 
 ---
@@ -341,7 +351,8 @@ Wraps Meta's Message Templates Management API (`lib/whatsapp-templates.ts` — `
 
 ### Pending
 - [x] Outbound portal XML feeds — `/feeds/<token>/<portal>.xml` (see "Outbound portal XML feeds")
-- [ ] Inbound portal leads (Encuentra24 / Compre o Alquile contacts → CRM)
+- [x] Inbound Encuentra24 leads → CRM (see "Encuentra24 leads → CRM")
+- [ ] Inbound Compre o Alquile / Inmotech leads (no lead API/spec yet)
 - [ ] Stripe payments — plan upgrade/downgrade, webhook updates `companies.plan_id`
 
 ---

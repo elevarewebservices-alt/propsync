@@ -41,7 +41,7 @@ const INSTRUCTIONS = [
   ['tipo_operacion', 'No', 'compra / alquiler / ambas', 'Tipo de operación buscada'],
   ['presupuesto_min', 'No', 'Número', 'Presupuesto mínimo en USD'],
   ['presupuesto_max', 'No', 'Número', 'Presupuesto máximo en USD'],
-  ['fuente', 'No', 'manual / referido / web_form / meta_leads / wasi', 'Origen del lead'],
+  ['fuente', 'No', 'manual / referido / web_form / meta_leads / wasi / encuentra24 / comprealquile / inmotech', 'Origen del lead'],
   ['meta_campaign', 'No', 'Texto libre', 'Nombre de campaña Meta'],
   ['meta_form', 'No', 'Texto libre', 'Nombre del formulario Meta'],
   ['etapa', 'No', 'nuevo_lead / contactado / visita / oferta_negociando / cerrado / descartado / basurero', 'Etapa del pipeline'],

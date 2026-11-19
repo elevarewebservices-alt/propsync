@@ -287,6 +287,9 @@ export default function ContactDetailPage() {
                   <Zap className="h-3 w-3" /> Meta
                 </Badge>
               )}
+              {contact.fuente === 'encuentra24' && (
+                <Badge className="bg-orange-100 text-orange-700 border-0 dark:bg-orange-900/40 dark:text-orange-300 text-xs">Encuentra24</Badge>
+              )}
             </div>
             <div className="flex items-center gap-4 mt-2 flex-wrap text-xs text-muted-foreground">
               {contact.email && (
