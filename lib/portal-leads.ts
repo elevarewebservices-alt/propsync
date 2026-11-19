@@ -68,6 +68,10 @@ export interface Encuentra24RawLead {
 
 export interface PortalLead {
   externalId: string
+  /** When the portal tells us the exact listing (Compre o Alquile codigoAviso = our property id). */
+  propertyId?: string | null
+  /** Free-text message the person wrote, if the portal provides it. */
+  mensaje?: string | null
   nombre: string
   email: string | null
   telefono: string | null

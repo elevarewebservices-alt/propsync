@@ -1,0 +1,13 @@
+# Portal integrations (Encuentra24 leads + Compre o Alquile listings & contacts), every 5 minutes.
+#
+# Vercel Hobby only allows daily crons, so the Elevare DigitalOcean droplet
+# pings the PropSync endpoint instead. No code runs here — it's just a curl.
+# The endpoint loops over every agency that connected Encuentra24 or Compre o Alquile in
+# Configuración → Fuentes (or in /panel-elevare): imports leads, publishes listings.
+#
+# Install on the droplet:
+#   1. crontab -e
+#   2. paste the line below, replacing <CRON_SECRET> with the same value set in
+#      Vercel → Settings → Environment Variables → CRON_SECRET
+#
+*/5 * * * * curl -fsS -m 300 -H "Authorization: Bearer <CRON_SECRET>" https://www.propsyncia.com/api/cron/portales > /dev/null 2>&1

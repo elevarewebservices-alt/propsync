@@ -284,6 +284,8 @@ function CompanyDrawer({ company: c, payments, addons, onClose }: {
   const [periodEnd, setPeriodEnd] = useState(c.current_period_end?.slice(0, 10) ?? '')
   const [e24Slug, setE24Slug] = useState(c.e24?.slug ?? '')
   const [e24Key, setE24Key] = useState('')
+  const [coaCodigo, setCoaCodigo] = useState(c.coa?.codigo ?? '')
+  const [coaPlan, setCoaPlan] = useState(c.coa?.plan ?? '')
 
   async function run(fn: () => Promise<string | null>, okText: string) {
     setBusy(true)
@@ -463,6 +465,39 @@ function CompanyDrawer({ company: c, payments, addons, onClose }: {
                   {c.e24.leads_imported} leads importados · última revisión {c.e24.last_sync_at ? fmtDate(c.e24.last_sync_at) : 'nunca'}
                 </p>
                 {c.e24.last_error && <p className="text-[11px] text-red-600 break-words">{c.e24.last_error}</p>}
+              </>
+            )}
+          </section>
+
+          <section className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase text-gray-500">Compre o Alquile · API OpenNavent</h4>
+            {c.coa === null ? (
+              <p className="text-xs text-amber-700">Aplica la migración 033 para conectar Compre o Alquile.</p>
+            ) : (
+              <>
+                <label className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                  <span>Integración activa</span>
+                  <input type="checkbox" checked={c.coa.enabled} disabled={busy}
+                    onChange={() => { if (c.coa!.enabled && !window.confirm('Se despublicarán sus propiedades de Compre o Alquile. ¿Desactivar?')) return; patch({ comprealquile_enabled: !c.coa!.enabled }, c.coa!.enabled ? 'Compre o Alquile desactivado' : 'Compre o Alquile activado') }} />
+                </label>
+                <input className={input} placeholder="Código de inmobiliaria (vacío = automático)" value={coaCodigo} onChange={(e) => setCoaCodigo(e.target.value)} />
+                <input className={input} placeholder="Plan de publicación (opcional)" value={coaPlan} onChange={(e) => setCoaPlan(e.target.value)} />
+                <div className="flex gap-2">
+                  <button
+                    disabled={busy || (coaCodigo.trim() === (c.coa.codigo ?? '') && coaPlan.trim() === (c.coa.plan ?? ''))}
+                    onClick={() => patch({ comprealquile_codigo: coaCodigo, comprealquile_plan: coaPlan }, 'Compre o Alquile guardado')}
+                    className={`${btnPrimary} flex-1`}
+                  >
+                    Guardar
+                  </button>
+                  <button disabled={busy || !c.coa.enabled} onClick={() => patch({ sync_comprealquile: true }, 'Sincronización de Compre o Alquile completada')} className={`${btnGhost} flex-1`}>
+                    Sincronizar ahora
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-500">
+                  {c.coa.leads_imported} contactos importados · última sincronización {c.coa.last_sync_at ? fmtDate(c.coa.last_sync_at) : 'nunca'}
+                </p>
+                {c.coa.last_error && <p className="text-[11px] text-red-600 break-words">{c.coa.last_error}</p>}
               </>
             )}
           </section>

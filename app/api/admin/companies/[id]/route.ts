@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { syncCompanyEncuentra24 } from '@/lib/encuentra24-sync'
+import { syncCompanyCompreOAlquile, unpublishAllCompreOAlquile, defaultCompreOAlquileCodigo } from '@/lib/comprealquile-sync'
 import { createAdminClient } from '@/lib/supabase'
 import { adminOr403, isIsoDate, PLAN_IDS, SUBSCRIPTION_STATUSES, UUID_RE } from '@/lib/admin'
 
@@ -56,6 +57,33 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   if (typeof body.encuentra24_api_key === 'string' && body.encuentra24_api_key.trim()) {
     update.encuentra24_api_key = body.encuentra24_api_key.trim()
     update.encuentra24_last_error = null
+  }
+
+  if (typeof body.comprealquile_codigo === 'string') {
+    const codigo = body.comprealquile_codigo.trim()
+    if (codigo && !/^[A-Za-z0-9_.-]{2,60}$/.test(codigo)) {
+      return NextResponse.json({ error: 'Código de Compre o Alquile inválido' }, { status: 400 })
+    }
+    update.comprealquile_codigo = codigo || null
+  }
+  if (typeof body.comprealquile_plan === 'string') update.comprealquile_plan = body.comprealquile_plan.trim() || null
+  if (body.comprealquile_enabled === true) {
+    update.comprealquile_enabled = true
+    if (!('comprealquile_codigo' in update)) {
+      const { data: cur } = await (createAdminClient().from('companies') as any).select('comprealquile_codigo').eq('id', params.id).single()
+      if (!cur?.comprealquile_codigo) update.comprealquile_codigo = defaultCompreOAlquileCodigo(params.id)
+    }
+  }
+  if (body.comprealquile_enabled === false) {
+    await unpublishAllCompreOAlquile(params.id).catch(() => 0)
+    update.comprealquile_enabled = false
+  }
+
+  if (body.sync_comprealquile === true && Object.keys(update).length === 0) {
+    const result = await syncCompanyCompreOAlquile(params.id)
+    console.info('[admin] comprealquile sync', { by: admin, company: params.id, result })
+    if (result.status !== 'ok') return NextResponse.json({ error: result.reason ?? 'Error de sincronización' }, { status: 502 })
+    return NextResponse.json({ sync: result })
   }
 
   if (body.sync_encuentra24 === true && Object.keys(update).length === 0) {

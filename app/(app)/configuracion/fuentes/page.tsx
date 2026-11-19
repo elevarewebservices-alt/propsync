@@ -220,6 +220,9 @@ export default function FuentesPage() {
       {/* Encuentra24 leads → CRM */}
       <Encuentra24Card />
 
+      {/* Compre o Alquile (OpenNavent API) */}
+      <CompreOAlquileCard />
+
       {/* Portal XML feeds */}
       <PortalFeedCard
         origin={origin}
@@ -552,6 +555,145 @@ function Encuentra24Card() {
               </div>
             </>
           )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface CoAState {
+  platform_ready: boolean
+  enabled: boolean
+  codigo: string
+  vinculada: boolean | null
+  last_sync_at: string | null
+  last_error: string | null
+  leads_imported: number
+  listings: { online: number; error: number; pending: number }
+}
+
+/**
+ * Compre o Alquile via its official API (OpenNavent). The agency activates it
+ * and asks its Compre o Alquile account executive to link the code shown here
+ * to PropSync; from then on listings marked for the portal are published and
+ * contacts arrive in the CRM automatically.
+ */
+function CompreOAlquileCard() {
+  const [state, setState] = useState<CoAState | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [busy, setBusy] = useState<'activate' | 'deactivate' | 'sync' | null>(null)
+  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  async function load() {
+    const r = await fetch('/api/configuracion/comprealquile')
+    const d = await r.json().catch(() => ({}))
+    if (!r.ok) { setLoadError(d.error ?? 'No se pudo cargar'); return }
+    setLoadError(null)
+    setState(d)
+  }
+  useEffect(() => { load() }, [])
+
+  async function run(action: 'activate' | 'deactivate' | 'sync') {
+    if (action === 'deactivate' && !window.confirm('Se despublicarán tus propiedades de Compre o Alquile y dejarán de entrar sus contactos. ¿Continuar?')) return
+    setBusy(action); setMsg(null)
+    try {
+      const r = await fetch(`/api/configuracion/comprealquile?action=${action}`, { method: 'POST' })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok) throw new Error(d.reason ?? d.error ?? 'No se pudo completar')
+      if (action === 'sync') {
+        if (d.status === 'skipped') setMsg({ type: 'error', text: d.reason })
+        else setMsg({ type: 'success', text: `Publicadas: ${d.published} · sin cambios: ${d.unchanged} · despublicadas: ${d.offline} · contactos nuevos: ${d.created}` })
+      } else {
+        setMsg({ type: 'success', text: action === 'activate' ? 'Compre o Alquile activado.' : 'Compre o Alquile desactivado.' })
+      }
+      await load()
+    } catch (e) {
+      setMsg({ type: 'error', text: e instanceof Error ? e.message : 'Error' })
+    } finally { setBusy(null) }
+  }
+
+  const badge = !state && !loadError
+    ? <Badge variant="secondary"><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Cargando</Badge>
+    : state?.enabled && state.vinculada
+      ? <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"><CheckCircle2 className="h-3 w-3 mr-1" /> Conectado</Badge>
+      : state?.enabled
+        ? <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Activado · pendiente de vincular</Badge>
+        : <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><AlertCircle className="h-3 w-3 mr-1" /> No activado</Badge>
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-foreground">Compre o Alquile — publicación y contactos</h2>
+        {badge}
+      </div>
+      <Separator />
+      <p className="text-sm text-muted-foreground">
+        Conexión oficial con Compre o Alquile: las propiedades que marques para este portal se publican, actualizan y
+        despublican solas, y cada consulta entra al CRM vinculada a su propiedad.
+      </p>
+      {loadError ? (
+        <p className="text-xs text-red-600 dark:text-red-400">{loadError}</p>
+      ) : state && (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 space-y-1.5">
+            <p className="text-xs text-muted-foreground">Tu código de integración PropSync</p>
+            <div className="flex items-center gap-2">
+              <code className="text-sm font-mono text-foreground">{state.codigo}</code>
+              <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { navigator.clipboard.writeText(state.codigo).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) }) }}>
+                {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Pídele a tu ejecutivo de cuenta de Compre o Alquile que vincule tu cuenta a <strong className="text-foreground font-medium">PropSync</strong> con este código.
+              {state.vinculada === true && ' ✓ Ya está vinculada.'}
+            </p>
+          </div>
+
+          {!state.platform_ready && (
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              Elevare está terminando la habilitación de PropSync con Compre o Alquile. Puedes activarlo ya: la publicación empieza sola cuando quede habilitada.
+            </p>
+          )}
+
+          {state.enabled && (
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-lg border border-border px-2 py-2"><p className="text-lg font-semibold">{state.listings.online}</p><p className="text-[11px] text-muted-foreground">publicadas</p></div>
+              <div className="rounded-lg border border-border px-2 py-2"><p className="text-lg font-semibold">{state.listings.error}</p><p className="text-[11px] text-muted-foreground">con error</p></div>
+              <div className="rounded-lg border border-border px-2 py-2"><p className="text-lg font-semibold">{state.leads_imported}</p><p className="text-[11px] text-muted-foreground">contactos</p></div>
+            </div>
+          )}
+
+          {state.last_error && <p className="text-xs text-red-600 dark:text-red-400 break-words">{state.last_error}</p>}
+          {msg && (
+            <div className={`text-xs flex items-center gap-1.5 ${msg.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+              {msg.type === 'success' ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
+              {msg.text}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {state.last_sync_at
+                ? `Última sincronización: ${new Date(state.last_sync_at).toLocaleString('es-PA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`
+                : 'Todavía no se ha sincronizado'}
+            </p>
+            <div className="flex gap-2">
+              {state.enabled ? (
+                <>
+                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => run('deactivate')} disabled={!!busy}>Desactivar</Button>
+                  <Button variant="outline" size="sm" className="gap-2" onClick={() => run('sync')} disabled={!!busy || !state.platform_ready}>
+                    <RefreshCw className={`h-3.5 w-3.5 ${busy === 'sync' ? 'animate-spin' : ''}`} />
+                    {busy === 'sync' ? 'Sincronizando…' : 'Sincronizar ahora'}
+                  </Button>
+                </>
+              ) : (
+                <Button size="sm" className="gap-2" onClick={() => run('activate')} disabled={!!busy}>
+                  {busy === 'activate' && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Activar Compre o Alquile
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

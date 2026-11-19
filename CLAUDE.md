@@ -220,8 +220,19 @@ Pull model ported from the user's standalone `encuentra-wasi/` script (an Encuen
 - Per-company credentials on `companies.encuentra24_slug` / `encuentra24_api_key` (migration `032_encuentra24_leads.sql`; not in the PostgREST column GRANT). Set in Configuración → Fuentes (`app/api/configuracion/encuentra24`) or by Elevare in the `/panel-elevare` drawer.
 - `lib/encuentra24-sync.ts` `syncCompanyEncuentra24()`: leads newer than `encuentra24_last_lead_at` → contact `fuente='encuentra24'`, `external_ref=<lead id>` (unique per company+fuente → re-runs never duplicate). Same email/phone as an existing contact → adds a note instead of a duplicate. Lead title matched to a listing (`matchPropertyByTitle`) → `contact_property_links` + the listing's agent is assigned. Watermark only advances if at least one lead succeeded. Push + owner email per batch.
 - Pure helpers in `lib/portal-leads.ts` (phone `00507…`→`+507…`, country, property type, title match); tests `node --test scripts/test-portal-leads.mjs`.
-- Schedule: `/api/cron/encuentra24-leads` (Bearer `CRON_SECRET`) is pinged every 5 min from the Elevare DigitalOcean droplet (`deploy/encuentra24-cron.example`) because Vercel Hobby only allows daily crons; `vercel.json` runs it daily as a fallback.
-- Compre o Alquile / Inmotech: no public import spec found; they get the generic XML feed above. Their leads aren't imported yet (no lead API known).
+- Contact creation is shared with Compre o Alquile: `lib/portal-lead-ingest.ts` `ingestPortalLeads()`.
+- Schedule: `/api/cron/portales` (Bearer `CRON_SECRET`, runs Encuentra24 + Compre o Alquile) is pinged every 5 min from the Elevare DigitalOcean droplet (`deploy/portales-cron.example`) because Vercel Hobby only allows daily crons; `vercel.json` runs it daily as a fallback.
+
+### Compre o Alquile — OpenNavent API (listings out + contacts in)
+
+Compre o Alquile is Navent/QuintoAndar; integrators use the **OpenNavent RELA API** (`https://api-rela-open.navent.com`, OpenAPI at `/v2/api-docs?group=opennavent-realestate`). PropSync/Elevare is the integrator: platform credentials in env `NAVENT_CLIENT_ID` / `NAVENT_CLIENT_SECRET` (requested from Navent, integracion@navent.com), optional `NAVENT_API_URL`. Each agency = a `codigoInmobiliaria` chosen by us (`companies.comprealquile_codigo`, default `propsync-<id>`), which the agency's Compre o Alquile executive links to the PropSync integration (`GET /v1/inmobiliarias` lists linked agencies → "vinculada").
+
+- Auth: `POST /v1/application/login?grant_type=client_credentials&client_id&client_secret` → token passed as `access_token` query param (`lib/navent.ts`, cached; catalogs cached 6h).
+- Listings: `PUT /v1/inmobiliarias/{codigo}/avisos/{propertyId}` for every property that is activo/destacado + disponible + canal `comprealquile`; `DELETE` same path when it stops qualifying. Mapping is pure in `lib/navent-mapping.ts` (type via `/v1/tipopropiedades` + synonyms, characteristics via `/v1/tipopropiedades/{id}/caracteristicas` aliases, location via `/v1/ubicaciones/latitud/../longitud/../countrycode/PA`). State per listing in `portal_listings` (status, portal errors, payload hash so unchanged listings aren't re-sent; max 20 PUTs per run). Tests: `node --test scripts/test-navent-mapping.mjs`.
+- Contacts: `GET /v2/inmobiliarias/{codigo}/mensajes?fromDate=yyyyMMdd` → `ingestPortalLeads(…, 'comprealquile')`; `codigoAviso` is our property id, so the link is exact.
+- Migration `033_comprealquile_navent.sql`. UI: Fuentes card (activate, code to give the portal, counts, sync) + `/panel-elevare` drawer (enable, custom code, optional `comprealquile_plan`, sync). Deactivating takes every listing offline.
+- **Untested against the live API** until Navent issues credentials — field mapping follows the OpenAPI spec; first real sync errors are stored per listing in `portal_listings.messages`.
+- Inmotech: generic XML feed only; no lead API known.
 
 UI: a "Lugares de publicación" section (pill toggles) at the end of both `propiedades/nueva` and `propiedades/[id]/editar`, writing to `properties.canales_publicados` (`TEXT[]`). `canAccessChannel()` exists but isn't called anywhere yet — channel selection isn't currently plan-gated, only marketing copy reflects what's "included."
 
@@ -352,7 +363,8 @@ Wraps Meta's Message Templates Management API (`lib/whatsapp-templates.ts` — `
 ### Pending
 - [x] Outbound portal XML feeds — `/feeds/<token>/<portal>.xml` (see "Outbound portal XML feeds")
 - [x] Inbound Encuentra24 leads → CRM (see "Encuentra24 leads → CRM")
-- [ ] Inbound Compre o Alquile / Inmotech leads (no lead API/spec yet)
+- [x] Compre o Alquile via OpenNavent API — listings + contacts (pending Navent integrator credentials)
+- [ ] Inmotech leads (no lead API known)
 - [ ] Stripe payments — plan upgrade/downgrade, webhook updates `companies.plan_id`
 
 ---

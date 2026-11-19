@@ -40,6 +40,7 @@ export interface CompanyRow {
   addons: string[]
   feed_token: string | null
   feed_last_access: Record<string, string>
+  coa: { enabled: boolean; codigo: string | null; plan: string | null; last_sync_at: string | null; last_error: string | null; leads_imported: number } | null
   e24: { slug: string | null; key_set: boolean; last_sync_at: string | null; last_error: string | null; leads_imported: number } | null
   propiedades: number
   contactos: number

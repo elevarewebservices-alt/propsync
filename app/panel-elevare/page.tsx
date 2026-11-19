@@ -13,7 +13,7 @@ async function loadData() {
   const db = createAdminClient()
   const month = new Date().toISOString().slice(0, 7) // YYYY-MM
 
-  const [companiesRes, propsRes, contactsRes, agentsRes, usageRes, imgRes, addonsRes, paymentsRes, promosRes, feedsRes, e24Res] = await Promise.all([
+  const [companiesRes, propsRes, contactsRes, agentsRes, usageRes, imgRes, addonsRes, paymentsRes, promosRes, feedsRes, e24Res, coaRes] = await Promise.all([
     (db.from('companies') as any)
       .select('id, nombre, email, plan_id, created_at, subscription_status, subscription_provider, trial_ends_at, current_period_end')
       .order('created_at', { ascending: true }),
@@ -38,6 +38,10 @@ async function loadData() {
     // Encuentra24 lead sync needs migration 032 — same degrade-safe pattern.
     (db.from('companies') as any)
       .select('id, encuentra24_slug, encuentra24_api_key, encuentra24_last_sync_at, encuentra24_last_error, encuentra24_leads_imported')
+      .then((r: any) => r, () => ({ data: null })),
+    // Compre o Alquile (OpenNavent) needs migration 033.
+    (db.from('companies') as any)
+      .select('id, comprealquile_enabled, comprealquile_codigo, comprealquile_plan, comprealquile_last_sync_at, comprealquile_last_error, comprealquile_leads_imported')
       .then((r: any) => r, () => ({ data: null })),
   ])
 
@@ -80,6 +84,18 @@ async function loadData() {
     }
   }
 
+  const coaMap: Record<string, CompanyRow['coa']> = {}
+  for (const r of (coaRes?.data ?? []) as any[]) {
+    coaMap[r.id] = {
+      enabled: Boolean(r.comprealquile_enabled),
+      codigo: r.comprealquile_codigo ?? null,
+      plan: r.comprealquile_plan ?? null,
+      last_sync_at: r.comprealquile_last_sync_at ?? null,
+      last_error: r.comprealquile_last_error ?? null,
+      leads_imported: r.comprealquile_leads_imported ?? 0,
+    }
+  }
+
   const companies: CompanyRow[] = ((companiesRes.data ?? []) as any[]).map((c) => ({
     id: c.id,
     nombre: c.nombre,
@@ -94,6 +110,7 @@ async function loadData() {
     feed_token: feedMap[c.id]?.feed_token ?? null,
     feed_last_access: feedMap[c.id]?.feed_last_access ?? {},
     e24: e24Res?.data ? (e24Map[c.id] ?? null) : null,
+    coa: coaRes?.data ? (coaMap[c.id] ?? null) : null,
     propiedades: propMap[c.id] ?? 0,
     contactos: contactMap[c.id] ?? 0,
     agentes: agentMap[c.id] ?? 0,
