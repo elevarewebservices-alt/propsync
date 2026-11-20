@@ -82,6 +82,11 @@ export async function sendRawEmail(cfg: SmtpConfig, to: string, subject: string,
 
 // ─── HTML shell ──────────────────────────────────────────────────────────────
 
+// Absolute URL — mail clients can't resolve relative paths. public/email-logo.png
+// is a cropped 440×124 copy of logo-lockup on its own #000006 background (the
+// logo isn't transparent), so the header band uses that exact colour.
+const EMAIL_LOGO_URL = `${(process.env.NEXT_PUBLIC_APP_URL || 'https://www.propsyncia.com').replace(/\/$/, '')}/email-logo.png`
+
 function emailShell({
   accent,
   headerTitle,
@@ -95,7 +100,7 @@ function emailShell({
   body: string
   recipientEmail: string
 }): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.propsync.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.propsyncia.com'
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -109,12 +114,11 @@ function emailShell({
       <table width="568" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.08);">
 
         <!-- Header band -->
-        <tr><td style="background:${accent};padding:0;">
+        <tr><td style="background:#000006;border-bottom:3px solid ${accent};padding:0;">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
-              <td style="padding:26px 36px 22px;">
-                <p style="margin:0;font-size:18px;font-weight:700;color:#fff;letter-spacing:-.2px;">PropSync</p>
-                <p style="margin:3px 0 0;font-size:11px;font-weight:500;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.07em;">Base de datos · CRM · IA</p>
+              <td style="padding:22px 36px 18px;" valign="middle">
+                <a href="${appUrl}" style="text-decoration:none;"><img src="${EMAIL_LOGO_URL}" width="176" height="50" alt="PropSync" style="display:block;border:0;outline:none;width:176px;height:50px;color:#ffffff;font-size:20px;font-weight:700;"></a>
               </td>
               <td style="padding:26px 36px 22px;" align="right">
                 <p style="margin:0;font-size:13px;font-weight:600;color:rgba(255,255,255,.9);">${h(headerTitle)}</p>
@@ -189,7 +193,7 @@ export async function sendWelcomeEmail(
   agencia: string,
   companyId?: string | null,
 ): Promise<void> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.propsync.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.propsyncia.com'
   const accent = '#1a73e8'
 
   const body = `
@@ -245,7 +249,7 @@ export async function sendAgentWelcomeEmail(
   agencia: string,
   companyId?: string | null,
 ): Promise<void> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.propsync.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.propsyncia.com'
   const accent = '#1a73e8'
 
   const body = `
@@ -359,7 +363,7 @@ export async function sendNewLeadNotification(
   lead: NewLeadInput,
   companyId?: string | null,
 ): Promise<void> {
-  const appUrl  = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.propsync.app'
+  const appUrl  = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.propsyncia.com'
   const accent  = '#7c3aed'
   const fuente  = FUENTE_CONFIG[lead.fuente] ?? FUENTE_CONFIG.manual
   const tipoPill = pill(TIPO_LABEL[lead.tipo] ?? lead.tipo, '#f1f5f9', '#374151')
@@ -405,7 +409,7 @@ export async function sendStageMilestoneEmail(
   isTerminal: boolean,
   companyId?: string | null,
 ): Promise<void> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.propsync.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.propsyncia.com'
   const accent = stageColor ?? '#22c55e'
   const isClosed = stageName.toLowerCase().includes('cerrado')
 
@@ -461,7 +465,7 @@ export async function sendFollowUpReminderEmail(
 ): Promise<void> {
   if (contacts.length === 0) return
 
-  const appUrl       = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.propsync.app'
+  const appUrl       = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.propsyncia.com'
   const accent       = '#f59e0b'
   const today        = new Date().toISOString().split('T')[0]
   const count        = contacts.length
