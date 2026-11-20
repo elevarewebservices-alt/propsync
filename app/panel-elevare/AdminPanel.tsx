@@ -282,6 +282,7 @@ function CompanyDrawer({ company: c, payments, addons, onClose }: {
   const [notes, setNotes] = useState('')
   const [trialDays, setTrialDays] = useState('7')
   const [periodEnd, setPeriodEnd] = useState(c.current_period_end?.slice(0, 10) ?? '')
+  const [accessLink, setAccessLink] = useState<string | null>(null)
   const [e24Slug, setE24Slug] = useState(c.e24?.slug ?? '')
   const [e24Key, setE24Key] = useState('')
   const [coaCodigo, setCoaCodigo] = useState(c.coa?.codigo ?? '')
@@ -435,6 +436,34 @@ function CompanyDrawer({ company: c, payments, addons, onClose }: {
                 </label>
               )
             })}
+          </section>
+
+          <section className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase text-gray-500">Acceso del titular</h4>
+            <p className="text-[11px] text-gray-500">Si la invitación venció (24 h) o no le llegó, genera un enlace nuevo para que cree su contraseña.</p>
+            <div className="flex gap-2">
+              <button
+                disabled={busy}
+                className={`${btnGhost} flex-1`}
+                onClick={() => run(async () => {
+                  try {
+                    const res = await fetch('/api/admin/accounts/invite-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companyId: c.id, send: true }) })
+                    const d = await res.json().catch(() => ({}))
+                    if (!res.ok) return d.error ?? `Error ${res.status}`
+                    setAccessLink(d.link)
+                    return null
+                  } catch { return 'Error de red' }
+                }, 'Enlace generado y enviado por correo')}
+              >
+                Reenviar invitación
+              </button>
+            </div>
+            {accessLink && (
+              <div className="flex gap-2">
+                <input readOnly value={accessLink} className={`${input} font-mono text-[11px]`} onFocus={(e) => e.currentTarget.select()} />
+                <button className={btnGhost} onClick={() => { void navigator.clipboard.writeText(accessLink); setMsg({ ok: true, text: 'Enlace copiado' }) }}>Copiar</button>
+              </div>
+            )}
           </section>
 
           <section className="space-y-2">
@@ -733,6 +762,8 @@ function NewAccountTab({ onCreated }: { onCreated: () => void }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
+  const [doneLink, setDoneLink] = useState<string | null>(null)
+  const [linkCopied, setLinkCopied] = useState(false)
   const empty = { empresa: '', nombre: '', email: '', plan_id: 'starter', mode: 'active', amount: '30', months: '1', reference: '' }
   const [form, setForm] = useState(empty)
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -745,6 +776,7 @@ function NewAccountTab({ onCreated }: { onCreated: () => void }) {
     setBusy(true)
     setErr(null)
     let companyId: string | null = null
+    let inviteLink: string | null = null
     try {
       const res = await fetch('/api/admin/accounts', {
         method: 'POST',
@@ -754,6 +786,7 @@ function NewAccountTab({ onCreated }: { onCreated: () => void }) {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setBusy(false); return setErr(data.error ?? `Error ${res.status}`) }
       companyId = data.companyId
+      inviteLink = data.inviteLink ?? null
     } catch {
       setBusy(false)
       return setErr('Error de red')
@@ -767,6 +800,8 @@ function NewAccountTab({ onCreated }: { onCreated: () => void }) {
     }
     setBusy(false)
     setDone(form.email)
+    setDoneLink(inviteLink)
+    setLinkCopied(false)
     setForm(empty)
     router.refresh()
   }
@@ -775,12 +810,21 @@ function NewAccountTab({ onCreated }: { onCreated: () => void }) {
     <div className="max-w-lg rounded-xl border bg-white p-5 space-y-3">
       <div>
         <h3 className="text-sm font-semibold">Crear cuenta de cliente</h3>
-        <p className="text-xs text-gray-500">Le llega un correo de invitación para crear su contraseña. La cuenta queda lista con el CRM configurado.</p>
+        <p className="text-xs text-gray-500">Le llega un correo para crear su contraseña, y aquí te queda el enlace para mandárselo también por WhatsApp. La cuenta queda lista con el CRM configurado.</p>
       </div>
       {err && <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
       {done && (
         <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
           Invitación enviada a <b>{done}</b>. <button onClick={onCreated} className="underline">Ver empresas</button>
+          {doneLink && (
+            <div className="mt-2 space-y-1">
+              <p className="text-xs">Enlace de acceso (vence en 24 h) — mándaselo por WhatsApp si el correo no llega:</p>
+              <div className="flex gap-2">
+                <input readOnly value={doneLink} className={`${input} font-mono text-[11px]`} onFocus={(e) => e.currentTarget.select()} />
+                <button className={btnGhost} onClick={() => { void navigator.clipboard.writeText(doneLink); setLinkCopied(true) }}>{linkCopied ? 'Copiado' : 'Copiar'}</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
       <label className="block text-xs text-gray-600">Nombre de la empresa / corredor

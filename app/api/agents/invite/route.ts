@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveCompanyId, getSessionAgent, getSessionPlan } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
-import { createClient } from '@supabase/supabase-js'
 import { getPlan } from '@/lib/plans'
+import { createInviteLink } from '@/lib/invite'
+import { sendInviteEmail } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
-
-function createAuthAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
 
 export async function POST(request: NextRequest) {
   const companyId = await resolveCompanyId()
@@ -85,23 +78,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: insertError.message }, { status: 500 })
   }
 
-  // Send Supabase invite email
-  const authAdmin = createAuthAdminClient()
-  const { error: inviteError } = await authAdmin.auth.admin.inviteUserByEmail(email, {
-    data: {
-      nombre,
-      company_id: companyId,
-      rol,
-      invited: true,
-    },
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/auth/callback`,
-  })
-
-  if (inviteError) {
-    // Roll back the agent row
+  // Invite link + email through our own transport (lib/invite.ts — Supabase's
+  // built-in mailer doesn't reliably reach external addresses).
+  let inviteLink: string
+  try {
+    ;({ link: inviteLink } = await createInviteLink(email, { nombre, company_id: companyId, rol, invited: true }, request.nextUrl.origin))
+  } catch (err) {
     await db.from('agents').delete().eq('company_id', companyId).eq('email', email)
-    return NextResponse.json({ error: inviteError.message }, { status: 500 })
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'No se pudo crear la invitación' }, { status: 500 })
   }
+  const { data: companyRow } = await (db.from('companies') as any).select('nombre').eq('id', companyId).single()
+  await sendInviteEmail({ email, nombre, empresa: companyRow?.nombre ?? 'PropSync', link: inviteLink, isOwner: false, companyId })
+    .catch((e) => console.error('[agents/invite] email failed', e))
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, inviteLink })
 }

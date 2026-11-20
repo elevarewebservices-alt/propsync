@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase'
 import { adminOr403, PLAN_IDS } from '@/lib/admin'
 import { seedDefaultCrm } from '@/lib/provision'
 import { TRIAL_DAYS } from '@/lib/subscription'
 import { cleanText } from '@/lib/validation'
+import { createInviteLink } from '@/lib/invite'
+import { sendInviteEmail } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,8 +20,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  *    If no payment is ever registered, the normal grace period locks it.
  *
  * Creates the company + seeds the CRM + pre-creates an inactive owner agent,
- * then sends a Supabase invite. The existing invite-link flow
- * (/auth/callback + lib/auth.ts self-heal) activates the owner on first login.
+ * then generates the invite link and emails it through our own transport
+ * (lib/invite.ts — Supabase's built-in mailer doesn't reach external clients).
+ * The link is also returned so the panel can show it for WhatsApp.
  */
 export async function POST(request: NextRequest) {
   const admin = await adminOr403()
@@ -86,20 +88,18 @@ export async function POST(request: NextRequest) {
 
   await seedDefaultCrm(companyId)
 
-  const authAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } },
-  )
-  const { error: iErr } = await authAdmin.auth.admin.inviteUserByEmail(email, {
-    data: { nombre, company_id: companyId, rol: 'owner', invited: true },
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/auth/callback`,
-  })
-  if (iErr) {
+  let inviteLink: string
+  try {
+    ;({ link: inviteLink } = await createInviteLink(email, { nombre, company_id: companyId, rol: 'owner', invited: true }, request.nextUrl.origin))
+  } catch (err) {
     await rollback()
-    return NextResponse.json({ error: `No se pudo enviar la invitación: ${iErr.message}` }, { status: 500 })
+    return NextResponse.json({ error: `No se pudo crear la invitación: ${err instanceof Error ? err.message : err}` }, { status: 500 })
   }
+  await sendInviteEmail({
+    email, nombre, empresa, link: inviteLink, isOwner: true,
+    trialDays: mode === 'trial' ? TRIAL_DAYS : null, companyId,
+  }).catch((e) => console.error('[admin] invite email failed', e))
 
   console.info('[admin] account created', { by: admin, company: companyId, email, planId, mode })
-  return NextResponse.json({ companyId })
+  return NextResponse.json({ companyId, inviteLink })
 }

@@ -295,6 +295,54 @@ export async function sendAgentWelcomeEmail(
   })
 }
 
+/**
+ * Invitation to activate a PropSync account (new client owner or teammate).
+ * Sent through our own transport (Brevo/SMTP) — see lib/invite.ts for why we
+ * don't use Supabase's mailer.
+ */
+export async function sendInviteEmail({
+  email, nombre, empresa, link, isOwner, trialDays, companyId,
+}: {
+  email: string
+  nombre: string
+  empresa: string
+  link: string
+  isOwner: boolean
+  trialDays?: number | null
+  companyId?: string | null
+}): Promise<void> {
+  const accent = '#1a73e8'
+  const intro = isOwner
+    ? `Tu cuenta de <strong style="color:#1e293b;">${h(empresa)}</strong> en PropSync está lista${trialDays ? `, con <strong style="color:#1e293b;">${trialDays} días de prueba gratis</strong>` : ''}.`
+    : `Te invitaron a unirte a <strong style="color:#1e293b;">${h(empresa)}</strong> en PropSync.`
+  const body = `
+    <h1 style="margin:0 0 10px;font-size:24px;font-weight:700;color:#0f172a;letter-spacing:-.4px;">¡Hola, ${h(nombre)}!</h1>
+    <p style="margin:0 0 18px;font-size:15px;color:#475569;line-height:1.65;">${intro}</p>
+    <p style="margin:0 0 6px;font-size:15px;color:#475569;line-height:1.65;">
+      Presiona el botón para crear tu contraseña y entrar. Tu inventario, tu CRM y el asistente con IA ya están configurados.
+    </p>
+    ${cta('Crear mi contraseña', link, accent)}
+    <p style="margin:22px 0 0;font-size:12px;color:#94a3b8;line-height:1.6;">
+      Si el botón no funciona, copia este enlace en tu navegador:<br>
+      <span style="word-break:break-all;color:#64748b;">${h(link)}</span>
+    </p>
+    <p style="margin:12px 0 0;font-size:12px;color:#94a3b8;">Por seguridad, el enlace vence en 24 horas. Si venció, pide uno nuevo.</p>`
+
+  await sendTransactionalEmail({
+    to: email,
+    toName: nombre,
+    subject: isOwner ? `Tu cuenta de PropSync está lista` : `Te invitaron a ${empresa} en PropSync`,
+    htmlContent: emailShell({
+      accent,
+      headerTitle: isOwner ? 'Bienvenido a PropSync' : 'Invitación a PropSync',
+      headerSub: empresa,
+      body,
+      recipientEmail: email,
+    }),
+    companyId,
+  })
+}
+
 export interface NewLeadInput {
   nombre: string
   fuente: string
