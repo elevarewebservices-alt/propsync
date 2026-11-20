@@ -5,7 +5,7 @@ import { seedDefaultCrm } from '@/lib/provision'
 import { TRIAL_DAYS } from '@/lib/subscription'
 import { cleanText } from '@/lib/validation'
 import { createInviteLink } from '@/lib/invite'
-import { sendInviteEmail } from '@/lib/email'
+import { sendInviteEmail, type EmailResult } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -95,11 +95,12 @@ export async function POST(request: NextRequest) {
     await rollback()
     return NextResponse.json({ error: `No se pudo crear la invitación: ${err instanceof Error ? err.message : err}` }, { status: 500 })
   }
-  await sendInviteEmail({
+  const mail = await sendInviteEmail({
     email, nombre, empresa, link: inviteLink, isOwner: true,
     trialDays: mode === 'trial' ? TRIAL_DAYS : null, companyId,
-  }).catch((e) => console.error('[admin] invite email failed', e))
+  }).catch((e): EmailResult => ({ ok: false, error: e instanceof Error ? e.message : String(e) }))
+  if (!mail.ok) console.error('[admin] invite email failed', mail.error)
 
   console.info('[admin] account created', { by: admin, company: companyId, email, planId, mode })
-  return NextResponse.json({ companyId, inviteLink })
+  return NextResponse.json({ companyId, inviteLink, emailSent: mail.ok, emailError: mail.ok ? null : mail.error })
 }

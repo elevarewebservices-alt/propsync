@@ -451,6 +451,7 @@ function CompanyDrawer({ company: c, payments, addons, onClose }: {
                     const d = await res.json().catch(() => ({}))
                     if (!res.ok) return d.error ?? `Error ${res.status}`
                     setAccessLink(d.link)
+                    if (d.emailSent === false) return `Enlace generado, pero el correo NO se envió: ${d.emailError ?? 'error desconocido'}. Copia el enlace y mándalo por WhatsApp.`
                     return null
                   } catch { return 'Error de red' }
                 }, 'Enlace generado y enviado por correo')}
@@ -763,6 +764,7 @@ function NewAccountTab({ onCreated }: { onCreated: () => void }) {
   const [err, setErr] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
   const [doneLink, setDoneLink] = useState<string | null>(null)
+  const [doneEmailError, setDoneEmailError] = useState<string | null>(null)
   const [linkCopied, setLinkCopied] = useState(false)
   const empty = { empresa: '', nombre: '', email: '', plan_id: 'starter', mode: 'active', amount: '30', months: '1', reference: '' }
   const [form, setForm] = useState(empty)
@@ -777,6 +779,7 @@ function NewAccountTab({ onCreated }: { onCreated: () => void }) {
     setErr(null)
     let companyId: string | null = null
     let inviteLink: string | null = null
+    let emailError: string | null = null
     try {
       const res = await fetch('/api/admin/accounts', {
         method: 'POST',
@@ -787,6 +790,7 @@ function NewAccountTab({ onCreated }: { onCreated: () => void }) {
       if (!res.ok) { setBusy(false); return setErr(data.error ?? `Error ${res.status}`) }
       companyId = data.companyId
       inviteLink = data.inviteLink ?? null
+      emailError = data.emailSent === false ? (data.emailError ?? 'error desconocido') : null
     } catch {
       setBusy(false)
       return setErr('Error de red')
@@ -801,6 +805,7 @@ function NewAccountTab({ onCreated }: { onCreated: () => void }) {
     setBusy(false)
     setDone(form.email)
     setDoneLink(inviteLink)
+    setDoneEmailError(emailError)
     setLinkCopied(false)
     setForm(empty)
     router.refresh()
@@ -815,7 +820,10 @@ function NewAccountTab({ onCreated }: { onCreated: () => void }) {
       {err && <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
       {done && (
         <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-          Invitación enviada a <b>{done}</b>. <button onClick={onCreated} className="underline">Ver empresas</button>
+          {doneEmailError
+            ? <>Cuenta creada para <b>{done}</b>, pero <b>el correo no se envió</b>. <button onClick={onCreated} className="underline">Ver empresas</button>
+                <p className="mt-1 rounded bg-red-50 px-2 py-1 text-xs text-red-700 break-words">{doneEmailError}</p></>
+            : <>Invitación enviada a <b>{done}</b>. <button onClick={onCreated} className="underline">Ver empresas</button></>}
           {doneLink && (
             <div className="mt-2 space-y-1">
               <p className="text-xs">Enlace de acceso (vence en 24 h) — mándaselo por WhatsApp si el correo no llega:</p>

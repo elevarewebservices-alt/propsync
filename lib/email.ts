@@ -17,6 +17,9 @@ function makeTransport(cfg: SmtpConfig): Transporter {
   })
 }
 
+/** Outcome of a send — callers that must tell a human (invites) surface `error`. */
+export type EmailResult = { ok: true; via: 'brevo' | 'smtp' | 'company_smtp' } | { ok: false; error: string }
+
 export async function sendTransactionalEmail({
   to,
   toName,
@@ -29,21 +32,23 @@ export async function sendTransactionalEmail({
   subject: string
   htmlContent: string
   companyId?: string | null
-}): Promise<void> {
+}): Promise<EmailResult> {
   // A tenant's own SMTP always wins — mail must keep leaving their domain.
   // Everyone else goes through the Elevare Brevo account when it's configured,
   // falling back to the generic platform SMTP when it isn't.
   const own = await getCompanySmtpConfig(companyId)
+  let brevoError: string | null = null
   if (!own && isBrevoEnabled()) {
     const result = await sendViaBrevo({ to, toName, subject, htmlContent, tags: ['transactional'] })
-    if (result.ok) return
+    if (result.ok) return { ok: true, via: 'brevo' }
+    brevoError = result.error
     console.error('[email] Brevo send failed, falling back to SMTP:', result.error)
   }
 
   const cfg = own ?? (await resolveSmtpConfig(companyId))
   if (!cfg) {
     console.warn('[email] No SMTP config available — skipping email')
-    return
+    return { ok: false, error: brevoError ?? 'No hay Brevo ni SMTP configurado en el servidor (BREVO_API_KEY / BREVO_FROM_EMAIL)' }
   }
 
   try {
@@ -54,8 +59,11 @@ export async function sendTransactionalEmail({
       subject,
       html:    htmlContent,
     })
+    return { ok: true, via: own ? 'company_smtp' : 'smtp' }
   } catch (err) {
     console.error('[email] send failed:', err)
+    const msg = err instanceof Error ? err.message : String(err)
+    return { ok: false, error: brevoError ? `${brevoError} · SMTP: ${msg}` : `SMTP: ${msg}` }
   }
 }
 
@@ -314,7 +322,7 @@ export async function sendInviteEmail({
   isOwner: boolean
   trialDays?: number | null
   companyId?: string | null
-}): Promise<void> {
+}): Promise<EmailResult> {
   const accent = '#1a73e8'
   const intro = isOwner
     ? `Tu cuenta de <strong style="color:#1e293b;">${h(empresa)}</strong> en PropSync está lista${trialDays ? `, con <strong style="color:#1e293b;">${trialDays} días de prueba gratis</strong>` : ''}.`
@@ -332,7 +340,7 @@ export async function sendInviteEmail({
     </p>
     <p style="margin:12px 0 0;font-size:12px;color:#94a3b8;">Por seguridad, el enlace vence en 24 horas. Si venció, pide uno nuevo.</p>`
 
-  await sendTransactionalEmail({
+  return sendTransactionalEmail({
     to: email,
     toName: nombre,
     subject: isOwner ? `Tu cuenta de PropSync está lista` : `Te invitaron a ${empresa} en PropSync`,

@@ -3,7 +3,7 @@ import { resolveCompanyId, getSessionAgent, getSessionPlan } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase'
 import { getPlan } from '@/lib/plans'
 import { createInviteLink } from '@/lib/invite'
-import { sendInviteEmail } from '@/lib/email'
+import { sendInviteEmail, type EmailResult } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,8 +88,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'No se pudo crear la invitación' }, { status: 500 })
   }
   const { data: companyRow } = await (db.from('companies') as any).select('nombre').eq('id', companyId).single()
-  await sendInviteEmail({ email, nombre, empresa: companyRow?.nombre ?? 'PropSync', link: inviteLink, isOwner: false, companyId })
-    .catch((e) => console.error('[agents/invite] email failed', e))
+  const mail = await sendInviteEmail({ email, nombre, empresa: companyRow?.nombre ?? 'PropSync', link: inviteLink, isOwner: false, companyId })
+    .catch((e): EmailResult => ({ ok: false, error: e instanceof Error ? e.message : String(e) }))
+  if (!mail.ok) console.error('[agents/invite] email failed', mail.error)
 
-  return NextResponse.json({ success: true, inviteLink })
+  return NextResponse.json({ success: true, inviteLink, emailSent: mail.ok, emailError: mail.ok ? null : mail.error })
 }

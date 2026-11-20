@@ -119,6 +119,9 @@ export default function UsuariosPage() {
 
     setInvDone(true)
     setInvLoading(false)
+    if (body.emailSent === false) {
+      setInvError(`Usuario creado, pero el correo no se envió (${body.emailError ?? 'error'}). Comparte este enlace: ${body.inviteLink}`)
+    }
     load()
   }
 
@@ -304,6 +307,11 @@ export default function UsuariosPage() {
               <p className="text-sm text-muted-foreground">
                 Le enviamos un correo a <strong>{invEmail}</strong> con el enlace para unirse.
               </p>
+              {invError && (
+                <p className="text-left text-xs text-red-600 bg-red-50 dark:bg-red-950 dark:text-red-400 px-3 py-2 rounded-md break-all select-all">
+                  {invError}
+                </p>
+              )}
             </div>
           ) : (
             <form onSubmit={handleInvite} className="space-y-4 pt-2">

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase'
 import { adminOr403, UUID_RE } from '@/lib/admin'
 import { createInviteLink } from '@/lib/invite'
-import { sendInviteEmail } from '@/lib/email'
+import { sendInviteEmail, type EmailResult } from '@/lib/email'
 import { TRIAL_DAYS } from '@/lib/subscription'
 
 export const dynamic = 'force-dynamic'
@@ -35,13 +35,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'No se pudo generar el enlace' }, { status: 500 })
   }
 
+  let mail: EmailResult | null = null
   if (body.send === true) {
-    await sendInviteEmail({
+    mail = await sendInviteEmail({
       email: owner.email, nombre: owner.nombre, empresa: company.nombre, link, isOwner: true,
       trialDays: company.subscription_status === 'trialing' ? TRIAL_DAYS : null, companyId,
-    }).catch((e) => console.error('[admin] invite email failed', e))
+    }).catch((e): EmailResult => ({ ok: false, error: e instanceof Error ? e.message : String(e) }))
+    if (!mail.ok) console.error('[admin] invite email failed', mail.error)
   }
 
   console.info('[admin] invite link generated', { by: admin, company: companyId, sent: body.send === true })
-  return NextResponse.json({ link, email: owner.email, activated: Boolean(owner.auth_user_id) })
+  return NextResponse.json({
+    link, email: owner.email, activated: Boolean(owner.auth_user_id),
+    emailSent: mail ? mail.ok : null, emailError: mail && !mail.ok ? mail.error : null,
+  })
 }
